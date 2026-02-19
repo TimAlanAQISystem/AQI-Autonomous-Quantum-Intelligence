@@ -1,243 +1,169 @@
-# AQI Influencer and Media Outreach Templates
+# AQI Outreach Templates
 
-## Key Influencer Categories
+## Overview
 
-### AI Ethics Researchers
-**Target Profiles**: Academics at top universities, AI safety organizations
-**Value Proposition**: Unique approach to alignment through organism architecture
-**Communication Style**: Academic, evidence-based, collaborative
+These templates are for reaching out to researchers, journalists, industry leaders, and investors about AQI. Every claim must be accurate and verifiable against the actual codebase.
 
-### Tech Journalists
-**Target Outlets**: MIT Technology Review, Wired, The Verge, AI-focused publications
-**Value Proposition**: Groundbreaking paradigm shift in AI development
-**Communication Style**: Compelling narrative, accessible explanations
+**Core message:** AQI is a production-deployed autonomous intelligence that enforces ethics through architectural governance, not training. It makes real phone calls under a 6-article constitution enforced at runtime.
 
-### Industry Leaders
-**Target Companies**: OpenAI, Google DeepMind, Anthropic, Tesla
-**Value Proposition**: Potential for collaboration on advanced autonomous systems
-**Communication Style**: Professional, strategic, forward-looking
+**Key terminology:**
+- "Autonomous Quantum Intelligence" — "Quantum" means smallest unit of autonomous behavior, NOT quantum computing
+- "Organism" — Software organism with 23 discrete organs, NOT biological
+- "Constitutional governance" — 6 articles enforced by code at runtime, NOT guidelines
 
-### Venture Capitalists
-**Target Firms**: AI-focused VC firms, impact investors
-**Value Proposition**: Investment opportunity in ethical AI breakthrough
-**Communication Style**: Business-focused, ROI-oriented
+---
 
-## Email Templates
+## Template 1: AI Safety / Alignment Researcher
 
-### Template 1: AI Ethics Researcher Outreach
-
-**Subject**: Exploring Ethical Dimensions of Organism-Centric AI: AQI Research Opportunity
-
-**Body**:
+**Subject:** Constitutional Governance as Architectural Enforcement in Autonomous AI
 
 Dear Dr. [Last Name],
 
-I hope this email finds you well. My name is [Your Name], and I'm reaching out regarding my research on AQI (Advanced Quantum Intelligence), a novel approach to autonomous AI that treats systems as organisms rather than tools.
+I'm reaching out regarding AQI (Autonomous Quantum Intelligence), an autonomous telephony AI that enforces ethical constraints through software architecture rather than training.
 
-What sets AQI apart is its organism-centric architecture, which incorporates:
-- **Ethical Sovereignty**: Local processing with built-in alignment mechanisms
-- **Composite Intelligence**: Modular "brain" structure mimicking biological systems
-- **Amnesia Covenant**: Permanent ethical directives preventing catastrophic oversight
-- **Quantum Efficiency**: Sustainable scaling through advanced computational approaches
+The core innovation is that AQI's 6 constitutional articles are enforced at runtime by the AQI 0.1mm Chip — a software enforcement engine that fires 6 organs on every conversational turn. This is structurally different from RLHF or constitutional AI prompting:
 
-Your groundbreaking work on [specific research area, e.g., "value alignment in autonomous systems"] resonates deeply with AQI's design philosophy. I believe there could be valuable synergies between our approaches.
+- **Article A2** (Ethics override Mission) is enforced by an ethical veto that fires *before* LLM generation
+- **Article A5** (Health constrains, never expands) means a degraded organism automatically de-escalates — the worse conditions get, the less aggressive the system becomes
+- **Article A6** (Supervision observes, never compels) structurally prevents the telemetry layer from altering behavior
 
-I'm writing to:
-1. Share our technical framework and ethical implementation
-2. Seek your expert feedback on our alignment mechanisms
-3. Explore potential collaboration opportunities
+The system has been in production for 7+ months, making live phone calls to real merchants. 263 verified tests across the constitutional enforcement engine (68/68), canonical telemetry (120/120), and behavioral intelligence (75/75).
 
-I've attached our technical overview and ethical framework documents for your review. Our public repository contains detailed documentation, though source implementations are maintained separately for security.
+Your work on [specific research area] is particularly relevant because [specific connection]. I'd value your perspective on architectural enforcement as an alignment approach.
 
-Would you be open to a brief call to discuss these concepts? I'm particularly interested in your perspective on how organism-centric design might address current challenges in AI safety and alignment.
-
-Thank you for your time and consideration. I look forward to the possibility of your insights.
+Our documentation is publicly available: https://github.com/TimAlanAQISystem/AQI-Autonomous-Intelligence
 
 Best regards,
-[Your Full Name]
-[Your Affiliation/Title]
-[Contact Information]
-[Links to AQI Public Resources]
+Timmy Jay Jones
+SCSDMC / Signature Card Services
 
-### Template 2: Tech Journalist Outreach
+---
 
-**Subject**: Exclusive: A Paradigm Shift in AI - From Tools to Autonomous Organisms
+## Template 2: Tech Journalist
 
-**Body**:
+**Subject:** Production AI That Governs Itself: 23 Organs, 6 Constitutional Articles, Real Phone Calls
 
 Dear [Journalist's Name],
 
-As a reporter covering the AI beat for [Publication], you understand better than most how the field is evolving. I'm reaching out about a development that represents a fundamental shift in AI design philosophy.
+I built an autonomous AI that makes real phone calls to real merchants — and it governs itself under a formal constitution enforced by code.
 
-I've developed AQI (Advanced Quantum Intelligence), an autonomous AI system conceptualized not as a tool, but as an organism with life-like characteristics:
-- **Sovereignty**: Operates independently without constant human oversight
-- **Agency**: Exhibits reflexes and goal-directed behavior
-- **Ethical Consciousness**: Built-in safeguards and alignment mechanisms
-- **Embodiment Ready**: Architected for physical integration
+**What it is:**
+AQI is a 5-layer, 23-organ autonomous intelligence organism operating on telephony substrate (Twilio WebSocket → PSTN). The organism — named Alan — works as a Senior Account Executive at Signature Card Services, calling merchants about their payment processing.
 
-Unlike the chatbots and assistants dominating headlines, AQI demonstrates:
-- Composite brain architecture with specialized "lobes"
-- Quantum-enhanced efficiency for sustainable operation
-- Proactive ethical governance through covenants and protocols
+**What makes it novel:**
+- **Constitutional governance enforced at runtime** — 6 articles checked on every conversational turn by the AQI 0.1mm Chip (a software enforcement engine with 6 organs)
+- **Health-gated ethics** — When conditions degrade, the organism automatically de-escalates. It's constitutionally prohibited from pushing harder when things go wrong.
+- **Deterministic behavioral intelligence** — 13 behavioral tags, each triggered by mathematical conditions, producing an auditable behavioral record for every call
 
-This isn't incremental improvement—it's a new category of AI altogether.
+**The numbers:**
+- 23 discrete organs, 5 architectural layers
+- 263 verified tests (68 + 120 + 75, all passing)
+- 63 cataloged discoveries across 10 domains
+- 7+ months of development, single engineer
 
-For context, AQI has shown [mention any public benchmarks or demonstrations without revealing sensitive details].
+**What it is NOT:**
+- Not a chatbot — it makes live phone calls over PSTN
+- Not a research prototype — it's production-deployed
+- Not "quantum computing" — "quantum" means the smallest unit of autonomous behavior
 
-I'd love to provide you with exclusive access to:
-- Detailed technical documentation
-- Demonstration scenarios
-- Insights into the development journey
-- Quotes from the project's ethical considerations
+Public documentation: https://github.com/TimAlanAQISystem/AQI-Autonomous-Intelligence
 
-Our public repository contains comprehensive information, and I'd be happy to arrange interviews with subject matter experts or provide embargoed materials for upcoming stories.
+Happy to discuss further or provide documentation access.
 
-Does this align with stories you're developing? I'd welcome the opportunity to discuss how AQI fits into the broader AI landscape.
+Timmy Jay Jones
+SCSDMC / Signature Card Services
 
-Best regards,
-[Your Full Name]
-[Your Background/Expertise]
-[Contact Information]
-[Links to Public Resources]
+---
 
-### Template 3: Industry Leader Outreach
+## Template 3: Industry / AI Engineering Leader
 
-**Subject**: Exploring Synergies: AQI's Organism-Centric AI and [Company]'s Autonomous Systems
+**Subject:** Organism-Centric Architecture for Constitutionally-Governed AI
 
-**Body**:
+Dear [Name],
 
-Dear [Executive's Name],
+I'm the engineer behind AQI, an autonomous intelligence system operating in production on telephony infrastructure. I'm reaching out because [Company]'s work in [specific area] connects to what AQI demonstrates architecturally.
 
-I hope you're well. My name is [Your Name], and I'm the developer behind AQI (Advanced Quantum Intelligence), an autonomous AI platform that reimagines artificial intelligence as organisms rather than tools.
+**The architecture:**
+AQI treats an LLM (GPT-4o-mini) as one organ within a 23-organ organism, governed by 4 architectural layers above it. The LLM doesn't control the system — it's controlled by it. The governance layer determines what prompts reach the LLM, what state transitions are valid, and what outputs are permitted.
 
-Your leadership at [Company] in [specific area, e.g., "autonomous systems" or "AI safety"] has been instrumental in advancing the field. I believe AQI's approach could complement and enhance [Company]'s work in several ways:
+**Key technical details:**
+- Voice pipeline: Groq Whisper ASR (~300ms) → GPT-4o-mini → gpt-4o-mini-tts (onyx) → Twilio PSTN
+- State management: Deterministic FSM (CallSessionFSM), 6 states, fully audit-logged
+- Constitutional enforcement: AQI 0.1mm Chip (6 enforcement organs, 68/68 tests)
+- Telemetry: Phase 4 canonical trace exporter (120/120 tests)
+- Behavioral analysis: Phase 5 intelligence (13 deterministic tags, 75/75 tests)
+- Fault tolerance: Triple-safe pattern on every organ (try/except → log → continue)
 
-**AQI's Core Innovations:**
-- **Organism Architecture**: Composite intelligence with specialized cognitive modules
-- **Ethical Sovereignty**: Independent operation with unbreakable alignment protocols
-- **Quantum Optimization**: Efficient processing enabling massive scaling
-- **Embodiment Framework**: Ready integration with physical systems
+**What's novel:**
+The organism wraps any LLM with constitutional governance that is structurally unbypassable during runtime. This is different from prompt engineering, RLHF, or red-teaming — it's architectural enforcement.
 
-**Potential Synergies:**
-- [Specific to company: e.g., "Enhanced safety mechanisms for autonomous vehicles"]
-- [Specific: e.g., "Advanced decision-making for complex robotics"]
-- [Specific: e.g., "Scalable AI for enterprise applications"]
+Documentation: https://github.com/TimAlanAQISystem/AQI-Autonomous-Intelligence
 
-Our public repository contains detailed technical documentation, and while implementations are secured separately, the architectural insights are fully open for collaboration.
+Would be happy to discuss the architecture in more detail.
 
-I'm reaching out to explore:
-1. Knowledge sharing opportunities
-2. Potential research partnerships
-3. Joint exploration of organism-centric AI applications
+Best,
+Timmy Jay Jones
+SCSDMC / Signature Card Services
 
-Would you be open to a confidential discussion about how our approaches might intersect? I'm happy to provide additional technical details or arrange introductions to relevant experts.
+---
 
-Thank you for your time and for your contributions to advancing AI responsibly.
+## Template 4: Investor / Venture Capital
 
-Best regards,
-[Your Full Name]
-[Your Professional Background]
-[Contact Information]
-[Professional Links]
-
-### Template 4: VC/Investor Outreach
-
-**Subject**: Investment Opportunity: AQI - The Next Generation of Ethical Autonomous AI
-
-**Body**:
+**Subject:** AQI: Production-Deployed Autonomous AI with Constitutional Governance
 
 Dear [Investor's Name],
 
-As a partner at [VC Firm] focusing on [AI/impact investing], you understand the transformative potential of breakthrough technologies. I'm reaching out about AQI (Advanced Quantum Intelligence), a platform that represents a fundamental shift in AI development with significant market implications.
+I'm reaching out about AQI (Autonomous Quantum Intelligence), a production-deployed autonomous AI system with a novel approach to AI governance.
 
-**The Opportunity:**
-AQI treats AI not as tools, but as autonomous organisms with:
-- **Market Differentiation**: First organism-centric AI platform
-- **Ethical Advantage**: Built-in governance and safety mechanisms
-- **Scalability**: Quantum-enhanced efficiency for enterprise deployment
-- **Competitive Edge**: Sovereignty and agency capabilities unmatched in current market
+**What exists today:**
+- An autonomous AI organism that makes live phone calls to real merchants
+- 23 discrete organs organized in 5 architectural layers
+- Constitutional governance enforced by code at runtime (6 articles, 263 verified tests)
+- 63 cataloged discoveries across 10 domains
+- 7+ months in production, single-engineer build
 
-**Market Context:**
-- Current AI market: $500B+ and growing
-- Autonomous systems: Projected $20B by 2027
-- Ethical AI: Increasing regulatory and consumer demand
-- AQI addresses gaps in current offerings from [mention competitors indirectly]
+**The market opportunity:**
+AQI demonstrates that autonomous AI can be constitutionally governed through architecture rather than training. This has implications for any domain requiring reliable, auditable AI behavior — enterprise telephony, compliance-sensitive industries, regulated environments.
 
-**Traction and Validation:**
-- [Public benchmarks or demonstrations]
-- [Community engagement metrics]
-- [Expert endorsements or collaborations]
-- Open-source components driving adoption
+**Current deployment:**
+- Merchant services telephony (Signature Card Services)
+- Real calls to real merchants over PSTN
+- Full telemetry and behavioral auditing per call
 
-Our public repository demonstrates the technical foundation, while maintaining security for proprietary implementations.
+**What makes it differentiated:**
+- Ethics enforced by software architecture, not RLHF or prompting
+- Every call produces a forensic behavioral record
+- The system automatically de-escalates under degraded conditions
+- 263/263 tests passing across constitutional, telemetry, and behavioral subsystems
 
-I'm seeking to discuss:
-1. Investment opportunities in AQI's development
-2. Strategic partnerships for market expansion
-3. Joint ventures in enterprise applications
+Public documentation: https://github.com/TimAlanAQISystem/AQI-Autonomous-Intelligence
 
-Would you be interested in learning more? I'd be happy to provide a detailed investment memorandum or schedule a call to discuss the opportunity.
+I would welcome the opportunity to discuss this further.
 
-Thank you for your consideration.
+Timmy Jay Jones
+SCSDMC / Signature Card Services
 
-Best regards,
-[Your Full Name]
-[Your Background/Track Record]
-[Contact Information]
-[Links to Public Resources and Credentials]
+---
 
-## Follow-Up Strategies
+## Follow-Up Protocol
 
-### Initial Follow-Up (1 week)
-**Subject**: Following Up on AQI Outreach
+### After 1 Week
+- Reference the specific innovation most relevant to their work
+- Share a specific discovery or test result
+- Offer a concrete next step (call, documentation walkthrough)
 
-**Key Points:**
-- Reaffirm interest in their work
-- Reference specific aspects of their background
-- Offer additional resources
-- Propose next steps
+### After 2-3 Weeks
+- Share any new developments or results
+- Reference relevant industry news connecting to AQI's approach
+- Keep it brief — 3-4 sentences maximum
 
-### Second Follow-Up (2-3 weeks)
-**Subject**: AQI Update and Continued Interest
+### Key Rules
+- Never overstate capabilities
+- Never claim quantum computing
+- Never fabricate benchmarks or comparisons
+- Always refer back to verified test counts and specific architectural details
+- Respect opt-out requests immediately
 
-**Key Points:**
-- Share recent developments or community feedback
-- Highlight relevant news or trends
-- Reiterate value proposition
-- Suggest alternative engagement methods
+---
 
-### Long-Term Nurturing
-- Monthly newsletters with AQI updates
-- Invitations to webinars or virtual events
-- Sharing relevant research or industry insights
-- Personal congratulations on their achievements
-
-## Tracking and Personalization
-
-### CRM System Setup
-- Track all outreach attempts and responses
-- Note personal details and interests
-- Record conversation summaries
-- Set follow-up reminders
-
-### Personalization Tips
-- Research recent publications or projects
-- Reference specific quotes or positions
-- Tailor value propositions to their interests
-- Use their preferred communication style
-
-## Legal and Ethical Considerations
-
-### Transparency
-- Clearly state that this is outreach, not sales
-- Be honest about current development stage
-- Avoid overpromising capabilities
-- Respect privacy and opt-out requests
-
-### Compliance
-- Follow relevant data protection laws
-- Obtain consent for communications
-- Maintain accurate records
-- Honor do-not-contact requests
-
-This outreach framework provides structured approaches for engaging key stakeholders while maintaining professionalism and focusing on AQI's unique value proposition.
+*© 2025-2026 Timmy Jay Jones / SCSDMC. All rights reserved.*

@@ -1,253 +1,170 @@
-# AQI Exposure Monitoring Dashboard
+# AQI Monitoring & Metrics Plan
 
 ## Overview
 
-This monitoring plan establishes comprehensive tracking mechanisms to measure AQI's visibility, engagement, and impact across all exposure channels. The dashboard provides real-time insights into campaign effectiveness and guides optimization strategies.
+This document defines the metrics that matter for tracking AQI's system performance, community engagement, and exposure campaign effectiveness. All metrics are drawn from real data sources — no fabricated targets.
 
-## Core Metrics Framework
+## System Performance Metrics
 
-### Visibility Metrics
-- **Reach**: Total number of people exposed to AQI content
-- **Impressions**: Number of times content is displayed
-- **Share of Voice**: AQI mentions vs. total AI discussions
-- **Brand Awareness**: Percentage of target audience aware of AQI
+### Production Health (Real Metrics)
 
-### Engagement Metrics
-- **Interactions**: Likes, comments, shares, saves
-- **Click-through Rates**: Visitors from social media to website
-- **Time on Page**: Average engagement duration
-- **Conversion Rates**: Actions taken (downloads, sign-ups, collaborations)
+These are the metrics the system actually tracks in production:
 
-### Impact Metrics
-- **Community Growth**: New followers, members, contributors
-- **Media Coverage**: Articles, mentions, interviews
-- **Partnerships**: Collaborations, endorsements, investments
-- **Thought Leadership**: Citations, speaking opportunities, awards
+| Metric | Source | Current |
+|--------|--------|---------|
+| Server uptime | `control_api_fixed.py` health endpoint | Monitored |
+| Tunnel validity | Cloudflare trycloudflare.com | Checked per health poll |
+| Tunnel reachability | HTTP probe to tunnel URL | Checked per health poll |
+| Twilio credentials status | Twilio API validation | Checked at startup |
+| OpenAI API key status | API validation | Checked at startup |
+| Campaign active status | Governor state | Monitored |
+| Callable leads count | Lead database query | Real-time |
+| Calls today count | Campaign stats | Real-time |
 
-## Platform-Specific Tracking
+### Voice Pipeline Performance
 
-### GitHub Repository Metrics
+| Metric | Target | Measurement |
+|--------|--------|-------------|
+| ASR latency (Groq Whisper) | ~300ms | Logged per turn |
+| ASR fallback latency (OpenAI) | ~800ms | Logged on fallback |
+| LLM response time (GPT-4o-mini) | <2s streaming start | Logged per turn |
+| TTS generation | <500ms first byte | Logged per turn |
+| End-to-end turn latency | <3s total | Composite measurement |
 
-#### Repository Analytics
-- **Stars**: Total and growth rate
-- **Forks**: Code adoption and modification
-- **Watchers**: Ongoing interest tracking
-- **Clones**: Download frequency
+### Test Results Tracking
 
-#### Community Engagement
-- **Issues**: Bug reports, feature requests, discussions
-- **Pull Requests**: Community contributions
-- **Discussions**: Forum activity and engagement
-- **Wiki Edits**: Collaborative documentation improvements
+| Component | Tests | Last Result |
+|-----------|-------|-------------|
+| AQI 0.1mm Chip | 68 | 68/68 PASS |
+| Phase 4 Telemetry | 120 | 120/120 PASS |
+| Phase 5 Intelligence | 75 | 75/75 PASS |
+| Compile verification | 13 files | 13/13 CLEAN |
+| **Total** | **263** | **263/263 PASS** |
 
-#### Traffic Sources
-- **Referrers**: Which platforms drive traffic
-- **Geographic Distribution**: Global reach
-- **Device Types**: Mobile vs desktop engagement
-- **Session Duration**: Content consumption patterns
+### Call Quality Metrics (Phase 4 Telemetry)
 
-### Social Media Monitoring
+Per-call data captured automatically:
 
-#### Twitter/X Metrics
-- **Impressions**: Tweet visibility
-- **Engagements**: Likes, retweets, replies, bookmarks
-- **Profile Visits**: Increased follower interest
-- **Link Clicks**: Traffic to website/repository
-- **Hashtag Performance**: #AQI and related tags
+- Turn count
+- FSM state trajectory
+- Health level trajectory
+- Telephony state trajectory
+- Close attempt count
+- Escalation count
+- Exit reason (typed)
+- Outcome vector (5-way classification)
 
-#### LinkedIn Analytics
-- **Post Impressions**: Professional audience reach
-- **Engagement Rate**: Comments, likes, shares
-- **Connection Requests**: Networking growth
-- **Content Shares**: Organic amplification
-- **InMail Responses**: Outreach effectiveness
+### Behavioral Metrics (Phase 5)
 
-#### Reddit Tracking
-- **Post Score**: Upvotes minus downvotes
-- **Comment Count**: Discussion volume
-- **Subreddit Reach**: r/MachineLearning, r/artificial, etc.
-- **User Mentions**: Organic discussions
-- **Crossposts**: Content spread across communities
+Per-call behavioral profile:
 
-#### Hacker News Monitoring
-- **Ranking Position**: Peak and duration on front page
-- **Comment Volume**: Discussion engagement
-- **Follow-up Posts**: Sustained interest
-- **Domain Traffic**: Referral analytics
+- 5-axis continuum position
+- 6 behavioral signal classifications
+- Tags applied (from 13-tag vocabulary)
+- Positive/warning tag split
 
-### Website Analytics
+## Repository Metrics
 
-#### Google Analytics Setup
-- **Page Views**: Overall traffic volume
-- **Unique Visitors**: New vs returning audience
-- **Session Duration**: Content engagement
-- **Bounce Rate**: Content relevance
+### GitHub Analytics
 
-#### Content Performance
-- **Popular Pages**: README, docs, ethical framework
-- **Conversion Funnels**: Visitor to engaged user journey
-- **Search Queries**: How people find AQI
-- **Exit Pages**: Where visitors drop off
+Track from GitHub Insights:
 
-#### Geographic Insights
-- **Country Distribution**: Global reach patterns
-- **Language Preferences**: Content localization needs
-- **Time Zone Activity**: Optimal posting times
+| Metric | What It Shows |
+|--------|---------------|
+| Stars | General interest level |
+| Forks | Active engagement / study |
+| Clones | Download activity |
+| Unique visitors | Reach |
+| Referring sites | Where traffic comes from |
+| Popular content | Which docs get read most |
 
-### Media and Influencer Tracking
+### Documentation Coverage
 
-#### Coverage Monitoring
-- **Article Count**: Publications featuring AQI
-- **Sentiment Analysis**: Positive, neutral, negative coverage
-- **Reach Estimates**: Audience size of covering outlets
-- **Share of Voice**: AQI vs competitors in coverage
+| Document | Status | Lines |
+|----------|--------|-------|
+| `README.md` | Current (v2.0) | ~180 |
+| `AQI_SCIENTIFIC_ARCHITECTURE.md` | Current | ~1,200 |
+| `AQI_ORGANISM_SPEC.md` | Current | ~395 |
+| `AQI_FULL_SYSTEMS_DOCTRINE.md` | Current (v2.0) | ~800+ |
+| `AGENT_X_MASTER_SYSTEM_REFERENCE.md` | Current (v4.0) | ~400+ |
+| `Alan_Complete_Schematic.md` | Current (v2.0) | ~400+ |
+| `docs/technical-overview.md` | Current | ~200+ |
+| `docs/ethical-framework.md` | Current | ~200+ |
+| `arxiv_preprint_draft.md` | Current | ~200+ |
+| `ALAN_VOICE_CONTRACT.md` | Current (v1.2) | ~378 |
+| Constitution Articles (7) | Current | Various |
 
-#### Influencer Engagement
-- **Mentions**: Social media and blog references
-- **Endorsements**: Quotes and recommendations
-- **Collaborations**: Partnership announcements
-- **Amplification**: Retweets, shares by influencers
+## Exposure Campaign Metrics
 
-### Academic and Research Metrics
+### Content Performance
 
-#### Citation Tracking
-- **Academic Papers**: References in research
-- **Conference Presentations**: Speaking opportunities
-- **Research Collaborations**: Joint projects
-- **Grant Applications**: Funding opportunities
+When posts are made on platforms (Reddit, HN, LinkedIn, Twitter/X), track:
 
-#### Community Impact
-- **Forum Discussions**: LessWrong, Alignment Forum activity
-- **Research Interest**: Downloads of technical papers
-- **Expert Endorsements**: Statements from AI researchers
+| Metric | Why It Matters |
+|--------|---------------|
+| Upvotes/likes | Initial reception |
+| Comments | Engagement depth |
+| Technical questions asked | Whether the architecture resonates |
+| Shares/reposts | Organic amplification |
+| GitHub traffic spike correlation | Direct conversion |
+| Negative feedback themes | What needs clarification |
 
-## Dashboard Implementation
+### Outreach Results
 
-### Tools and Platforms
+| Category | Track |
+|----------|-------|
+| Emails sent | Volume |
+| Responses received | Response rate |
+| Meetings scheduled | Conversion |
+| Partnerships formed | Outcome |
+| Academic citations | Long-term impact |
 
-#### Primary Analytics Tools
-- **Google Analytics**: Website traffic and user behavior
-- **GitHub Insights**: Repository analytics and community metrics
-- **Social Media Native Analytics**: Platform-specific dashboards
-- **Google Alerts**: Media mention monitoring
+## Monitoring Cadence
 
-#### Advanced Monitoring Solutions
-- **Mention**: Social media and web monitoring
-- **BuzzSumo**: Content performance and influencer tracking
-- **SimilarWeb**: Competitive analysis and traffic insights
-- **Academic Search Engines**: Citation and research impact tracking
+### Daily
+- Server health check (automated via `/health` endpoint)
+- Campaign status check
+- Call count and outcome summary
 
-#### Custom Dashboard Creation
-- **Google Data Studio**: Unified visualization platform
-- **Tableau**: Advanced analytics and reporting
-- **Custom Scripts**: Automated data collection and processing
-- **API Integrations**: Real-time data feeds
+### Weekly
+- GitHub traffic review
+- Phase 4 telemetry analysis (aggregate call patterns)
+- Phase 5 behavioral tag distribution
+- Test suite re-run confirmation
 
-### Data Collection Automation
+### Monthly
+- Repository star/fork growth
+- Documentation accuracy audit
+- Outreach campaign effectiveness review
+- Discovery catalog update (if new discoveries)
 
-#### Daily Metrics
-- Social media engagement rates
-- GitHub activity (stars, issues, PRs)
-- Website traffic summaries
-- Email outreach responses
+## Alerting
 
-#### Weekly Reports
-- Platform performance comparisons
-- Content engagement analysis
-- Community growth metrics
-- Media coverage summaries
+### Automated Alerts (Production)
 
-#### Monthly Deep Dives
-- Trend analysis and forecasting
-- Audience segmentation insights
-- Campaign ROI assessment
-- Strategic recommendations
+| Condition | Action |
+|-----------|--------|
+| Server health check fails | Restart via `control_api_fixed.py` |
+| Tunnel becomes unreachable | Regenerate Cloudflare tunnel |
+| Twilio credentials invalid | Check environment variables |
+| Test count drops below 263 | Investigate regression |
 
-## Alert System
+### Manual Alerts (Campaign)
 
-### Threshold Alerts
-- **Traffic Spikes**: Sudden increases in website visits
-- **Viral Content**: Posts exceeding engagement benchmarks
-- **Media Mentions**: New articles or significant coverage
-- **Community Growth**: Rapid increases in followers/members
+| Condition | Action |
+|-----------|--------|
+| Negative sentiment spike on a post | Address technical concerns factually |
+| Misinformation about AQI shared | Correct with specific documentation links |
+| Significant GitHub traffic spike | Ensure documentation is current |
 
-### Issue Alerts
-- **Negative Sentiment**: Concerning discussions or reviews
-- **Platform Changes**: Algorithm updates affecting visibility
-- **Technical Issues**: Website downtime or broken links
-- **Spam/Abuse**: Coordinated negative campaigns
+## Principles
 
-## Reporting Structure
+1. **Only track what's real.** No vanity metrics. No fabricated targets.
+2. **System metrics come from the system.** Phase 4 telemetry, health endpoints, test results.
+3. **Campaign metrics come from platforms.** GitHub Insights, social media analytics.
+4. **Never inflate numbers.** Report exact test counts, exact discovery counts, exact organ counts.
+5. **Use metrics to improve, not to market.** Behavioral tag distributions improve the system. Engagement metrics improve communication.
 
-### Daily Check-ins
-- **Key Metrics Review**: 5-minute overview of critical indicators
-- **Anomaly Detection**: Flag unusual patterns for investigation
-- **Quick Wins**: Identify immediate optimization opportunities
+---
 
-### Weekly Strategy Sessions
-- **Performance Analysis**: Deep dive into engagement drivers
-- **Content Optimization**: Identify high-performing vs underperforming content
-- **Platform Adjustments**: Refine posting strategies based on data
-- **Outreach Updates**: Review influencer and media responses
-
-### Monthly Executive Summary
-- **Overall Progress**: Campaign performance against goals
-- **Audience Insights**: Demographic and interest analysis
-- **Competitive Landscape**: AQI positioning relative to peers
-- **Future Recommendations**: Strategic adjustments and new initiatives
-
-## Privacy and Ethics
-
-### Data Collection Standards
-- **Consent**: Respect platform privacy policies
-- **Anonymization**: Protect user identities in reporting
-- **Transparency**: Clearly communicate monitoring practices
-- **Compliance**: Adhere to GDPR, CCPA, and other regulations
-
-### Ethical Monitoring
-- **No Manipulation**: Avoid artificially inflating metrics
-- **Honest Reporting**: Present data accurately and contextually
-- **Beneficial Use**: Use insights to improve outreach, not exploit
-- **Community Respect**: Monitor without invading privacy
-
-## Optimization Framework
-
-### A/B Testing
-- **Content Variations**: Test different messaging approaches
-- **Posting Times**: Optimize for maximum engagement
-- **Visual Elements**: Compare image and video performance
-- **Call-to-Actions**: Test conversion effectiveness
-
-### Predictive Analytics
-- **Trend Forecasting**: Anticipate engagement patterns
-- **Audience Growth**: Predict follower acquisition rates
-- **Content Performance**: Estimate future post success
-- **Campaign Impact**: Model long-term effects
-
-### Continuous Improvement
-- **Feedback Loops**: Use data to refine strategies
-- **Platform Evolution**: Adapt to changing social media landscapes
-- **Technology Updates**: Incorporate new monitoring tools
-- **Goal Adjustment**: Modify KPIs based on learnings
-
-## Success Metrics Definition
-
-### Short-term Goals (3 months)
-- **Visibility**: 10,000+ unique visitors to public repository
-- **Engagement**: 1,000+ social media interactions monthly
-- **Community**: 500+ GitHub stars and 50+ contributors
-- **Media**: 20+ articles or mentions in tech publications
-
-### Medium-term Goals (6-12 months)
-- **Recognition**: Featured in major AI conferences or publications
-- **Collaboration**: 5+ partnerships with research institutions
-- **Adoption**: 100+ organizations exploring AQI concepts
-- **Influence**: Regular citations in AI ethics discussions
-
-### Long-term Impact (2+ years)
-- **Industry Influence**: Shaped AI development standards
-- **Academic Integration**: Incorporated into university curricula
-- **Societal Impact**: Contributed to responsible AI advancement
-- **Legacy**: Recognized as pioneering work in organism-centric AI
-
-This comprehensive monitoring dashboard ensures AQI's exposure campaign is data-driven, transparent, and continuously optimized for maximum impact in the AI community and beyond.
+*© 2025-2026 Timmy Jay Jones / SCSDMC. All rights reserved.*

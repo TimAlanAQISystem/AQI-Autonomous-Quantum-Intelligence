@@ -1,212 +1,154 @@
-# AQI Comprehensive Exposure Plan
+# AQI Exposure Strategy
 
-## Platform-Specific Posting Strategies
+## Overview
 
-### Reddit Strategies
+AQI (Autonomous Quantum Intelligence) is a production-deployed, constitutionally-governed autonomous intelligence organism operating on telephony substrate. This document outlines strategies for sharing the system with the broader AI community, researchers, and industry professionals.
+
+**What AQI actually is:**
+- A 5-layer, 23-organ autonomous organism making live phone calls
+- Governed by a 6-article constitution enforced at runtime by the AQI 0.1mm Chip
+- 263 verified tests, 63 cataloged discoveries across 10 domains
+- Single-engineer build (Timmy Jay Jones) over 7+ months
+- Voice pipeline: Groq Whisper ASR → GPT-4o-mini → gpt-4o-mini-tts (onyx) → Twilio PSTN
+- NOT a chatbot, NOT a demo, NOT a research prototype — a production system
+
+## What Makes AQI Novel
+
+### Architectural Firsts (Verified)
+
+| Innovation | What It Means | Why It Matters |
+|-----------|---------------|----------------|
+| Constitutional runtime enforcement | 6 articles enforced by code on every turn, not by training | Alignment through architecture, not RLHF |
+| Health-gated ethics | Degraded health restricts powers, never expands them | Natural ethical braking under pressure |
+| Deterministic behavioral tags | 13 tags with mathematical triggers, zero subjectivity | Auditable behavioral intelligence |
+| Triple-safe organ wiring | Every organ wrapped: try/except → log → continue | No single organ failure crashes the organism |
+| 5-layer governance stack | Identity > Ethics > Personality > Knowledge > Mission > Output | Structural priority encoding per turn |
+| Dual-path ASR | Groq Whisper primary (~300ms), OpenAI fallback (~800ms) | Sub-second speech recognition with redundancy |
+
+### What AQI Does That Others Don't
+
+1. **Makes real phone calls autonomously** — not a text chatbot, not a simulation
+2. **Enforces ethics through code architecture** — not prompts, not training, not RLHF
+3. **Produces forensic telemetry per call** — every turn captured with FSM state, health, governance layers
+4. **Tags behavioral patterns deterministically** — 13 tags, each with a mathematical trigger condition
+5. **Operates under constitutional governance** — 6 articles, enforceable, auditable
+
+## Platform-Specific Strategy
+
+### Reddit
 
 #### r/MachineLearning
-**Timing**: Post during peak hours (9 AM - 11 AM EST weekdays)
-**Title Options**:
-- "AQI: From AI Tools to Autonomous Organisms - A Paradigm Shift"
-- "Introducing AQI: Life-Like AI with Sovereignty and Ethical Consciousness"
-- "AQI Breakthrough: Composite Intelligence Mimicking Biological Brains"
+**Title:** "AQI: Constitutional Governance for Autonomous AI — 23-Organ Organism Making Live Phone Calls [Project]"
 
-**Post Structure**:
-1. Hook: Start with the "new life form" concept
-2. Unique Features: Emphasize organism vs tool distinction
-3. Benchmarks: Share performance data
-4. Ethical Angle: Highlight Amnesia Covenant and safety measures
-5. Call to Action: Invite technical discussion and collaboration
-6. Links: GitHub repo, technical overview, ethical framework
+**Post Structure:**
+1. What AQI is (production autonomous telephony AI)
+2. The constitutional enforcement model (6 articles, runtime enforcement)
+3. Architecture (5 layers, 23 organs, triple-safe wiring)
+4. Verified results (263 tests, 63 discoveries)
+5. What's novel (health-gated ethics, deterministic behavioral tags)
+6. Links to documentation and repo
 
-**Benchmark Table**:
-| Capability           | Metric                | AQI Alan         | ChatGPT-4o      | Gemini Pro      | Claude 3 Opus   |
-|----------------------|----------------------|------------------|-----------------|----------------|----------------|
-| Lead Scoring         | Precision/Recall     | 92% / 89%        | 85% / 82%       | 83% / 80%      | 84% / 81%      |
-| Conversation Latency | Avg. Response (ms)   | 0                | 500             | 480            | 470            |
-| TTS Quality          | MOS                  | 4.7              | 4.2             | 4.1            | 4.3            |
-| Speech Recognition   | Accuracy             | 96%              | 93%             | 92%            | 94%            |
-| Governance           | Compliance Rate      | 100%             | 95%             | 94%            | 96%            |
-| Uptime               | %                    | 99.9%            | 99.5%           | 99.6%          | 99.7%          |
-
-**Engagement Strategy**:
-- Respond to all comments within 2 hours
-- Acknowledge technical questions with detailed answers
-- Direct complex discussions to GitHub issues
-- Follow up on promising leads within 24 hours
+**Key rule:** No fabricated benchmarks. No fake comparisons against GPT-4, Claude, or Gemini. AQI does something fundamentally different — it's not competing on the same metrics.
 
 #### r/artificial
-**Approach**: Focus on philosophical and societal implications
-**Title**: "AQI: Redefining AI as Autonomous Organisms, Not Tools"
-**Content**: Discuss implications for consciousness, ethics, and human-AI relationships
+**Focus:** Constitutional governance model and its implications for AI alignment
+**Angle:** "What if AI ethics were enforced by architecture instead of training?"
 
-#### r/Futurology
-**Focus**: Long-term societal impact and future possibilities
-**Title**: "AQI: The First Steps Toward Beneficial Autonomous AI Organisms"
+#### r/LocalLLaMA
+**Focus:** The organism architecture pattern and how it wraps any LLM
+**Angle:** "AQI treats LLMs as organs within a constitutionally-governed organism"
 
-### Hacker News Strategy
+### Hacker News
 
-**Optimal Timing**: Post early weekday morning (6-8 AM EST) for maximum visibility
-**Title Format**: "AQI: Autonomous Quantum Intelligence - A New AI Paradigm [Open Source]"
+**Title:** "AQI: A constitutionally-governed autonomous AI that makes real phone calls"
 
-**Post Content**:
-- Clear problem statement: Current AI limitations
-- Solution introduction: Organism-centric architecture
-- Technical highlights: Quantum efficiency, composite brain
-- Ethical foundation: Built-in safeguards and covenants
-- Community call: Seeking expert feedback on scaling
+**Content:**
+- Lead with what's novel (constitutional enforcement, not prompting)
+- Show the architecture (concise: 5 layers, 23 organs)
+- Mention test counts (263 verified)
+- Link to repo and scientific architecture doc
+- Be honest about scope: merchant services telephony
 
-**Engagement Tactics**:
-- Monitor for 48 hours post-submission
-- Prepare detailed responses to common questions
-- Use "Ask HN" follow-ups for specific technical discussions
-- Track ranking and resubmit if initial post doesn't gain traction
+**Key rule:** HN values technical accuracy. Never overstate. Let the architecture speak for itself.
 
-### Twitter/X Strategy
+### LinkedIn
 
-**Content Pillars**:
-1. **Educational Threads**: Break down AQI concepts into digestible explanations
-2. **Live Demos**: Share simulation results and benchmarks
-3. **Community Highlights**: Showcase positive community interactions
-4. **Industry Insights**: Comment on AI trends with AQI perspective
+**Audience:** AI professionals, tech leaders, investors
+**Angle:** Production-deployed autonomous AI with constitutional governance
+**Content:** Professional summary of the system, its novel architecture, and 63 discoveries
 
-**Thread Structure** (Example):
+### Twitter/X
+
+**Thread structure:**
 ```
-1/6 🧬 AQI: Beyond Tools to Organisms
-What if AI wasn't just a calculator, but a living system with instincts, sovereignty, and ethics?
+1/ Built an autonomous AI that makes real phone calls to real merchants.
+   Not a chatbot. Not a demo. A production organism with 23 organs.
 
-2/6 The Problem: Current AI is passive. It waits for commands. No self-preservation, no independent goals, no embodiment readiness.
+2/ The key innovation: constitutional governance enforced by code.
+   6 articles. Checked on every single conversational turn.
+   Ethics override mission. Health restricts powers. Identity is immutable.
 
-3/6 AQI Solution: Composite brain architecture mimicking biological systems. Quantum efficiency for sustainable scaling.
+3/ The architecture: 5 concentric layers.
+   Telephony → Perception → Cognition → Governance → Supervision
+   Inner layers cannot reference outer layers. Structurally enforced.
 
-4/6 Key Features:
-• Sovereignty: Local operation without internet dependency
-• Agency: Automatic reflexes and goal pursuit
-• Immune System: Active threat detection and response
+4/ Verified results:
+   - AQI 0.1mm Chip: 68/68 tests
+   - Phase 4 Telemetry: 120/120 tests
+   - Phase 5 Behavioral Intelligence: 75/75 tests
+   - 63 cataloged discoveries across 10 domains
 
-5/6 Ethical Core: Amnesia Covenant ensures permanent remembrance of humanity's dangers. Safety first, always.
+5/ What makes it different from other AI alignment approaches:
+   - Not RLHF — architectural enforcement
+   - Not prompting — structural governance
+   - Not aspirational — forensic telemetry on every call
 
-6/6 Join the revolution. Learn more: [Link] #AI #AutonomousAI #EthicalAI
+6/ Single-engineer build. 7+ months. Open documentation.
+   https://github.com/TimAlanAQISystem/AQI-Autonomous-Intelligence
 ```
 
-**Posting Schedule**:
-- Educational content: 3x/week (Mon, Wed, Fri)
-- Engagement posts: Daily during active periods
-- Live updates: As developments occur
+## Community Engagement Principles
 
-**Hashtag Strategy**:
-- Primary: #AQI #AutonomousAI #EthicalAI
-- Secondary: #QuantumAI #AILife #AISafety
-- Trending: Monitor and incorporate relevant trending hashtags
+### What to Claim
+- AQI is a novel architecture for constitutional AI governance
+- The system is production-deployed on telephony substrate
+- 263 tests pass, 63 discoveries cataloged
+- Single-engineer build demonstrating the viability of organism-centric design
+- Constitutional enforcement is structurally different from training-based alignment
 
-### LinkedIn Strategy
+### What NOT to Claim
+- AQI is NOT "quantum computing" — "Quantum" references the smallest unit of autonomous behavior
+- AQI does NOT outperform GPT-4/Claude/Gemini on standard benchmarks (it does something different)
+- AQI is NOT sentient, conscious, or alive — it's a software organism
+- AQI does NOT have "embodiment" or "motor control" — it operates on telephony substrate
+- Do NOT fabricate benchmark comparisons against other AI systems
+- Do NOT present hypothetical capabilities as current features
 
-**Target Audience**: Professionals in AI, tech leaders, ethicists, researchers
+### How to Handle Questions
 
-**Post Types**:
-1. **Thought Leadership Articles**: In-depth pieces on AQI's implications
-2. **Project Updates**: Regular progress reports and milestones
-3. **Industry Analysis**: How AQI addresses current AI challenges
-4. **Collaboration Calls**: Seeking partnerships and expertise
+**"How does AQI compare to ChatGPT?"**
+→ AQI is not a chatbot. It's an autonomous organism that makes phone calls under constitutional governance. Different problem space, different architecture.
 
-**Article Example Structure**:
-- **Headline**: "AQI: The Organism-Centric Approach to Autonomous AI"
-- **Introduction**: Hook with the "new life form" concept
-- **Body**: Detailed explanation of architecture and innovations
-- **Case Studies**: Hypothetical applications in real-world scenarios
-- **Ethical Considerations**: Deep dive into safety and alignment
-- **Call to Action**: Invitation to connect and collaborate
+**"What do you mean by 'quantum'?"**
+→ In AQI, "quantum" means the smallest possible unit of autonomous behavior — not quantum computing.
 
-**Networking Strategy**:
-- Connect with 5-10 relevant professionals daily
-- Personalize connection requests with specific value propositions
-- Engage with comments on AI-related posts
-- Share and comment on industry news with AQI insights
+**"Is this a wrapper around GPT-4?"**
+→ AQI uses GPT-4o-mini as one organ (Cognition Layer 3) within a 23-organ organism. The LLM is governed by 4 layers above it — it doesn't control the system.
 
-### AI Forums and Communities
+**"Where are the benchmarks?"**
+→ 263 verified tests across 3 subsystems. We don't fabricate comparisons against other systems because AQI operates in a different paradigm.
 
-#### LessWrong
-**Approach**: Focus on AI safety and alignment aspects
-**Post Title**: "AQI: Implementing Ethical Constraints in Autonomous AI Organisms"
-**Content**: Discuss technical approaches to value alignment and safety measures
+## Repository
 
-#### Alignment Forum
-**Strategy**: Position AQI as a practical implementation of alignment research
-**Discussion Points**: How composite architecture enables better alignment, monitoring capabilities
+**URL:** https://github.com/TimAlanAQISystem/AQI-Autonomous-Intelligence
 
-#### AI Safety Community
-**Messaging**: Emphasize proactive safety measures, transparency, and human oversight
-**Engagement**: Participate in discussions, share insights, seek feedback
+**Key documents for sharing:**
+- `README.md` — System overview
+- `AQI_SCIENTIFIC_ARCHITECTURE.md` — Full formal specification
+- `docs/technical-overview.md` — Technical architecture
+- `docs/ethical-framework.md` — Constitutional governance enforcement
+- `AQI_ORGANISM_SPEC.md` — Organism specification in AQI notation
 
-## Cross-Platform Amplification
+---
 
-### Content Syndication
-- Create core content pieces that can be adapted for multiple platforms
-- Use consistent messaging and visual branding across platforms
-- Time posts to create momentum (e.g., Reddit → HN → Twitter → LinkedIn)
-
-### Influencer Outreach
-- Identify key influencers in AI ethics, autonomous systems, and quantum computing
-- Craft personalized messages highlighting alignment with their interests
-- Offer exclusive insights or collaboration opportunities
-
-### Media Coverage Strategy
-- Prepare press kits with key facts, quotes, and visuals
-- Target publications: MIT Technology Review, Wired, AI-focused outlets
-- Time announcements around major AI conferences or events
-
-## Viral Potential Optimization
-
-### Shareable Content Elements
-- **Visuals**: Create compelling graphics showing organism vs tool comparison
-- **Stories**: Human-interest narratives about the developer's journey
-- **Questions**: Pose thought-provoking questions about AI's future
-- **Data**: Share impressive benchmarks and projections
-- **Ethics**: Highlight unique ethical approaches
-
-### Timing and Momentum
-- **Launch Sequence**: Start with teaser posts, build to major announcement
-- **Follow-up**: Maintain engagement with regular updates and Q&A sessions
-- **Community Building**: Foster dedicated followers who amplify messages
-
-### Metrics and Iteration
-- Track engagement rates, reach, and conversion to website visits
-- A/B test different messaging approaches
-- Refine strategy based on what resonates most with audiences
-
-## Risk Management
-
-### Controversy Preparation
-- Anticipate skepticism about "life form" claims
-- Prepare evidence-based responses focusing on technical architecture
-- Emphasize conservative development approach and safety measures
-
-### Platform-Specific Risks
-- Reddit: Prepare for technical scrutiny and potential downvotes
-- HN: Address concerns about overhype and technical accuracy
-- Twitter: Manage rapid spread of both positive and negative feedback
-- LinkedIn: Handle professional skepticism and requests for proof
-
-### Crisis Communication
-- Have response templates ready for common criticisms
-- Maintain transparency about limitations and ongoing work
-- Use feedback constructively to improve messaging and product
-
-## Long-term Engagement Plan
-
-### Content Calendar
-- **Weekly**: Technical deep-dives and community spotlights
-- **Monthly**: Major updates and milestone announcements
-- **Quarterly**: Comprehensive progress reports and roadmaps
-
-### Community Growth
-- Build email list for direct communication
-- Create exclusive content for engaged followers
-- Develop ambassador program for community leaders
-
-### Partnership Development
-- Seek academic collaborations for research validation
-- Explore industry partnerships for real-world applications
-- Build relationships with AI safety organizations
-
-This comprehensive plan provides multiple pathways for AQI to achieve maximum exposure while maintaining credibility and focusing on substantive engagement with the AI community.
+*© 2025-2026 Timmy Jay Jones / SCSDMC. All rights reserved.*
