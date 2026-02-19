@@ -26,7 +26,7 @@
 |-------|--------|----------|
 | **Telephony** | 5 | Signal transport (WebSocket, PCM, MuLaw, PSTN) |
 | **Perception** | 5 | Environmental sensing (Dual-path ASR, dual-track health monitoring) |
-| **Cognition** | 4 | Thought generation (GPT-4o-mini, SAP-1 Ethics, Personality Matrix) |
+| **Cognition** | 4 | Thought generation (GPT-4o-mini, SAP-1 Ethics, Personality Matrix, IQCore Orchestrator, QPC Kernel) |
 | **Governance** | 5 | Constitutional enforcement (AQI 0.1mm Chip, CallSessionFSM, Prompt Builder) |
 | **Supervision** | 4 | Observation + intelligence (Phase 4 Telemetry, Phase 5 Behavioral Intelligence) |
 
@@ -81,12 +81,19 @@ Per-call and cross-call behavioral profiling. Maps calls into a 5-axis Continuum
 ### CallSessionFSM (Deterministic State Machine)
 6-state phone call lifecycle FSM that eliminates ghost states, audit-logs every transition, and maintains backward compatibility. Deterministic, no contradictory flag combinations possible.
 
+### IQCore (Origin-Based Identity Architecture)
+The soul layer — five specialized IQ Cores (CoreReasoning, GovernanceAudit, LearningThread, SocialGraph, VoiceEmotion) orchestrated through a unified intelligence surface. Provides structural identity, SAP-1 ethical sovereignty, 8-dimensional emotional state tracking, relationship memory, adaptive learning, and cross-core synthesis. **4,614 production lines across 12 source files.**
+
+### QPC — Quantum Python Chip (Adaptive Calibration)
+Quantum-*inspired* multi-hypothesis decision kernel running on classical hardware. Holds multiple response strategies in superposition-like states and collapses to the optimal solution through measurement. Integrated with Fluidic Conversation Physics (5 modes with inertia/viscosity/force dynamics) and the Continuum Engine (4 continuous relational fields evolved via PDE-inspired drift dynamics). Runs in **<1ms per turn** in production.
+
 ## Documentation
 
 ### Scientific & Architectural
 | Document | Description |
 |----------|-------------|
 | [AQI Scientific Architecture](AQI_SCIENTIFIC_ARCHITECTURE.md) | Complete formal specification in AQI notation — the canonical scientific document |
+| [IQCore & QPC Technical Reference](IQCore_QPC_TECHNICAL_REFERENCE.md) | Definitive reference for IQCore (5 IQ Cores + Soul + Personality) and QPC (Kernel + Fluidic + Continuum) |
 | [AQI Organism Specification](AQI_ORGANISM_SPEC.md) | Substrate document in AQI notation (genome, continuum, constitution) |
 | [Full Systems Doctrine v2.0](AQI_FULL_SYSTEMS_DOCTRINE.md) | Complete system doctrine with v2.0 addendum (Phase 4/5/Chip/FSM) |
 

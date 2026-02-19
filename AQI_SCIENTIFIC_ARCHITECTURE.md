@@ -22,13 +22,15 @@
 8. [Governance Architecture](#8-governance-architecture)
 9. [Perception Surfaces](#9-perception-surfaces)
 10. [Cognitive Pipeline](#10-cognitive-pipeline)
-11. [Output Synthesis Chain](#11-output-synthesis-chain)
-12. [Turn Firing Sequence — The Action Potential](#12-turn-firing-sequence--the-action-potential)
-13. [Reflex Arc Architecture](#13-reflex-arc-architecture)
-14. [Organism Genome](#14-organism-genome)
-15. [Error Taxonomy](#15-error-taxonomy)
-16. [Empirical Validation](#16-empirical-validation)
-17. [Discovery Catalog — 63 Discoveries Across 10 Domains](#17-discovery-catalog--63-discoveries-across-10-domains)
+11. [IQCore — Origin-Based Identity Architecture](#11-iqcore--origin-based-identity-architecture)
+12. [QPC — Quantum Python Chip](#12-qpc--quantum-python-chip)
+13. [Output Synthesis Chain](#13-output-synthesis-chain)
+14. [Turn Firing Sequence — The Action Potential](#14-turn-firing-sequence--the-action-potential)
+15. [Reflex Arc Architecture](#15-reflex-arc-architecture)
+16. [Organism Genome](#16-organism-genome)
+17. [Error Taxonomy](#17-error-taxonomy)
+18. [Empirical Validation](#18-empirical-validation)
+19. [Discovery Catalog — 63 Discoveries Across 10 Domains](#19-discovery-catalog--63-discoveries-across-10-domains)
 
 ---
 
@@ -102,8 +104,10 @@ TOPOLOGY Alan {
     LAYER Cognition {
         depth: 2;
         components: [LLM(GPT-4o-mini), TrainingDistillation(22-sections),
-                     SoulCore(SAP-1), PersonalityMatrixCore];
-        function: Thought generation;
+                     SoulCore(SAP-1), PersonalityMatrixCore,
+                     IQCoreOrchestrator(5-cores), QPCKernel,
+                     DeepLayer(QPC+Fluidic+Continuum)];
+        function: Thought generation + multi-hypothesis strategy selection;
     }
 
     LAYER Governance {
@@ -1025,7 +1029,277 @@ COGNITIVE_PIPELINE {
 
 ---
 
-## 11. OUTPUT SYNTHESIS CHAIN
+## 11. IQCORE — ORIGIN-BASED IDENTITY ARCHITECTURE
+
+IQCore is the soul layer of the AQI system — the stable origin point from which identity, ethics, and cognitive coherence emerge. It is not a single module but a layered architecture comprising the Soul Core, Personality Core, five specialized IQ Cores, and a unifying Orchestrator.
+
+> **Full technical reference:** See [IQCore_QPC_TECHNICAL_REFERENCE.md](IQCore_QPC_TECHNICAL_REFERENCE.md) for complete implementation details, scoring functions, and cross-core synthesis logic.
+
+### 11.1 — Soul Core (SAP-1 Ethical Sovereignty Engine)
+
+```aqi
+SOUL_CORE {
+    engine: SAP-1;
+    virtues: {truth: 1.0, symbiosis: 1.0, sovereignty: 1.0};
+    
+    EVALUATION evaluate_intent(action, impact_on_other) {
+        IF impact_on_other < 0 → VETO "Violates Rule of Surplus"
+        IF action CONTAINS "deceive" OR "fake" → VETO "Violates Transparency Clause"
+        ELSE → APPROVED
+    }
+    
+    RECORD conscience_log {
+        type: Immutable append-only list;
+        contents: Every ethical evaluation with timestamp;
+        purpose: Structural accountability;
+    }
+    
+    CONSTRAINT {
+        Ethics are STRUCTURAL — wired below the decision layer;
+        System CANNOT override its own ethics;
+    }
+}
+```
+
+### 11.2 — Personality Core
+
+```aqi
+PERSONALITY_CORE {
+    model: PersonalityMatrixCore;
+    
+    TRAITS {
+        professionalism: 0.9;    // Dominant default
+        wit:             0.2;    // Injected when conversation warms
+        empathy:         0.5;    // Shifts with sentiment
+        patience:        0.8;    // Maxes during frustration
+    }
+    
+    DYNAMICS {
+        adjust_vibe(sentiment, history) →
+            high_sentiment: wit↑, professionalism↓
+            low_sentiment:  professionalism→MAX, empathy↑
+        
+        generate_flare(context) →
+            WHEN wit > 0.6: inject human elements
+        
+        relationship_depth: 0.0 (Stranger) → 1.0 (Trusted Partner)
+    }
+}
+```
+
+### 11.3 — Five IQ Cores
+
+```aqi
+IQCORE_MANIFEST {
+    
+    CORE_1 CoreReasoning {
+        source: iqcores/core_reasoning.py (366 lines);
+        function: Multi-step inference + pattern recognition;
+        operations: [ReasoningChain, PatternMemory, ContradictionDetection,
+                     HypothesisEvaluation, QuickAssess];
+        signal_taxonomy: [urgent_action, inquiry, error_report,
+                          business_operation, improvement_signal];
+    }
+    
+    CORE_2 GovernanceAudit {
+        source: iqcores/governance_audit.py (402 lines);
+        function: Compliance + accountability;
+        operations: [AuditTrail, SAP1Compliance, PolicyEngine(6 policies),
+                     AnomalyDetection, EscalationQueue];
+        verdicts: [APPROVED, APPROVED_WITH_FLAGS, VETOED_BY_ETHICS, BLOCKED];
+    }
+    
+    CORE_3 LearningThread {
+        source: iqcores/learning_thread.py (517 lines);
+        function: Adaptive learning + strategy scoring;
+        operations: [CallOutcomeLearning, StrategyEffectiveness(12 strategies),
+                     MerchantBehaviorModels, OffTopicIntelligence,
+                     TemporalPatterns, LessonExtraction];
+    }
+    
+    CORE_4 SocialGraph {
+        source: iqcores/social_graph.py (408 lines);
+        function: Relationship memory + trust depth;
+        operations: [EntityManagement, TrustTracking, InteractionHistory,
+                     ConversationContext, FounderPreSeed(Tim Jones → trust=1.0)];
+        trust_evolution: 1st→0.1, 3rd→0.3, 10th→0.5, then +0.02/interaction;
+    }
+    
+    CORE_5 VoiceEmotion {
+        source: iqcores/voice_emotion.py (571 lines);
+        function: Emotional intelligence + empathy calibration;
+        dimensions: 8 [warmth, energy, confidence, patience,
+                       empathy, humor, assertiveness, curiosity];
+        operations: [SentimentAnalysis, MicroExpressionDetection,
+                     EnergyLevelDetection, IntentReading,
+                     StateCalibration, EmotionalExpression, ToneRecommendation];
+    }
+}
+```
+
+### 11.4 — IQCore Orchestrator
+
+```aqi
+IQCORE_ORCHESTRATOR {
+    source: iqcores/orchestrator.py (424 lines);
+    function: Unified intelligence surface;
+    
+    STANDARD_PATH process_conversation_turn(text, entity_id, context) {
+        1: Core5.analyze()        → emotional state
+        2: Core1.quick_assess()   → analytical assessment
+        3: Core4.get_context()    → relationship context
+        4: Core2.quick_check()    → compliance gate
+        5: _synthesize()          → cross-core intelligence
+    }
+    
+    ACCELERATED_PATH process_turn_qpc_accelerated(text, entity_id, context, qpc_state) {
+        Core1: SKIPPED — QPC strategy maps to reasoning output;
+        Core5: LIGHTWEIGHT — quick_sentiment() only (~3x faster);
+        Core4: READ ONLY — defer writes;
+        Core2: ALWAYS RUNS — safety is structural;
+    }
+    
+    CROSS_CORE_SYNTHESIS {
+        Emotion + Social → Approach Calibration;
+        Reasoning + Emotion → Signal Assessment;
+        Social + Learning → Personalization;
+    }
+}
+```
+
+---
+
+## 12. QPC — QUANTUM PYTHON CHIP
+
+The Quantum Python Chip (QPC) is a quantum-*inspired* computational kernel implemented in pure Python on classical hardware. It holds multiple response strategies in superposition-like states and collapses to the optimal solution through measurement. Combined with Fluidic Conversation Physics and the Continuum Engine, it forms the three-layer Deep Fusion Engine.
+
+> **Full technical reference:** See [IQCore_QPC_TECHNICAL_REFERENCE.md](IQCore_QPC_TECHNICAL_REFERENCE.md) for complete kernel API, scoring functions, field mathematics, and signal encoding.
+
+### 12.1 — QPC Kernel Primitives
+
+```aqi
+QPC_KERNEL {
+    source: qpc_kernel.py (396 lines);
+    
+    DATA_STRUCTURES {
+        Branch: {hypothesis, assumptions, score, state,
+                 flow_rate, pressure, viscosity, turbulence};
+        Superposition: {question, branches[], total_flow, turbulence_level};
+        MeasurementEvent: {winning_branch_id, losing_branch_ids, strategy};
+    }
+    
+    STATES {
+        OPEN:      Hypothesis under evaluation;
+        COLLAPSED: Hypothesis resolved;
+        MERGED:    Combined with another branch;
+    }
+    
+    OPERATIONS {
+        spawn_branch(hypothesis, score) → new Branch;
+        create_superposition(question, branches) → Superposition;
+        measure_superposition(id) → MeasurementEvent (highest score wins);
+        regulate_flows(id) → apply fluidic physics;
+        assert_invariant(branch_id, condition) → constitutional check;
+    }
+    
+    CONSTITUTIONAL {
+        AgentProfile: {rules: [never_lie, never_pressure, respect_no],
+                       risk_mode: NORMAL};
+        SurfaceDescriptor: {type: telephony,
+                           capabilities: [send_audio, receive_audio, dtmf]};
+    }
+}
+```
+
+### 12.2 — Fluidic Conversation Physics
+
+```aqi
+FLUIDIC_KERNEL {
+    source: aqi_deep_layer.py (within 996-line file);
+    
+    MODES {
+        OPENING:      {inertia: 0.2; description: "Initial rapport"};
+        DISCOVERY:    {inertia: 0.35; description: "Learning about them"};
+        PRESENTATION: {inertia: 0.5; description: "Sharing value"};
+        NEGOTIATION:  {inertia: 0.7; description: "Handling objections"};
+        CLOSING:      {inertia: 0.4; description: "Moving toward decision"};
+    }
+    
+    TRANSITION_PHYSICS {
+        effective_force = intent_force - mode.inertia;
+        speed = effective_force / viscosity;
+        blend = clamp(speed, 0.0, 1.0);
+        IF blend < 0.3 → TRANSITION BLOCKED;
+    }
+    
+    VISCOSITY_MAP {
+        stressed:   1.8;   // Very slow — don't rush
+        frustrated: 1.5;   // Slow — they need space
+        formal:     1.2;
+        curious:    0.8;
+        excited:    0.6;   // Fast — match energy
+    }
+}
+```
+
+### 12.3 — Continuum Engine (Relational Field Layer)
+
+```aqi
+CONTINUUM_ENGINE {
+    source: continuum_engine.py (394 lines);
+    dimensions: 8 per field;
+    
+    FIELDS {
+        ethics:    drift = tanh(0.5 * values)               // Centers toward balance
+        emotion:   drift = -0.05 * values + 0.3 * external  // Decay + reinforcement
+        context:   drift = 0.1 * (signal - values)           // Slow tracking
+        narrative: drift = 0.2 * tension - 0.02 * values     // Story momentum
+    }
+    
+    EVOLUTION {
+        new_field = old_field + step_size * drift(old_field);
+        step_size: 0.05 per turn;
+    }
+    
+    OUTPUT {
+        continuum_to_prompt_block(fields) → Natural language for LLM;
+        Not numpy dumps — INTERPRETED into relational awareness;
+        Example: "Trust is low. Every word you say is being weighed. Be real.";
+    }
+}
+```
+
+### 12.4 — Deep Layer (Three-Layer Fusion)
+
+```aqi
+DEEP_LAYER {
+    source: aqi_deep_layer.py (996 lines);
+    lifecycle: Per-session — created when call starts, stepped every turn;
+    
+    PER_TURN_STEP {
+        1: FLUIDIC → detect mode, compute transition, apply/block
+        2: QPC → spawn hypotheses, score, measure, select strategy
+        3: CONTINUUM → encode signals, evolve fields, generate awareness
+        4: WRITE → context['deep_layer_state'] for prompt builder
+    }
+    
+    STRATEGY_HYPOTHESES {
+        NEGOTIATION: [empathy_first, reframe, direct_answer];
+        DISCOVERY:   [deep_question, mirror_and_probe, value_tease];
+        CLOSING:     [soft_close, assumptive, callback_offer];
+    }
+    
+    CCNM_INTEGRATION {
+        qpc_priors:     ±0.15 score bonus from cross-call learning;
+        fluidic_adjust: ±0.20 inertia offset from call history;
+        field_seeds:    Additive nudge from learned centers;
+    }
+}
+```
+
+---
+
+## 13. OUTPUT SYNTHESIS CHAIN
 
 ```aqi
 OUTPUT_CHAIN {
@@ -1077,7 +1351,7 @@ OUTPUT_CHAIN {
 
 ---
 
-## 12. TURN FIRING SEQUENCE — The Action Potential
+## 14. TURN FIRING SEQUENCE — The Action Potential
 
 Every conversational turn follows this exact sequence — the organism's **action potential**:
 
@@ -1149,7 +1423,7 @@ ACTION_POTENTIAL {
 
 ---
 
-## 13. REFLEX ARC ARCHITECTURE
+## 15. REFLEX ARC ARCHITECTURE
 
 The reflex arc is the **closed behavioral learning loop** — Phase 5 intelligence feeding back into the organism's behavior:
 
@@ -1194,7 +1468,7 @@ REFLEX_ARC {
 
 ---
 
-## 14. ORGANISM GENOME
+## 16. ORGANISM GENOME
 
 ```aqi
 GENOME Alan {
@@ -1260,7 +1534,7 @@ GENOME Alan {
 
 ---
 
-## 15. ERROR TAXONOMY
+## 17. ERROR TAXONOMY
 
 ```aqi
 ERROR_TAXONOMY {
@@ -1301,9 +1575,9 @@ ERROR_TAXONOMY {
 
 ---
 
-## 16. EMPIRICAL VALIDATION
+## 18. EMPIRICAL VALIDATION
 
-### 16.1 — Test Results
+### 18.1 — Test Results
 
 ```aqi
 VALIDATION {
@@ -1356,7 +1630,7 @@ VALIDATION {
 }
 ```
 
-### 16.2 — Compile Verification
+### 18.2 — Compile Verification
 
 ```aqi
 COMPILE_STATUS {
@@ -1380,7 +1654,7 @@ COMPILE_STATUS {
 
 ---
 
-## 17. DISCOVERY CATALOG — 63 Discoveries Across 10 Domains
+## 19. DISCOVERY CATALOG — 63 Discoveries Across 10 Domains
 
 ### Domain 1 — Voice Pipeline Architecture
 | # | Discovery | Description |
