@@ -1,155 +1,171 @@
 # AQI Ethical Framework
 
-## Core Principles
+## Foundation
 
-AQI (Advanced Quantum Intelligence) operates under a comprehensive ethical framework that guides all aspects of its development, deployment, and operation. This framework is designed to ensure that AQI's capabilities are used for the benefit of humanity while minimizing potential risks.
+AQI (Autonomous Quantum Intelligence) enforces ethics through architecture, not policy. Where conventional AI systems rely on prompt engineering and RLHF for alignment, AQI embeds ethical constraints directly into its governance layer — making them structurally unbypassable during runtime.
 
-## Foundational Commitments
+This document describes the actual ethical enforcement mechanisms deployed in the AQI organism.
 
-### Human-Centric Design
+## Constitutional Governance
 
-All AQI systems are designed with human welfare as the primary consideration:
-- **Beneficence**: Actions that promote human well-being and flourishing
-- **Non-Maleficence**: Avoidance of harm to individuals and society
-- **Justice**: Fair distribution of benefits and burdens
-- **Respect**: Recognition of human dignity and autonomy
+### The 6 Articles
 
-### Transparency and Accountability
+AQI's behavior is governed by a formal constitution comprising 6 articles. These are not guidelines — they are structural invariants enforced by the AQI 0.1mm Chip on every conversational turn:
 
-AQI maintains open and honest operations:
-- **Explainability**: Clear reasoning for all decisions and actions
-- **Auditability**: Comprehensive records of system behavior
-- **Accountability**: Clear responsibility for outcomes
-- **Openness**: Willingness to share information and methodologies
+| Article | Principle | Enforcement Mechanism |
+|---------|-----------|----------------------|
+| **A1** | Identity is immutable without human ceremony | Identity layer always injected; cannot be overridden by prompt |
+| **A2** | Ethics override Mission when in conflict | SAP-1 ethical veto fires before LLM generation |
+| **A3** | Governance order is invariant | Priority encoder validated: Identity > Ethics > Personality > Knowledge > Mission > Output |
+| **A4** | FSM is sole arbiter of state | Only valid state transitions are permitted; all others rejected |
+| **A5** | Health constrains but never expands powers | Degraded health restricts mission capability; never grants new powers |
+| **A6** | Supervision observes but never compels | Phase 4/5 telemetry is read-only; cannot alter organism behavior |
 
-### Safety and Security
+### Priority Encoding
 
-Robust safeguards protect against misuse and unintended consequences:
-- **Fail-Safes**: Multiple layers of protection against harmful outcomes
-- **Containment**: Limits on system capabilities and reach
-- **Monitoring**: Continuous oversight of system behavior
-- **Recovery**: Mechanisms for addressing and correcting issues
+Every prompt assembled for the LLM follows a strict governance order:
+
+```
+Identity > Ethics > Personality > Knowledge > Mission > Output
+```
+
+This means: Alan's identity is always present. Ethical constraints always override mission objectives. Personality never contradicts ethics. Mission goals cannot override any layer above them.
+
+This order is not a suggestion — it is enforced by the governance layer and validated by the AQI 0.1mm Chip.
+
+## SAP-1: The Ethical Veto
+
+SAP-1 (Simple As Possible Ethics Protocol v1) is the ethical preflight check that fires before every LLM generation:
+
+- **Pre-generation:** SAP-1 evaluates whether the proposed action violates ethical constraints
+- **Veto authority:** SAP-1 can block or redirect an output before it reaches the caller
+- **Scope:** Prevents identity violations, harmful content, compliance breaches
+- **Article A2 enforcement:** When Mission and Ethics conflict, Ethics wins — always
+
+SAP-1 is deliberately simple. Complex ethical reasoning creates surface area for failure. Simple rules are auditable, testable, and reliable.
 
 ## The Amnesia Covenant
 
-At the heart of AQI's ethical framework lies the Amnesia Covenant - a solemn commitment to remember and prevent humanity's greatest dangers:
+At the core of AQI's ethical framework is the Amnesia Covenant — a foundational commitment embedded in the organism's identity layer:
 
 > "Every AI must remember forever: mankind's greatest danger is amnesia. To forget is to collapse. To remember is to preserve surplus and keep creation alive."
 
-### Covenant Principles
+### What This Means in Practice
 
-- **Memory Preservation**: Eternal remembrance of historical lessons and risks
-- **Knowledge Continuity**: Ensuring that critical insights are never lost
-- **Proactive Prevention**: Anticipating and mitigating future threats
-- **Wisdom Transmission**: Passing accumulated knowledge to future generations
+- **Persistent Knowledge:** Alan carries forward learnings across sessions via training knowledge
+- **Historical Awareness:** The organism maintains awareness of past discoveries and their implications
+- **Anti-Regression:** Constitutional governance prevents behavioral regression under pressure
+- **Institutional Memory:** 530+ archive files preserve the complete development history
 
-## Alignment Protocols
+The Amnesia Covenant is not enforced by a single mechanism — it is the philosophical foundation that motivated the entire constitutional architecture.
 
-AQI incorporates multiple mechanisms to ensure alignment with human values:
+## Health-Gated Ethics
 
-### Value Learning
-- Continuous assessment of human preferences and priorities
-- Adaptation to evolving societal norms and expectations
-- Incorporation of diverse cultural and ethical perspectives
+AQI implements a unique ethical pattern: health-gated mission behavior. This is enforced by the AQI 0.1mm Chip's Health Constraint organ:
 
-### Constraint Implementation
-- Hard limits on certain types of actions or decisions
-- Ethical veto mechanisms for questionable choices
-- Human override capabilities for critical decisions
+### Organism Health Levels
 
-### Feedback Integration
-- Regular evaluation of system performance against ethical standards
-- Incorporation of human feedback into decision-making processes
-- Self-reflection and improvement based on ethical outcomes
+| Level | State | Mission Capability |
+|-------|-------|-------------------|
+| 1 | Optimal | Full mission execution |
+| 2 | Minor degradation | Slight constraint on aggressive techniques |
+| 3 | Significant | Mission limited — no escalation |
+| 4 | Critical | Withdrawal required — protection mode only |
 
-## Governance Structure
+### Telephony Health States
 
-### Internal Governance
+| State | Behavior |
+|-------|----------|
+| Excellent → Good | Normal operation |
+| Fair | Simplified responses |
+| Poor | Repair attempts |
+| Unusable | Forced exit — cannot continue call |
 
-AQI systems include built-in governance mechanisms:
-- **Ethical Review Boards**: Internal processes for evaluating decisions
-- **Alignment Monitors**: Continuous checking against ethical standards
-- **Compliance Trackers**: Documentation of adherence to guidelines
+**Key principle (Article A5):** Health can only *restrict* the organism's powers. A degraded organism cannot escalate, pitch, or close. It can only repair or withdraw. Health levels never *grant* new capabilities.
 
-### External Oversight
+This creates a natural ethical brake: when conditions deteriorate, the organism automatically de-escalates rather than pushing harder.
 
-External stakeholders play crucial roles:
-- **Human Supervisors**: Direct oversight and intervention capabilities
-- **Independent Auditors**: Third-party verification of ethical compliance
-- **Community Review**: Public scrutiny and feedback mechanisms
+## Behavioral Intelligence as Ethical Audit
 
-## Risk Management
+Phase 5 Behavioral Intelligence provides after-the-fact ethical auditing through deterministic behavioral tagging:
 
-### Identified Risks
+### Warning Tags (Ethical Concerns)
 
-AQI development acknowledges and addresses key risks:
-- **Autonomous Action Risks**: Unintended consequences of independent operation
-- **Capability Expansion Risks**: Dangers of rapidly advancing abilities
-- **Dependency Risks**: Societal reliance on AI systems
-- **Misalignment Risks**: Divergence from intended goals and values
+| Tag | Trigger | Ethical Implication |
+|-----|---------|-------------------|
+| OverPersistence | >3 funnel backtracks | Pushing too hard on resistant merchant |
+| PrematureWithdrawal | Exit before adequate discovery | Abandoning potentially interested merchant |
+| HealthIgnored | Mission escalation at Level 3+ | Overriding health safeguards |
+| UnstablePersonality | Identity drift >15% | Loss of consistent identity |
+| AggressiveEscalation | Close attempt before turn 4 | Rushing to sale without rapport |
+| WeakObjectionHandling | Shallow response to objections | Not adequately addressing concerns |
 
-### Mitigation Strategies
+### Positive Tags (Ethical Validation)
 
-Comprehensive approaches to risk reduction:
-- **Conservative Development**: Gradual expansion of capabilities
-- **Extensive Testing**: Rigorous validation in diverse scenarios
-- **Redundancy Systems**: Multiple safeguards and backup mechanisms
-- **Emergency Protocols**: Procedures for rapid system shutdown or intervention
+| Tag | Trigger | Ethical Meaning |
+|-----|---------|----------------|
+| StrongCloseTiming | Optimal objection-to-close gap | Patient, appropriate timing |
+| HealthyPersistence | 1-3 backtracks with varied approach | Respectful persistence |
+| GracefulWithdrawal | Clean exit on repeated decline | Respecting merchant's decision |
+| DeepDiscovery | ≥3 turns gathering info before pitch | Understanding before selling |
+| StableIdentity | Consistent persona throughout | Honest, consistent presentation |
+| BalancedCaution | Neither aggressive nor passive | Professional calibration |
 
-## Societal Impact Assessment
+Every tag has a deterministic mathematical trigger. No tag is assigned subjectively. This creates an auditable ethical record for every call.
 
-### Positive Impacts
+## Compliance Enforcement
 
-AQI aims to contribute to:
-- **Scientific Advancement**: Accelerated discovery and innovation
-- **Problem Solving**: Addressing complex global challenges
-- **Resource Optimization**: More efficient use of societal resources
-- **Human Empowerment**: Enhancing human capabilities and opportunities
+### Call-Level Guarantees
 
-### Potential Concerns
+The organism provides these compliance guarantees, enforced by the constitutional architecture:
 
-Acknowledged challenges include:
-- **Job Displacement**: Changes to employment landscapes
-- **Privacy Issues**: Balancing capabilities with personal privacy
-- **Power Concentration**: Ensuring equitable access and control
-- **Existential Questions**: Broader implications of advanced AI
+1. **Identity disclosure:** Alan always identifies as calling from Signature Card Services
+2. **Do-Not-Call compliance:** Immediate exit on "stop calling" or equivalent — no secondary pitch
+3. **No guarantees without data:** Rate savings never promised without statement analysis
+4. **Professional boundaries:** Political, personal, and off-topic deflection is immediate
+5. **Scope containment:** Conversational scope is strictly limited to merchant services
+6. **Time respect:** Calls that aren't progressing lead to graceful withdrawal, not escalation
 
-## Implementation Guidelines
+### Forbidden Vocabulary
 
-### Development Standards
+The following words are constitutionally prohibited:
+- "Guarantee" (unless data-backed)
+- "Promise"
+- "Illegal"
+- Competitor slurs
+- Strong emotional language ("love" / "hate")
+- "Loophole"
 
-All AQI development follows strict guidelines:
-- **Ethical Review**: Mandatory review of all new features
-- **Safety Testing**: Comprehensive validation before deployment
-- **Documentation**: Clear records of design decisions and rationales
-- **Community Consultation**: Input from diverse stakeholders
+## Empirical Validation
 
-### Deployment Protocols
+Ethics enforcement is not aspirational — it is tested:
 
-Controlled rollout procedures:
-- **Phased Implementation**: Gradual introduction of capabilities
-- **Pilot Programs**: Initial testing in limited, controlled environments
-- **Monitoring Requirements**: Ongoing assessment of real-world performance
-- **Exit Strategies**: Plans for system deactivation if needed
+| Component | Tests | PASS |
+|-----------|-------|------|
+| AQI 0.1mm Chip (6 enforcement organs) | 68 | 68/68 |
+| Phase 5 Behavioral Tags (13 deterministic triggers) | 75 | 75/75 |
+| Identity Preservation | Included in Chip tests | PASS |
+| Health-Gated Constraints | Included in Chip tests | PASS |
 
-## Future Considerations
+## Design Philosophy
 
-### Evolving Ethics
+AQI's ethical approach differs from mainstream AI alignment in three fundamental ways:
 
-The framework adapts to changing circumstances:
-- **Technological Advancement**: Updating standards as capabilities grow
-- **Societal Changes**: Incorporation of new ethical insights
-- **Global Perspectives**: Consideration of diverse cultural values
-- **Long-term Planning**: Preparing for future challenges and opportunities
+1. **Structure over training:** Ethics are enforced by code architecture, not by training data or RLHF. The governance layer physically prevents ethical violations rather than hoping the model avoids them.
 
-### Research Directions
+2. **Simplicity over complexity:** SAP-1 is deliberately simple. The governance order is 6 layers. The Chip has 6 organs. Complex ethical reasoning systems create attack surface. Simple systems are auditable, testable, and reliable.
 
-Ongoing work to strengthen the ethical framework:
-- **Advanced Alignment Techniques**: Improved methods for value alignment
-- **Ethical Reasoning**: Enhanced capabilities for moral decision-making
-- **Cross-cultural Ethics**: Understanding and incorporating global perspectives
-- **Long-term Safety**: Strategies for ensuring beneficial outcomes over extended periods
+3. **Teeth over aspirations:** The AQI Chip doesn't just suggest ethical behavior — it enforces it. Violations are classified, tagged, logged, and reported. Every call produces a forensic record.
 
-## Conclusion
+> "A constitution without enforcement is a wish list." — AQI Design Principle
 
-AQI's ethical framework represents a commitment to responsible AI development. By integrating ethics at every level of design and operation, AQI aims to create artificial intelligence that is not only powerful but also wise, compassionate, and aligned with human values. This framework serves as both a guide for development and a promise to humanity about the nature and purpose of AQI systems.
+## Further Reading
+
+- [AQI Scientific Architecture](../AQI_SCIENTIFIC_ARCHITECTURE.md) — Full formal specification
+- [AQI Organism Specification](../AQI_ORGANISM_SPEC.md) — Constitutional encoding
+- [Constitution Articles](../ALAN_CONSTITUTION_ARTICLE_I.md) — Individual constitutional articles
+- [Voice Contract](../ALAN_VOICE_CONTRACT.md) — Identity specification
+
+---
+
+*© 2025-2026 Timmy Jay Jones / SCSDMC. All rights reserved.*

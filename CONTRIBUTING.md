@@ -1,159 +1,97 @@
 # Contributing to AQI
 
-We welcome contributions from the community! AQI (Advanced Quantum Intelligence) is an open initiative focused on advancing ethical AI development. This document outlines how you can contribute to our mission.
+## About the Project
+
+AQI (Autonomous Quantum Intelligence) is a constitutionally-governed autonomous intelligence system. The organism — named Alan — operates as a production telephony AI making real phone calls. The system has 23 discrete organs, 6 constitutional articles, and 263 verified tests.
+
+**Repository:** [github.com/TimAlanAQISystem/AQI-Autonomous-Intelligence](https://github.com/TimAlanAQISystem/AQI-Autonomous-Intelligence)
+
+## Current System Status
+
+- **Architecture:** 5-layer, 23-organ organism
+- **Voice Pipeline:** GPT-4o-mini LLM → gpt-4o-mini-tts (onyx) → Twilio PSTN
+- **ASR:** Groq Whisper primary (~300ms), OpenAI Whisper fallback
+- **Governance:** AQI 0.1mm Chip (6 enforcement organs), CallSessionFSM
+- **Telemetry:** Phase 4 canonical trace exporter (120/120 tests)
+- **Intelligence:** Phase 5 behavioral analysis (75/75 tests)
+- **Deployment:** Production — making real calls to real merchants
 
 ## Ways to Contribute
 
-### Research and Ideas
-- **Share insights**: Contribute to discussions on AI ethics, organism-based architectures, or quantum computing applications
-- **Propose concepts**: Suggest new approaches to autonomous AI design
-- **Review literature**: Help identify and summarize relevant research papers
+### Documentation
+- Fix inaccuracies or clarify confusing sections
+- Improve technical explanations of AQI subsystems
+- Add examples, diagrams, or cross-references
+- Help translate the AQI notation language into accessible explanations
 
-### Content Creation
-- **Write articles**: Create educational content about AQI concepts
-- **Develop tutorials**: Build guides for understanding advanced AI topics
-- **Create visualizations**: Design diagrams or models illustrating AQI principles
+### Research and Analysis
+- Analyze the constitutional governance model and its implications
+- Study the behavioral intelligence tagging system
+- Research organism-centric AI architecture patterns
+- Propose improvements to the governance layer or telemetry system
 
-### Community Building
-- **Organize events**: Plan workshops, webinars, or discussion groups
-- **Mentor others**: Help newcomers understand AQI concepts
-- **Moderate discussions**: Maintain respectful and productive community interactions
-
-### Outreach and Advocacy
-- **Spread awareness**: Share AQI information on social media and professional networks
-- **Network building**: Connect with other researchers and organizations
-- **Media engagement**: Help communicate AQI's mission to broader audiences
-
-## Getting Started
-
-### 1. Understand Our Mission
-Familiarize yourself with AQI's core principles:
-- Organism-centric AI design
-- Ethical AI development
-- Transparency and accountability
-- Human-AI collaboration
-
-### 2. Join the Community
-- Visit our [GitHub repository](https://github.com/yourusername/AQI-Public)
-- Participate in [GitHub Discussions](https://github.com/yourusername/AQI-Public/discussions)
-- Follow us on social media for updates
-
-### 3. Find Your Niche
-Identify areas where your skills and interests align:
-- Research and analysis
-- Content creation and education
-- Community management
-- Technical writing and documentation
+### Community
+- Participate in discussions about AQI architecture and ethics
+- Help newcomers understand the system's design principles
+- Share insights from related fields (telephony, NLP, constitutional AI)
 
 ## Contribution Guidelines
 
-### Communication Standards
-- **Be respectful**: Treat all community members with courtesy and consideration
-- **Be constructive**: Focus on positive contributions and solutions
-- **Be transparent**: Clearly state your intentions and sources
-- **Be patient**: Allow time for responses and collaborative processes
+### Standards
 
-### Content Standards
-- **Accuracy**: Ensure information is correct and well-supported
-- **Originality**: Create original content or properly attribute sources
-- **Relevance**: Keep contributions focused on AQI-related topics
-- **Quality**: Maintain high standards of work and presentation
+All contributions must:
+- **Be accurate:** No fabricated benchmarks, inflated claims, or speculative assertions presented as facts
+- **Be consistent:** Follow the existing documentation style and AQI notation conventions
+- **Respect the constitution:** Contributions should align with the 6-article constitutional framework
+- **Use correct terminology:** "Autonomous" (not "Advanced"), organs (not modules), governance (not configuration)
 
-### Ethical Considerations
-- **Promote responsible AI**: Emphasize ethical development and deployment
-- **Respect privacy**: Protect personal information and sensitive data
-- **Avoid harm**: Ensure contributions don't promote dangerous or unethical practices
-- **Consider impacts**: Think about broader societal implications of your work
+### What Not to Do
 
-## Specific Contribution Types
+- Do not submit fabricated performance comparisons or benchmarks
+- Do not add speculative capabilities not present in the actual codebase
+- Do not modify constitutional articles without explicit approval from the project maintainer
+- Do not use the term "quantum" to refer to quantum computing — in AQI it refers to the smallest possible unit of autonomous behavior
 
-### Documentation Improvements
-- Fix typos or clarify confusing sections
-- Add examples or case studies
-- Update information to reflect current developments
-- Translate content for international audiences
+### Process
 
-### Research Contributions
-- Summarize relevant academic papers
-- Analyze industry trends and their implications
-- Propose research questions or methodologies
-- Share findings from related experiments
+1. **Fork the repository** on GitHub
+2. **Create a branch** for your changes
+3. **Make your changes** following the standards above
+4. **Submit a pull request** with a clear description of what was changed and why
+5. **Respond to feedback** from project maintainers
 
-### Educational Content
-- Create beginner-friendly explanations
-- Develop advanced tutorials for experts
-- Design interactive learning experiences
-- Produce multimedia content (videos, podcasts)
+### For Discussion
 
-### Community Support
-- Answer questions from newcomers
-- Moderate discussions and maintain guidelines
-- Organize community events or study groups
-- Provide feedback on others' contributions
+- Use [GitHub Discussions](https://github.com/TimAlanAQISystem/AQI-Autonomous-Intelligence/discussions) for ideas, questions, and proposals
+- Use [GitHub Issues](https://github.com/TimAlanAQISystem/AQI-Autonomous-Intelligence/issues) for specific problems or bugs in documentation
 
-## Submission Process
+## Key References
 
-### For Content Contributions
-1. **Fork the repository**: Create your own copy of the AQI-Public repo
-2. **Create a branch**: Make changes in a separate branch
-3. **Make your changes**: Add or modify files as needed
-4. **Test your changes**: Ensure everything works correctly
-5. **Submit a pull request**: Describe your changes and their purpose
+Before contributing, familiarize yourself with:
 
-### For Discussion Contributions
-1. **Start a discussion**: Use GitHub Discussions for ideas and questions
-2. **Provide context**: Give background information and explain your perspective
-3. **Engage with responses**: Reply to comments and continue the conversation
-4. **Document outcomes**: Summarize key points and decisions
-
-### For Outreach Contributions
-1. **Plan your approach**: Decide on platforms and messaging
-2. **Coordinate with team**: Discuss strategies and get approval
-3. **Execute and track**: Implement your plan and monitor results
-4. **Report back**: Share outcomes and lessons learned
-
-## Recognition and Credits
-
-### Acknowledgment
-We recognize all contributors:
-- **Public credit**: Your name and contributions listed in project documentation
-- **Community spotlight**: Featured in newsletters and announcements
-- **Professional networking**: Opportunities to connect with other contributors
-
-### Rewards and Opportunities
-Contributors may receive:
-- **Certificates**: Recognition of your contributions
-- **Speaking opportunities**: Present at community events
-- **Leadership roles**: Take on more responsibility in community governance
-- **Collaborations**: Work on exciting projects with other experts
+| Document | Purpose |
+|----------|---------|
+| `README.md` | System overview and architecture summary |
+| `AQI_SCIENTIFIC_ARCHITECTURE.md` | Full formal specification in AQI notation |
+| `AQI_ORGANISM_SPEC.md` | Constitutional substrate document |
+| `AQI_FULL_SYSTEMS_DOCTRINE.md` | Complete system doctrine (v2.0) |
+| `docs/ethical-framework.md` | Ethical enforcement architecture |
+| `docs/technical-overview.md` | Technical architecture overview |
+| `ALAN_VOICE_CONTRACT.md` | Voice identity specification |
 
 ## Code of Conduct
 
-All contributors must adhere to our community standards:
-- Respect diverse backgrounds and perspectives
-- Maintain professional and ethical behavior
-- Protect community safety and well-being
-- Follow all applicable laws and regulations
+- Treat all community members with respect
+- Prioritize evidence and accuracy over persuasion
+- Follow the ethical framework documented in `docs/ethical-framework.md`
+- Maintain professional conduct in all interactions
 
-Violations of these standards may result in:
-- Warnings and requests for correction
-- Temporary suspension of contribution privileges
-- Permanent removal from the community in severe cases
+## Contact
 
-## Getting Help
+- **Maintainer:** Timmy Jay Jones
+- **Organization:** SCSDMC / Signature Card Services
+- **GitHub:** [TimAlanAQISystem](https://github.com/TimAlanAQISystem)
 
-If you need assistance:
-- **Read the docs**: Check our documentation for guidance
-- **Ask questions**: Use discussions or issues for clarification
-- **Contact maintainers**: Reach out for direct support
-- **Join community calls**: Participate in regular meetings
+---
 
-## Future Opportunities
-
-As AQI grows, we anticipate:
-- **Expanded collaboration tools**: Better platforms for teamwork
-- **Formal partnerships**: Alliances with universities and organizations
-- **Funding opportunities**: Grants and sponsorships for contributors
-- **Professional development**: Training and certification programs
-
-Thank you for your interest in contributing to AQI! Your efforts help advance the field of ethical AI and create a better future for humanity. We look forward to working with you.
+*© 2025-2026 Timmy Jay Jones / SCSDMC. All rights reserved.*

@@ -1,164 +1,88 @@
 # AQI Community Guidelines
 
-## Welcome to the AQI Community
+## Welcome
 
-The AQI (Advanced Quantum Intelligence) community is a collaborative space for researchers, developers, ethicists, and enthusiasts working together to advance responsible AI development. Our community is built on principles of openness, respect, and shared commitment to ethical AI.
+The AQI (Autonomous Quantum Intelligence) community is a collaborative space for researchers, developers, ethicists, and engineers interested in constitutionally-governed autonomous intelligence. AQI is built on principles of transparency, scientific rigor, and ethical AI development.
+
+## About AQI
+
+AQI is a 5-layer, 23-organ autonomous intelligence organism deployed on telephony substrate. It is governed by a formal 6-article constitution, enforced at runtime by the AQI 0.1mm Chip. The system makes real phone calls to real merchants as a Senior Account Executive.
+
+This is not a research prototype — it is a production system with 263 verified tests across its constitutional, telemetry, and behavioral intelligence subsystems.
 
 ## Core Values
 
-### Collaboration
-We believe in the power of collective intelligence:
-- **Open Sharing**: Freely sharing knowledge, insights, and resources
-- **Mutual Support**: Helping fellow community members achieve their goals
-- **Inclusive Participation**: Welcoming diverse perspectives and backgrounds
-- **Constructive Dialogue**: Engaging in respectful, productive discussions
+### Scientific Rigor
+- **Empirical validation:** Every claim must be testable and tested
+- **Deterministic triggers:** Behavioral tags and governance rules use mathematical thresholds, not subjective judgment
+- **Transparency:** The full architecture is documented in AQI notation with codebase cross-references
 
-### Ethics First
-Ethical considerations guide all community activities:
-- **Responsible Development**: Prioritizing safety and beneficial outcomes
-- **Transparency**: Being open about methods, limitations, and intentions
-- **Accountability**: Taking responsibility for our work and its impacts
-- **Human Welfare**: Ensuring AI development serves humanity's best interests
+### Constitutional Ethics
+- **Structure over policy:** Ethics are enforced by architecture, not prompt engineering
+- **Priority encoding:** Identity > Ethics > Personality > Knowledge > Mission > Output
+- **Health-gated behavior:** Degraded conditions restrict powers, never expand them
 
-### Innovation with Caution
-We balance advancement with prudence:
-- **Bold Thinking**: Encouraging creative and ambitious ideas
-- **Rigorous Testing**: Thoroughly validating concepts before implementation
-- **Safety Protocols**: Maintaining appropriate safeguards and oversight
-- **Continuous Learning**: Adapting based on new evidence and experiences
+### Honest Engineering
+- **No fabricated benchmarks:** Only publish results from actual tests
+- **No inflated claims:** Describe what the system does, not what it could theoretically do
+- **Attribution:** Credit contributions, discoveries, and prior work accurately
 
 ## Community Standards
 
 ### Respect and Inclusion
-
-All community members must:
-- **Treat others with respect**: Use inclusive language and avoid discriminatory behavior
-- **Value diversity**: Recognize and appreciate different backgrounds, experiences, and viewpoints
-- **Practice empathy**: Consider how words and actions affect others
-- **Resolve conflicts constructively**: Address disagreements through dialogue and understanding
+- Treat all community members with respect and courtesy
+- Value diverse backgrounds, perspectives, and expertise levels
+- Resolve disagreements through evidence and constructive dialogue
+- Focus on ideas and implementations, not personal attributes
 
 ### Professional Conduct
-
-Maintain high standards of professionalism:
-- **Honest communication**: Be truthful and transparent in all interactions
-- **Intellectual integrity**: Acknowledge sources, give credit where due, and avoid plagiarism
-- **Confidentiality**: Respect privacy and protect sensitive information
-- **Reliability**: Follow through on commitments and be dependable
+- Be honest and transparent in all interactions
+- Acknowledge sources and give credit where due
+- Protect privacy and sensitive information
+- Follow through on commitments
 
 ### Content Guidelines
+- Ensure technical claims are accurate and well-substantiated
+- Keep discussions focused on AQI architecture, governance, and related topics
+- Contribute constructively to community goals
+- No harmful, offensive, or inappropriate content
 
-When sharing information or ideas:
-- **Accuracy**: Ensure information is correct and well-substantiated
-- **Relevance**: Keep discussions focused on AQI-related topics
-- **Constructiveness**: Contribute positively to community goals
-- **Appropriateness**: Avoid harmful, offensive, or inappropriate content
+## Participation
 
-## Participation Guidelines
+### Discussion
+- Stay on topic — AQI architecture, constitutional governance, behavioral intelligence, telephony AI
+- Support claims with evidence or references to the codebase
+- Cite specific files, test counts, or architectural decisions when possible
+- Respect different levels of expertise
 
-### Discussion Forums
+### Contributions
+- Follow the [Contributing Guide](../CONTRIBUTING.md)
+- Ensure code contributions maintain compile-clean standards
+- Document technical decisions with the same rigor as the existing codebase
+- All contributions should align with the constitutional governance principles
 
-When participating in discussions:
-- **Stay on topic**: Keep conversations relevant to AQI and related AI topics
-- **Be constructive**: Offer solutions, insights, or helpful feedback
-- **Cite sources**: Support claims with evidence or references
-- **Respect expertise**: Acknowledge different levels of knowledge and experience
+### Research
+- Adhere to ethical research standards
+- Protect personal information and follow data protection laws
+- Share findings responsibly
+- Maintain the boundary between tested facts and speculation
 
-### Collaboration Projects
-
-For joint projects or initiatives:
-- **Clear communication**: Establish expectations and maintain regular updates
-- **Shared ownership**: Recognize all contributors' efforts and ideas
-- **Quality standards**: Maintain high standards of work and deliverables
-- **Ethical compliance**: Ensure all activities align with AQI ethical principles
-
-### Research and Development
-
-When conducting research:
-- **Ethical approval**: Obtain necessary approvals for human or animal subjects
-- **Data privacy**: Protect personal information and follow data protection laws
-- **Safety protocols**: Implement appropriate safeguards for experimental work
-- **Open sharing**: Share findings responsibly while respecting intellectual property
-
-## Reporting and Enforcement
-
-### Reporting Issues
+## Reporting Issues
 
 If you encounter violations of these guidelines:
-- **Contact moderators**: Use appropriate channels to report concerns
-- **Provide details**: Include specific information about the issue
-- **Remain respectful**: Report issues constructively without personal attacks
-- **Follow up**: Cooperate with any investigations or resolutions
+- Contact project maintainers via GitHub issues or discussions
+- Provide specific details about the concern
+- Remain constructive in your report
+- Allow time for investigation and response
 
-### Enforcement Process
+## Resources
 
-Community moderation follows these principles:
-- **Fairness**: All reports are investigated impartially
-- **Transparency**: Clear communication about actions and reasoning
-- **Proportionality**: Responses appropriate to the severity of violations
-- **Education**: Focus on learning and improvement where possible
+- **Repository:** [AQI-Autonomous-Intelligence](https://github.com/TimAlanAQISystem/AQI-Autonomous-Intelligence)
+- **Scientific Architecture:** See `AQI_SCIENTIFIC_ARCHITECTURE.md`
+- **Ethical Framework:** See `docs/ethical-framework.md`
+- **Technical Overview:** See `docs/technical-overview.md`
+- **Founder:** Timmy Jay Jones (SCSDMC)
 
-## Resources and Support
+---
 
-### Getting Started
-
-New community members can:
-- **Read documentation**: Familiarize yourself with AQI concepts and guidelines
-- **Introduce yourself**: Share your background and interests
-- **Ask questions**: Don't hesitate to seek clarification or help
-- **Start small**: Begin with observing and then gradually increase participation
-
-### Learning and Development
-
-The community provides:
-- **Educational resources**: Tutorials, guides, and reference materials
-- **Mentorship programs**: Opportunities to learn from experienced members
-- **Workshops and events**: Regular sessions for skill-building and networking
-- **Feedback mechanisms**: Ways to receive constructive input on your work
-
-### Technical Support
-
-For technical assistance:
-- **Documentation**: Comprehensive guides and FAQs
-- **Help channels**: Dedicated spaces for troubleshooting and support
-- **Code reviews**: Peer review processes for collaborative development
-- **Best practices**: Shared knowledge of effective techniques and tools
-
-## Recognition and Rewards
-
-### Community Recognition
-
-We celebrate contributions through:
-- **Spotlight features**: Highlighting outstanding work and achievements
-- **Awards and acknowledgments**: Recognizing significant contributions
-- **Leadership opportunities**: Roles for active and committed members
-- **Public appreciation**: Thanking contributors in community communications
-
-### Professional Development
-
-Support career growth through:
-- **Networking opportunities**: Connections with peers and experts
-- **Publication support**: Assistance with sharing work in academic or professional venues
-- **Certification programs**: Recognition of skills and expertise
-- **Collaboration credits**: Acknowledgment of contributions to joint projects
-
-## Future Evolution
-
-### Community Feedback
-
-The guidelines evolve based on community input:
-- **Regular reviews**: Periodic assessment and updates to guidelines
-- **Surveys and feedback**: Gathering community opinions on policies
-- **Working groups**: Collaborative development of new standards
-- **Transparent process**: Clear communication about changes and rationale
-
-### Scaling and Growth
-
-As the community grows:
-- **Infrastructure development**: Building tools and platforms to support larger participation
-- **Governance evolution**: Adapting structures to maintain effectiveness
-- **Global expansion**: Welcoming international participation and perspectives
-- **Sustainability**: Ensuring long-term viability and community health
-
-## Conclusion
-
-These guidelines form the foundation of a vibrant, ethical, and productive AQI community. By adhering to these principles, we create an environment where innovative ideas can flourish, responsible AI can be developed, and positive impacts can be achieved. We invite you to join us in this important work and contribute to shaping the future of artificial intelligence.
+*© 2025-2026 Timmy Jay Jones / SCSDMC. All rights reserved.*

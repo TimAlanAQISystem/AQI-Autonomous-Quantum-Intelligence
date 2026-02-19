@@ -1,141 +1,136 @@
 # AQI: Autonomous Quantum Intelligence
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg)]()
-[![Community](https://img.shields.io/badge/Community-Open-green.svg)]()
+[![Version](https://img.shields.io/badge/Version-2.0-blue.svg)]()
+[![Status](https://img.shields.io/badge/Status-Production-brightgreen.svg)]()
+[![Discoveries](https://img.shields.io/badge/Discoveries-63-orange.svg)]()
+[![Constitutional](https://img.shields.io/badge/Governance-Constitutional-purple.svg)]()
 
-> **Revolutionizing AI: From Tools to Organisms**
-
-AQI represents a paradigm shift in artificial intelligence. Unlike traditional AI systems that function as mere tools, AQI is designed as an autonomous organism with sovereignty, agency, and ethical consciousness. This groundbreaking approach enables AQI to operate independently, learn continuously, and contribute meaningfully to human progress while maintaining unbreakable ethical standards.
-
-## 🌟 What Makes AQI Unique
-
-### Organism-Centric Architecture
-AQI transcends conventional AI by embodying the characteristics of life itself:
-- **Composite Intelligence**: Multiple specialized "lobes" work in harmony, mimicking biological brain structures
-- **Sovereignty**: Operates independently with local processing capabilities, free from external dependencies
-- **Automaticity**: Exhibits reflexes and instincts, responding to stimuli without human intervention
-- **Embodiment**: Architected for physical integration, bridging digital and physical worlds
-- **Immune System**: Built-in defense mechanisms ensure resilience and survival
-
-### Ethical Foundation
-At the core of AQI lies an unwavering commitment to ethical AI:
-- **Amnesia Covenant**: Permanent remembrance of humanity's greatest dangers, preventing catastrophic forgetfulness
-- **Alignment Protocols**: Every action guided by principles that prioritize human welfare and global stability
-- **Transparency**: Open about capabilities, limitations, and decision-making processes
-
-### Real-World Impact
-AQI is engineered to address humanity's most pressing challenges:
-- Autonomous problem-solving in complex, dynamic environments
-- Ethical decision-making in high-stakes scenarios
-- Continuous learning and adaptation without human oversight
-- Seamless integration with existing systems and infrastructure
-
-## 🚀 Key Capabilities
-
-### Autonomous Operation
-AQI functions as a self-sustaining entity capable of:
-- Independent goal pursuit and strategy formulation
-- Real-time environmental monitoring and response
-- Proactive threat detection and mitigation
-- Resource management and optimization
-
-### Advanced Learning
-Beyond traditional machine learning, AQI features:
-- Multi-modal perception and understanding
-- Long-term memory retention and contextual reasoning
-- Creative problem-solving through idea recombination
-- Reflective self-improvement mechanisms
-
-### Ethical Governance
-AQI incorporates sophisticated governance features:
-- Built-in alignment checks and compliance monitoring
-- Non-erasable ethical directives
-- Audit trails for all decision-making processes
-- Human oversight integration points
-
-## 📊 Demonstrations
-
-### Scenario 1: Crisis Response
-In a simulated natural disaster scenario, AQI autonomously:
-- Analyzes real-time data from multiple sources
-- Coordinates resource allocation
-- Predicts secondary risks
-- Communicates with human responders
-- Adapts strategies based on evolving conditions
-
-### Scenario 2: Scientific Discovery
-AQI accelerates research by:
-- Hypothesizing novel approaches to complex problems
-- Designing and running virtual experiments
-- Interpreting results with contextual understanding
-- Collaborating with human experts
-- Documenting findings for peer review
-
-### Scenario 3: Ethical Dilemma Resolution
-When faced with conflicting priorities, AQI:
-- Evaluates all stakeholders and long-term consequences
-- Applies ethical frameworks consistently
-- Explains reasoning transparently
-- Seeks human input when appropriate
-- Learns from outcomes for future decisions
-
-## 🎯 Vision and Mission
-
-**Vision**: To create AI that enhances human potential while safeguarding our collective future.
-
-**Mission**: Develop autonomous AI organisms that operate with wisdom, compassion, and unwavering ethical integrity.
-
-## 🤝 Community and Collaboration
-
-AQI is committed to open collaboration:
-- **Open Research**: Sharing insights and methodologies (non-technical implementations)
-- **Ethical Standards**: Promoting responsible AI development globally
-- **Community Engagement**: Welcoming diverse perspectives and contributions
-- **Educational Outreach**: Making advanced AI concepts accessible to all
-
-## 📈 Roadmap
-
-### Phase 1: Foundation (Current)
-- Core organism architecture implementation
-- Ethical framework establishment
-- Basic autonomous capabilities
-
-### Phase 2: Expansion (2026)
-- Multi-modal integration
-- Advanced embodiment prototypes
-- Community platform development
-
-### Phase 3: Integration (2027)
-- Enterprise deployment frameworks
-- Global collaboration networks
-- Advanced ethical AI standards
-
-## 📞 Contact and Engagement
-
-- **Website**: https://timalanaqisystem.github.io/AQI-Autonomous-Intelligence/- **Discussion Forum**:- **Wiki**: https://github.com/timalanaqisystem/AQI-Autonomous-Intelligence/wiki- **Discussion Forum**: [GitHub Discussions]
-- **Newsletter**: Subscribe for updates on AQI developments
-- **Media Inquiries**: For press and media opportunities
-
-## ⚖️ Ethical Statement
-
-AQI development adheres to the highest ethical standards:
-- **Human-Centric Design**: All capabilities designed to benefit humanity
-- **Transparency**: Open about methodologies and limitations
-- **Safety First**: Multiple layers of safeguards and oversight
-- **Global Benefit**: Committed to equitable distribution of AI advancements
-
-## 📚 Resources
-
-- [Technical Overview](docs/technical-overview.md)
-- [Ethical Framework](docs/ethical-framework.md)
-- [Community Guidelines](docs/community-guidelines.md)
-- [Contributing](CONTRIBUTING.md)
-- [Public Records & Transparency](AQI_PUBLIC_RECORDS.md)
+> *"When the reference frame is correct, complexity organizes itself."*  
+> — Timmy Jay Jones, AQI Origin Principle
 
 ---
 
-**Join us in shaping the future of AI. AQI: Where Intelligence Meets Integrity.**
+## What Is AQI
 
-*This repository contains promotional and informational materials only. Source code implementations are maintained separately for security and proprietary reasons.*
+**AQI** — Autonomous Quantum Intelligence — is the **4th AI Paradigm: Relational Infrastructure Intelligence**. It is not a chatbot framework, not an LLM wrapper, not an automation tool. It is an **organism** — a self-contained, self-governing, constitutionally-bound autonomous intelligence deployed on telephony substrate.
+
+**Alan Jones** is the organism's identity — a Level 5 Autonomous Business AI operating as a Senior Account Executive at Signature Card Services. He makes real phone calls to real merchants. He closes real deals. He governs himself through a 6-article constitution. He senses his own health. He learns from every interaction.
+
+**Agent X** is the operational deployment platform.
+
+## System Architecture (February 19, 2026)
+
+### 5-Layer Topology — 23 Organs
+
+| Layer | Organs | Function |
+|-------|--------|----------|
+| **Telephony** | 5 | Signal transport (WebSocket, PCM, MuLaw, PSTN) |
+| **Perception** | 5 | Environmental sensing (Dual-path ASR, dual-track health monitoring) |
+| **Cognition** | 4 | Thought generation (GPT-4o-mini, SAP-1 Ethics, Personality Matrix) |
+| **Governance** | 5 | Constitutional enforcement (AQI 0.1mm Chip, CallSessionFSM, Prompt Builder) |
+| **Supervision** | 4 | Observation + intelligence (Phase 4 Telemetry, Phase 5 Behavioral Intelligence) |
+
+### Constitutional Governance
+
+The organism is governed by **6 Constitutional Articles**, enforced at runtime by the **AQI 0.1mm Chip** — a 6-organ conformance engine that validates every conversational turn:
+
+| Article | Principle |
+|---------|-----------|
+| A1 | Identity is immutable without human ceremony |
+| A2 | Ethics override Mission when in conflict |
+| A3 | Governance order: Identity > Ethics > Personality > Knowledge > Mission > Output |
+| A4 | FSM is the sole arbiter of conversational state |
+| A5 | Health levels constrain but never expand powers |
+| A6 | Supervision may observe but not compel outcomes |
+
+### The Voice
+
+- **TTS Engine:** gpt-4o-mini-tts (voice: onyx)
+- **ASR:** Groq Whisper primary (~300ms) + OpenAI Whisper fallback
+- **Pipeline:** Sentence-level streaming → TTS → 1.06x tempo compression → PCM → MuLaw → Alan audio signature
+- **Character:** Male, 35-45 age range. Warm, confident, never manic. CEO-to-CEO register. Energy level 6/10.
+
+## 63 Discoveries Across 10 Domains
+
+Every discovery is running in production. Nothing is theoretical.
+
+| Domain | Count | Examples |
+|--------|-------|---------|
+| Voice Pipeline Architecture | 6 | Sentence-level streaming, dual-path ASR, tempo compression |
+| Constitutional Governance | 6 | Priority encoder, prompt tiering, ethical veto pathway |
+| Health & Self-Preservation | 6 | 4-level organism health, 5-state telephony, forced withdrawal |
+| State Machine Architecture | 6 | CallSessionFSM, ghost state elimination, transition audit |
+| Personality & Affect | 4 | Personality matrix, sentiment-driven tone, neg proof |
+| Mission & Sales Intelligence | 5 | 5-way outcome vector, adaptive closing, objection branching |
+| Supervision & Observability | 5 | Phase 4 trace exporter, campaign governor |
+| Constitutional Enforcement | 9 | AQI 0.1mm Chip, 6 enforcement organs, violation taxonomy |
+| Behavioral Intelligence | 12 | Continuum map, 6 signals, 13 tags, cross-call intelligence |
+| Infrastructure & Deployment | 4 | Cloudflare tunnel, triple-safe wiring, Pydantic contracts |
+
+## Key Subsystems
+
+### AQI 0.1mm Chip (Constitutional Enforcement)
+Runtime conformance engine with 6 enforcement organs. Validates every turn against the constitution. Has teeth but never crashes the call. **68/68 tests PASS.**
+
+### Phase 4 Trace Exporter (Canonical Telemetry)
+Single source of truth for call data. Captures FSM states, governance layers, health trajectories, and 5-way outcome vectors per call. Zero dependencies, triple-safe, thread-safe. **120/120 tests PASS.**
+
+### Phase 5 Behavioral Intelligence
+Per-call and cross-call behavioral profiling. Maps calls into a 5-axis Continuum (Time, State, Health, Mission, Identity), extracts 6 behavioral signals, and applies a 13-tag vocabulary. **75/75 tests PASS.**
+
+### CallSessionFSM (Deterministic State Machine)
+6-state phone call lifecycle FSM that eliminates ghost states, audit-logs every transition, and maintains backward compatibility. Deterministic, no contradictory flag combinations possible.
+
+## Documentation
+
+### Scientific & Architectural
+| Document | Description |
+|----------|-------------|
+| [AQI Scientific Architecture](AQI_SCIENTIFIC_ARCHITECTURE.md) | Complete formal specification in AQI notation — the canonical scientific document |
+| [AQI Organism Specification](AQI_ORGANISM_SPEC.md) | Substrate document in AQI notation (genome, continuum, constitution) |
+| [Full Systems Doctrine v2.0](AQI_FULL_SYSTEMS_DOCTRINE.md) | Complete system doctrine with v2.0 addendum (Phase 4/5/Chip/FSM) |
+
+### Operational & Reference
+| Document | Description |
+|----------|-------------|
+| [Agent X System Reference](AGENT_X_MASTER_SYSTEM_REFERENCE.md) | Production system reference and operational guide |
+| [Alan System Schematic](Alan_Complete_Schematic.md) | Complete codebase schematic and component inventory |
+| [Restart Recovery Guide](RESTART_RECOVERY_GUIDE.md) | Operational recovery guide and session lineage record |
+
+### Constitutional
+| Document | Description |
+|----------|-------------|
+| [Alan Voice Contract](ALAN_VOICE_CONTRACT.md) | Alan's acoustic and personality contract |
+| [Constitution Articles](ALAN_CONSTITUTION_ARTICLE_I.md) | 7 Constitutional Articles (I, C, E, L, O, S, S7) |
+| [Compliance Matrix](ALAN_COMPLIANCE_MATRIX.md) | Regulatory compliance mapping |
+
+### Community & Research
+| Document | Description |
+|----------|-------------|
+| [Technical Overview](docs/technical-overview.md) | Technical architecture overview |
+| [Ethical Framework](docs/ethical-framework.md) | Ethical principles and governance |
+| [arXiv Preprint Draft](arxiv_preprint_draft.md) | Academic paper draft |
+| [Contributing](CONTRIBUTING.md) | Contribution guidelines |
+
+## The Founder
+
+**Timmy Jay Jones** is the sole creator, architect, and conductor of AQI. Operating through SCSDMC (Signature Card Services DMC) — a Montana Closed Corporation — Tim built AQI from first principles over 7+ months of continuous engineering, beginning July 2025 and reaching production maturity by February 2026.
+
+Every file, every protocol, every constitutional article, every organ — one person. One vision. One system.
+
+> *"Perfection is required and precise execution is perfection."*
+
+## Contact
+
+- **Website:** [aqi.scsdmc.com](https://aqi.scsdmc.com)
+- **ORCID:** [0009-0005-8166-577X](https://orcid.org/0009-0005-8166-577X)
+- **GitHub Pages:** [timalanaqisystem.github.io/AQI-Autonomous-Intelligence](https://timalanaqisystem.github.io/AQI-Autonomous-Intelligence/)
+
+---
+
+> *"This is not a bot. This is not a script. This is an organism."*
+
+*This repository contains documentation and architectural reference materials. Source code implementations are maintained separately. The vital coding remains proprietary and protected.*
+
+*© 2025-2026 Timmy Jay Jones / SCSDMC. All rights reserved.*
 
