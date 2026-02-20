@@ -391,4 +391,80 @@ CONSTITUTION Alan {
 
 ---
 
+## PART G — RTSSA STATUS (Real-Time Speculative Streaming Architecture)
+
+> **Alan is a production RTSSA organism. Remaining latency is dominated by external TTFT and reactive VAD; internal pipeline is fully overlapped and operating near theoretical minimum for current vendors.**
+
+### RTSSA Layer Audit
+
+```aqi
+RTSSA Alan {
+
+    LAYER SpeculativeDecoding {
+        status: LIVE;
+        implementation: Sprint+Full parallel LLM calls;
+        config: SPECULATIVE_DECODING_ENABLED=True,
+                SPRINT_MAX_TOKENS=30,
+                SPRINT_OVERLAP_THRESHOLD=0.35;
+        latency_impact: -600ms perceived TTFT;
+        bound_to: _build_sprint_prompt(), _orchestrated_response();
+    }
+
+    LAYER StreamingLLMInference {
+        status: LIVE;
+        implementation: OpenAI SSE streaming → sentence detection → immediate TTS;
+        mode: Token-by-token with sentence boundary detection;
+        bound_to: _llm_sentence_stream(), _orchestrated_response();
+    }
+
+    LAYER PartialUtteranceForwarding {
+        status: LIVE;
+        implementation: Sentence-chunked TTS with clause-level micro-pauses;
+        config: SENTENCE_SILENCE_FRAMES=6 (~120ms),
+                CLAUSE_SILENCE_FRAMES=3 (~60ms);
+        bound_to: OUTPUT pipeline, bridge pre-cache;
+    }
+
+    LAYER AudioPipelining {
+        status: LIVE;
+        implementation: PCM→MuLaw→base64→WebSocket frame streaming;
+        enhancements: [TempoCompression(1.06x), AlanSignature, RingToneBridge];
+        bound_to: _openai_tts_sync(), tempo_compress_audio(), apply_alan_signature();
+    }
+
+    LAYER VADReflexLoop {
+        status: LIVE (reactive);
+        implementation: vad_state gate + STT accumulator + back-channel filter;
+        config: vad_commit=0.42s silence, LATENCY_SHIELD=1.5s;
+        headroom: ~200ms reclaimable via predictive VAD (Phase 5);
+        bound_to: VAD GUARD block, ACCUMULATOR block;
+    }
+
+    LAYER ZeroBufferTransport {
+        status: LIVE (constrained by Twilio WebSocket+mulaw);
+        implementation: Frames sent as-fast-as-synthesized;
+        ceiling: Twilio media stream jitter characteristics;
+        headroom: Outbound jitter organ (smoothing, not buffering);
+    }
+
+    LATENCY_BUDGET {
+        openai_ttft: 300-500ms (external, not controllable);
+        reactive_vad: ~200ms (reclaimable — Phase 5 Predictive VAD);
+        internal_pipeline: Fully overlapped, near theoretical minimum;
+        status: "At the wall of external dependencies";
+    }
+}
+```
+
+### Phase 5 Experiments (RTSSA Frontier)
+
+| Experiment | Target | Status | Spec |
+|---|---|---|---|
+| Predictive VAD | -150–250ms turn-handoff | PLANNED | `predictive_vad.py` |
+| Outbound Jitter Organ | Perceived smoothness | PLANNED | `outbound_jitter.py` |
+| Multi-Sprint Strategy | Lower tail latency on openers | PLANNED | Config toggle in relay server |
+| Streaming-Input LLM | Delete ASR→LLM gap | BLOCKED | Requires vendor support |
+
+---
+
 *End of AQI Organism Specification.*

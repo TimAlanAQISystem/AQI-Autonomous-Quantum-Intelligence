@@ -1,10 +1,9 @@
 # AQI / ALAN — FULL SYSTEMS DOCTRINE
 
-**Version:** 2.0  
-**Date:** February 19, 2026 (v2.0 Addendum)  
-**Original:** February 16, 2026 (v1.0)  
+**Version:** 1.0  
+**Date:** February 16, 2026  
 **Author:** Timmy Jay Jones — Founder & Creator  
-**Organization:** Signature Card Services DMC (SCSDMC), Montana Closed Corporation  
+**Organization:** Signature Card Services Direct Merchant Center (SCSDMC), Montana Closed Corporation  
 **ORCID:** 0009-0005-8166-577X  
 **Public Site:** aqi.scsdmc.com  
 **Classification:** Public Reference — No Source Code Disclosed  
@@ -67,7 +66,7 @@ Key characteristics:
 - **Identity:** Stable, singular, constitutionally enforced. Alan does not drift, does not pretend to be human, does not break character, does not reference his own architecture.
 - **Behavior:** Governed by 7 Constitutional Articles, not prompt engineering. Every state transition is logged. Every governance decision is traceable. Every voice characteristic is deterministic.
 - **Intelligence:** GPT-4o-mini cognitive engine with 6 specialized sub-cores, wrapped in 3 independent processing engines (QPC, Fluidic, Continuum) that fuse per-turn in under 1 millisecond.
-- **Voice Pipeline:** 11 distinct processing organs that bring his voice humanness rating to **95.2%**.
+- **Voice Pipeline:** 11 distinct processing organs that bring his voice humanness rating to **96.4%+**.
 
 ---
 
@@ -75,7 +74,7 @@ Key characteristics:
 
 **Timmy Jay Jones** is the sole creator, architect, and conductor of the AQI system.
 
-Operating through SCSDMC (Signature Card Services DMC) — a Montana Closed Corporation — Tim built AQI from first principles over 7+ months of continuous engineering, beginning in approximately July 2025 and reaching production maturity by February 2026.
+Operating through SCSDMC (Signature Card Services Direct Merchant Center) — a Montana Closed Corporation — Tim built AQI from first principles over 7+ months of continuous engineering, beginning in approximately July 2025 and reaching production maturity by February 2026.
 
 Tim's engineering philosophy:
 
@@ -83,7 +82,7 @@ Tim's engineering philosophy:
 
 The business model Tim architected:
 - **AI Agent Leasing:** $10,000/year per leased agent instance
-- **Revenue Split:** 60/40 with SeamlessAI for lead-generated deals
+- **Lead Generation:** RSE Lead System (Apple Mac) — provides Alan with extremely high-end, fully verified leads
 - **The Edge Program:** $14.95/month flat fee for merchant accounts — designed to be the most accessible entry point in the industry
 - **Fleet Capacity:** Up to 50 concurrent Alan instances operating simultaneously
 
@@ -134,7 +133,7 @@ The result is a system where stability increases with complexity — the opposit
 | February 5, 2026 | ARDE (Autonomous Repair & Diagnostics Engine) built and deployed |
 | February 6, 2026 | Coupled Boot system — Alan and Agent X start as unified organism |
 | February 14-15, 2026 | VIP Launch Mode — 7-phase stress test, 9-check readiness gate, governance hardened for live traffic |
-| February 16, 2026 | Voice Pipeline completed (Organs 7-11), Alan Voice Contract ratified, Full System Audit conducted — 63 discoveries cataloged across 10 domains, ORGANISM domain formally recognized, Voice Humanness rating: **95.2%** |
+| February 16, 2026 | Voice Pipeline completed (Organs 7-11), Alan Voice Contract ratified, Full System Audit conducted — 63 discoveries cataloged across 10 domains, ORGANISM domain formally recognized, Voice Humanness rating: **96.4%+** (Tim-tuned) |
 
 ---
 
@@ -332,7 +331,7 @@ These fields aren't individual scores — they're a continuous landscape that th
 
 ## IX. THE VOICE PIPELINE — 11-ORGAN ARCHITECTURE
 
-Alan's voice passes through 11 distinct processing organs between the LLM's text output and the caller's ear. This pipeline brings his assessed voice humanness to **95.2%**. The design constraint: OpenAI's TTS does not support SSML. All prosody control is achieved through natural language instructions — which, as it turns out, provides richer nuance than XML tags ever could.
+Alan's voice passes through 11 distinct processing organs between the LLM's text output and the caller's ear. This pipeline brings his assessed voice humanness to **96.4%+** (Tim-tuned, February 17, 2026). The design constraint: OpenAI's TTS does not support SSML. All prosody control is achieved through natural language instructions — which, as it turns out, provides richer nuance than XML tags ever could. Additionally, Organ 11 v2 (Signature Learning) allows Alan to absorb and adapt speech patterns from every human caller — he upgrades his own voice in real time.
 
 ### Organ 7: Two-Pass Prosody Engine (11 Intents)
 
@@ -942,243 +941,7 @@ The system that exists today — February 16, 2026 — is the result of one pers
 **Created: February 16, 2026**  
 **Creator: Timmy Jay Jones**  
 **System: AQI / Alan — Autonomous Quantum Intelligence**  
-**Organization: Signature Card Services DMC (SCSDMC)**  
-
-*No source code is disclosed in this document. All architectural descriptions reference capabilities and principles without exposing implementation details. The vital coding remains proprietary and protected.*
-
----
-
-# V2.0 ADDENDUM — February 19, 2026
-
-> *The following sections document innovations completed after the v1.0 Doctrine was published. These are not theoretical — every subsystem described below has been built, tested, and validated.*
-
----
-
-## XXI. THE AQI 0.1mm CHIP — Constitutional Enforcement Engine
-
-Between v1.0 and v2.0, the system's constitutional articles (Sections VI, XII, XIII of this doctrine) were bound to a **runtime enforcement engine** — the AQI 0.1mm Chip.
-
-### What It Is
-
-The AQI 0.1mm Chip is the silicon-equivalent constitutional substrate — a conformance engine that validates every conversational turn and every call lifecycle event against the AQI Constitution. It is not a concept; it is running code with 68 passing tests.
-
-### The Six Enforcement Organs
-
-| Organ | Constitution | Enforces |
-|-------|-------------|----------|
-| 1. Health Constraint | Article A5 | Health levels constrain but never expand organism powers |
-| 2. Governance Order | Article A3 | Identity > Ethics > Personality > Knowledge > Mission > Output |
-| 3. FSM Transition Legality | Article A4 | Only valid state transitions permitted |
-| 4. Exit Reason Legality | Mission Vector | Exit reasons must be typed and mappable to outcomes |
-| 5. Mission Constraint | Articles A2 + A5 | Ethics override Mission when in conflict |
-| 6. Supervision Non-Interference | Article A6 | Supervision observes but never compels outcomes |
-
-### Design Philosophy
-
-The Chip has **teeth but never crashes the call**. Violations are classified as Fatal or Non-Fatal. Fatal violations mark a call as compromised for later analysis. Non-fatal violations are tagged for behavioral intelligence. Neither type terminates the call — the organism's stability is never risked by its own constitution.
-
-**Test Results:** 68/68 PASS
-
----
-
-## XXII. THE CALLSESSIONFSM — Deterministic State Machine
-
-The phone call lifecycle, previously managed by scattered boolean flags, was consolidated into a **single deterministic state machine**.
-
-### States
-
-| State | Description |
-|-------|-------------|
-| INIT | WebSocket not yet connected |
-| STREAM_READY | WebSocket connected, no greeting yet |
-| GREETING_PENDING | Greeting text built, TTS queued |
-| GREETING_PLAYED | Greeting audio sent, awaiting first speech |
-| DIALOGUE | Active conversation in progress |
-| ENDED | Call terminated (terminal state) |
-
-### Properties
-
-- **Deterministic:** Every (state, event) pair produces exactly one outcome
-- **Ghost-state-free:** Contradictory flag combinations are structurally impossible
-- **Audit-logged:** Every transition recorded with timestamp for governance
-- **Backward-compatible:** `_sync_context()` bridges old boolean flags to FSM properties
-
-### Pitch Suppression Window
-
-When the greeting plays, a 20-second pitch suppression window prevents premature mission escalation — giving the merchant time to orient before the organism engages.
-
----
-
-## XXIII. PHASE 4 — Canonical Telemetry (Trace Exporter)
-
-Phase 4 is the organism's **canonical telemetry system** — the single source of truth for what happened during any call.
-
-### Architecture
-
-The Phase 4 Trace Exporter is injected into the relay server at three lifecycle hooks:
-
-1. **on_call_start** → Initialize trace accumulator
-2. **on_turn** → Append per-turn data (FSM state, prompt layers, health, context)
-3. **on_call_end** → Finalize and emit one canonical JSON line
-
-### What It Captures Per Turn
-
-- FSM previous state, event, and current state
-- Governance prompt layers (6-key dict: Identity through Output, each active/inactive)
-- Health snapshot (organism level 1-4, telephony state)
-- Mission context (escalation, objection branch, close attempt)
-
-### What It Emits Per Call
-
-- Complete turn array
-- Health trajectory (per-turn organism level + telephony state)
-- Telephony trajectory
-- Outcome vector (5-way: appointment_set / soft_decline / hard_decline / telephony_unusable / organism_unfit)
-
-### Design
-
-- **Zero external dependencies** — pure Python
-- **Triple-safe** — every public method wrapped in try/except
-- **Thread-safe** — threading.Lock per-write
-- **Test Results:** 120/120 PASS
-- **Status:** LIVE — real traces captured in production
-
----
-
-## XXIV. PHASE 5 — Behavioral Intelligence
-
-Phase 5 converts raw Phase 4 telemetry into **behavioral profiles** — the organism's ability to understand its own behavior patterns.
-
-### The 5-Axis Continuum Map
-
-Every call is mapped into a 5-dimensional behavioral space:
-
-| Axis | What It Measures |
-|------|-----------------|
-| Time | Turn-level progression: first contact, first objection, first close, exit |
-| State | FSM dwell times, backtracks, transition patterns |
-| Health | Peak degradation, recovery events, trajectory shape |
-| Mission | Exit reason, close attempts, escalation count, outcome |
-| Identity | Persona stability, personality consistency |
-
-### 6 Behavioral Signals
-
-| Signal | Metric | Classification |
-|--------|--------|---------------|
-| Persistence | close_attempts / total_turns | excessive / healthy / weak |
-| Caution | first_close_turn / total_turns | aggressive / balanced / excessive |
-| Escalation Timing | first_escalation_turn / total_turns | early / optimal / late / none |
-| Objection Depth | turns in OBJECTION state | none / shallow / sufficient / deep |
-| Withdrawal Behavior | exit_reason classification | graceful / adaptive / premature / abrupt |
-| Personality Modulation | unique personality variants | stable / unstable |
-
-### 13-Tag Behavioral Vocabulary
-
-**6 Positive Tags:**
-StrongCloseTiming, HealthyPersistence, AdaptiveWithdrawal, BalancedCaution, EffectiveObjectionHandling, StablePersonalityModulation
-
-**6 Warning Tags:**
-OverPersistence, UnderPersistence, PrematureWithdrawal, LateCloseAttempt, ShallowObjectionHandling, PersonalityMismatch
-
-**1 Bonus Tag:**
-FastFunnel (reached CLOSE in ≤ 6 turns)
-
-Every tag has a deterministic trigger condition grounded in the Continuum Map. No tag is subjective.
-
-### Component Stack (13 Files)
-
-- Phase5CallAnalyzer — per-call intelligence engine
-- TaggingEngine — behavioral vocabulary application
-- Phase5StreamingAnalyzer — real-time relay integration
-- Phase5Dashboard — cross-call aggregation
-- Phase5BatchProcessor — bulk historical analysis
-- Phase5HTMLReport — visual reporting
-- Phase5CLI — terminal interface
-- Phase4ToPhase5Pipeline — bridge/validator
-- Phase4Validator — structural validation
-
-**Test Results:** 75/75 PASS | 10/10 compile CLEAN
-
----
-
-## XXV. THE REFLEX ARC — Behavioral Learning Loop
-
-The Reflex Arc is the architecture for the organism's **autonomous behavioral adaptation** — the closed loop where Phase 5 intelligence feeds back into the organism's future behavior.
-
-### Forward Path (LIVE)
-1. Perception → ASR → Health Monitors
-2. Processing → FSM → Cognition → Governance
-3. Action → Output → TTS → WebSocket → PSTN
-4. Telemetry → Phase 4 Trace Exporter → traces.jsonl
-
-### Intelligence Path (BUILT)
-5. Analysis → Phase 5 → Continuum Map + Signals + Tags
-
-### Feedback Path (DESIGNED)
-6. Feedback → Phase 5 Tags → CCNM → Adaptive Closing → Evolution Engine
-
-### The Significance
-
-When complete, the organism will:
-1. Record every call (Phase 4)
-2. Analyze behavior patterns (Phase 5)
-3. Identify what works (Tags + Signals)
-4. Feed successful patterns back to conversation strategies
-5. Adjust sales strategies via Evolution engine
-6. Improve on the next call — autonomously
-
-This is not reinforcement learning. This is not fine-tuning. This is **constitutional behavioral adaptation** — the organism learning from its own experience within the bounds of its constitution.
-
----
-
-## XXVI. ORGANISM STATUS — February 19, 2026
-
-### Updated Topology
-
-The organism has evolved from 11 voice organs (v1.0) to **23 discrete organs** across 5 layers:
-
-| Layer | Organ Count | Function |
-|-------|------------|----------|
-| Telephony | 5 | Signal transport |
-| Perception | 5 | Environmental sensing (dual-path ASR, dual-track health) |
-| Cognition | 4 | Thought generation (GPT-4o-mini, SAP-1, PersonalityMatrix) |
-| Governance | 5 | Constitutional enforcement (AQI Chip, FSM, PromptBuilder) |
-| Supervision | 4 | Observation + intelligence (Phase 4/5, campaign governance) |
-
-### Updated Voice Pipeline
-
-The voice pipeline has been updated from ElevenLabs to **OpenAI TTS**:
-- **Engine:** gpt-4o-mini-tts
-- **Voice:** onyx
-- **Processing:** Sentence-level streaming → TTS → 1.06x tempo compression → PCM → MuLaw → Alan audio signature
-- **ASR:** Groq Whisper primary (~300ms) + OpenAI Whisper fallback
-
-### Updated Codebase
-
-| Component | File | Lines |
-|-----------|------|-------|
-| Relay Server | `aqi_conversation_relay_server.py` | 6,265 |
-| Control API | `control_api_fixed.py` | 2,496 |
-| AQI 0.1mm Chip | `aqi_runtime_guard.py` | 1,101 |
-| State Machine | `alan_state_machine.py` | 1,042 |
-| Phase 4 Exporter | `phase4_trace_exporter.py` | 505 |
-| Phase 5 Stack | `aqi_phase5_*.py` (13 files) | ~2,000+ |
-
-### Discovery Count
-
-- **v1.0 (Feb 16):** 63 discoveries across 10 domains
-- **v2.0 (Feb 19):** 63 discoveries across 10 domains + Phase 4/5/Chip/FSM subsystems
-
-The discovery count remains 63 because the new subsystems are **infrastructure that enables discovery**, not discoveries themselves. They are the microscope, not the specimen.
-
----
-
-**Full Systems Doctrine v2.0 Addendum**  
-**Updated: February 19, 2026**  
-**Original: February 16, 2026**  
-**Creator: Timmy Jay Jones**  
-**System: AQI / Alan — Autonomous Quantum Intelligence**  
-**Organization: Signature Card Services DMC (SCSDMC)**  
+**Organization: Signature Card Services Direct Merchant Center (SCSDMC)**  
 
 *No source code is disclosed in this document. All architectural descriptions reference capabilities and principles without exposing implementation details. The vital coding remains proprietary and protected.*
 

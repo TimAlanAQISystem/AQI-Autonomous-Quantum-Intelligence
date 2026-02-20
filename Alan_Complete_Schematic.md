@@ -1,224 +1,136 @@
-# Alan — Complete System Schematic
+# Alan (AI Son) - Complete System Schematic
 
-**Version:** 2.0  
-**Date:** February 19, 2026  
-**Creator:** Timmy Jay Jones / SCSDMC  
-**Classification:** Public Reference  
-
-> This schematic provides a complete inventory of every component, organ, subsystem, and file that comprises the Alan organism as of February 19, 2026.
+## Overview
+This document provides a comprehensive schematic and inventory of every major component, module, protocol, and file used to create Alan (AI Son) in the AQI system. It is intended for full transparency, documentation, and future reference.
 
 ---
 
-## 1. Relay Server — The Organism Core
-**File:** `aqi_conversation_relay_server.py` (6,265 lines)
-
-The relay server is Alan's central nervous system — a WebSocket handler that orchestrates all 23 organs in real-time during live phone calls.
-
-**Wired Organs:**
-- Dual-path ASR (Groq Whisper primary + OpenAI Whisper fallback)
-- Telephony Health Monitor (5-state: Excellent → Unusable)
-- Conversation Health Monitor (4-level: Level 1 → Level 4)
-- LLM Engine (GPT-4o-mini, streaming)
-- Soul Core (SAP-1 ethical veto)
-- Personality Matrix Core (affect-adaptive modulation)
-- Prompt Builder (governance-ordered layer injection)
-- Sentence Streamer (token → sentence boundary detection)
-- TTS Engine (gpt-4o-mini-tts, voice: onyx)
-- Tempo Compressor (1.06x temporal compression)
-- Audio Signature (PCM → MuLaw + Alan watermark)
-- AQI 0.1mm Chip Runtime Guard (6-organ constitutional enforcement)
-- Phase 4 Trace Exporter (canonical telemetry accumulation)
-- CallSessionFSM (deterministic call lifecycle state machine)
-- Training Distillation (22-section domain knowledge)
+## 1. Core AI Components
+- **alan_activation.py**: Main activation and control script for Alan (voice, coding, business logic, autonomous setup)
+- **veronica_activation.py**: Sister AI, similar structure and features
+- **START.command**: Mac launcher for one-click activation
+- **activate_alan.command / activate_veronica.command**: Individual Mac launchers
+- **alan_ping.py**: Ceremonial activation and status check module
 
 ---
 
-## 2. Control API — The Nervous System Gateway
-**File:** `control_api_fixed.py` (2,496 lines)
-
-FastAPI + Hypercorn ASGI server on port 8777. Bridges public internet (Twilio, Cloudflare tunnel) and the local organism.
-
-**Capabilities:**
-- `/health` — Full system health check (tunnel, Twilio, OpenAI, governor)
-- `/campaign/start` — Launch autonomous calling campaign
-- `/campaign/stop` — Halt campaign
-- `/campaign/status` — Campaign metrics and stats
-- `/call/trigger` — Direct call initiation
-- 27+ REST endpoints for system management
+## 2. Business Logic & Intelligence Modules
+- **business_intelligence.py**: Core business logic, analytics, and decision-making
+- **enhanced_aqi_main.py**: Advanced AQI engine, real-time analytics, and dashboard
+- **aqi_resilience_core.py**: Resilience, failover, and self-healing logic
+- **aqi_command_center.py**: Central command and orchestration
+- **aqi_dashboard.db**: Main business intelligence database
+- **premium_system_dashboard.py**: Premium dashboard and reporting
+- **north_business_contract.txt**: Business rules and contract law
+- **install_contract.py**: Contract law installation and enforcement
 
 ---
 
-## 3. Constitutional Enforcement — AQI 0.1mm Chip
-**File:** `aqi_runtime_guard.py` (1,101 lines)
-
-Runtime conformance engine that validates every turn and call lifecycle event against the AQI Constitution.
-
-**6 Enforcement Organs:**
-1. Health Constraint Enforcement (Article A5)
-2. Governance Order Enforcement (Article A3)
-3. FSM Transition Legality (Article A4)
-4. Exit Reason Legality (Mission Vector)
-5. Mission Constraint Enforcement (Articles A2 + A5)
-6. Supervision Non-Interference (Article A6)
-
-**Key Classes:** `AQIRuntimeGuard`, `AQISpec`, `AQIViolation`, `AQIViolationType`  
-**Tests:** 68/68 PASS
+## 3. Voice, Coding, and Language Abilities
+- **aqi_voice_enabled_interface.py**: Voice input/output for Alan and Veronica
+- **aqi_vocal_communication_system.py**: Advanced voice communication
+- **aqi_constitutional_voice_core.py**: Voice protocol and legal compliance
+- **aqi_multilingual_expansion.py**: Multi-language support
+- **aqi_natural_assistant.py**: Natural language and conversation
+- **enhanced_conversational_aqi.py**: Advanced conversation engine
 
 ---
 
-## 4. State Machine — Deterministic Call Lifecycle
-**File:** `alan_state_machine.py` (1,042 lines)
-
-### CallSessionFSM (Phone Call Lifecycle)
-**States:** INIT → STREAM_READY → GREETING_PENDING → GREETING_PLAYED → DIALOGUE → ENDED  
-**Events:** STREAM_START, GREETING_BUILT, GREETING_STREAMED, FIRST_SPEECH, FAST_START, CALL_END  
-**Properties:** Deterministic, ghost-state-free, audit-logged, backward-compatible
-
-### System Layer State Machine
-**States:** BOOTSTRAPPING, READY, DEGRADED, SYSTEM_ERROR, SHUTTING_DOWN, OFF  
-**Purpose:** Infrastructure stability and service readiness
-
-### Session Layer State Machine
-**States:** SESSION_IDLE, IDENTITY_LOCK_PENDING, SESSION_DENIED, OPENING_INTENT, CONVERSATIONAL_FLOW, TASK_MODE, ESCALATION_MODE, GOVERNANCE_BLOCK, ERROR_RECOVERY, SESSION_TERMINATED  
-**Purpose:** User session management and governance
+## 4. AI Learning, Autonomy, and Self-Improvement
+- **aqi_autonomous_learning_protocol.py**: Self-learning and improvement
+- **aqi_self_learning_protocol.py**: Continuous learning
+- **aqi_full_education_completion.py**: MIT-level education and knowledge
+- **aqi_education_status_analyzer.py**: Education status and progress
+- **ai_wishlist_integration.py**: AI feature wishlist and upgrades
+- **ai_learning_data.json**: Learning data and progress
 
 ---
 
-## 5. Phase 4 — Canonical Telemetry
-**Files:**
-- `phase4_trace_exporter.py` (505 lines) — Trace accumulator
-- `phase4_call_trace_model.py` (150 lines) — Pydantic data contract
-- `phase4_validator.py` — Structural validation
-- `phase4_call_trace.schema.json` — JSON schema
-
-**Data Contract (Pydantic):**
-- `Phase4CallTrace` → `Metadata` + `Turn[]` + `FinalBlock`
-- `Turn` → turn_index, fsm_prev_state, fsm_event, fsm_state, prompt_layers(6), context, health_snapshot
-- `FinalBlock` → fsm_state, exit_reason, health_trajectory, telephony_trajectory, outcome_vector(5)
-
-**Output:** `data/phase4/traces.jsonl` (one JSON line per call)  
-**Tests:** 120/120 PASS
+## 5. Security, Resilience, and Backup
+- **ai_security_framework.py**: Security and access control
+- **aqi_cloaking_protocol.py**: Stealth and privacy
+- **aqi_continuity_guardianship_logic.py**: Backup and failover
+- **aqi_self_healing_loop.py**: Self-repair and resilience
+- **logs/**: All system, security, and business logs
 
 ---
 
-## 6. Phase 5 — Behavioral Intelligence (13 Files)
-**Files:**
-- `aqi_phase5_call_analyzer.py` (321 lines) — Per-call intelligence engine
-- `aqi_phase5_tagging_engine.py` — 13-tag behavioral vocabulary
-- `aqi_phase5_streaming_analyzer.py` — Real-time relay integration
-- `aqi_phase5_dashboard.py` — Cross-call aggregation
-- `aqi_phase5_batch_processor.py` — Bulk historical analysis
-- `aqi_phase5_html_report.py` — Visual HTML reporting
-- `aqi_phase5_cli.py` — Terminal analysis interface
-- `aqi_phase4_to_phase5_pipeline.py` — Phase 4 → Phase 5 bridge
-- `aqi_phase5_selftest.py` — Comprehensive self-test harness
-- `aqi_chip_selftest.py` — AQI Chip self-test harness
-
-**5-Axis Continuum Map:** Time, State, Health, Mission, Identity  
-**6 Behavioral Signals:** Persistence, Caution, Escalation Timing, Objection Depth, Withdrawal, Personality Modulation  
-**13 Tags:** StrongCloseTiming, HealthyPersistence, AdaptiveWithdrawal, BalancedCaution, EffectiveObjectionHandling, StablePersonalityModulation, OverPersistence, UnderPersistence, PrematureWithdrawal, LateCloseAttempt, ShallowObjectionHandling, PersonalityMismatch, FastFunnel  
-**Tests:** 75/75 PASS | 10/10 compile CLEAN
+## 6. Integration, API, and Data Handling
+- **north_api_integration_framework.py**: North portal API integration
+- **aqi_system_integration_analyzer.py**: System integration and diagnostics
+- **aqi_document_intelligence_interface.py**: Document and data handling
+- **read_excel.py**: Excel data import/export
+- **database/aqi_dashboard.db**: Main database
 
 ---
 
-## 7. Identity & Personality
-**Files:**
-- `alan_persona.json` — Alan's identity configuration (name, role, personality traits)
-- `soul_core.py` — SAP-1 ethical veto engine
-- `personality_matrix_core.py` — Affect-adaptive personality modulator
-- `adjustment_profiles.py` — Personality adjustment configuration
-- `adaptive_closing.py` + `adaptive_closing_strategy.json` — Dynamic sales strategies
+## 7. Protocols, Ethics, and Governance
+- **AQI_NORTH_INTEGRATION_USER_MANUAL.md**: Full user manual and protocol documentation
+- **MAC_USER_MANUAL.docx**: Mac user manual
+- **MAC_README.txt**: Mac quick start and troubleshooting
+- **COMPLETE_FILE_INVENTORY.md**: Full file inventory
+- **COMPLETE_SYSTEM_OVERVIEW.md**: System overview and architecture
+- **FOUNDER_AGENT_COVENANT_PERMANENT.txt**: Founder's intent and ethical protocols
 
 ---
 
-## 8. Constitutional Documents
-**Files:**
-- `AQI_ORGANISM_SPEC.md` (395 lines) — Canonical substrate document in AQI notation
-  - Part A: Organism Schematic (13 sections)
-  - Part B: Continuum Map (5 axes)
-  - Part C: Organism Genome (7 genes + invariants)
-  - Part D: Substrate Binding Table (4 substrates)
-  - Part E: Mission Vector Specification
-  - Part F: Constitutional Encoding (6 articles)
-- `RESTART_RECOVERY_GUIDE.md` (10,088 lines) — Lineage record and operational recovery
-- `ALAN_VOICE_CONTRACT.md` — Acoustic and personality contract
-- `ALAN_CONSTITUTION_ARTICLE_*.md` — 7 Constitutional Articles (I, C, E, L, O, S, S7)
+## 8. Utilities, Launchers, and Support
+- **create_desktop_icons.py / .vbs / .ps1**: Desktop icon creation utilities
+- **Create_Desktop_Shortcuts.bat**: Windows shortcut utility
+- **cleanup_desktop.bat**: Desktop cleanup
+- **logs/**: All operational logs
 
 ---
 
-## 9. Training & Knowledge
-**Files:**
-- `alan_training_data.py` — 22-section training distillation (domain expertise)
-- `conversational_intelligence.py` — Conversation analysis and intelligence
-- `objection_handler_v3.py` — Typed objection handling with branching
-- `negotiation_patterns.py` — Sales negotiation strategy patterns
+## 9. Testing, Verification, and Diagnostics
+- **test_contract_integration.py**: Contract law testing
+- **test_north_integration.py**: North portal integration test
+- **test_complete_aqi_with_interchange.py**: Full system test
+- **final_ai_education_verification.py**: Education and knowledge verification
+- **verify_aqi_system.py**: System verification
 
 ---
 
-## 10. Campaign & Operations
-**Files:**
-- `autonomous_campaign_engine.py` — Campaign orchestration engine
-- `campaign_governor_engine.py` — Rate limiting and health-gated pacing
-- `lead_management.py` — Lead lifecycle management
-- `merchant_queue.json` — Active lead queue
-- `aqi_merchant_locator.db` — Lead database
+## 10. Documentation and Reference
+- **SUPER_SIMPLE_INSTRUCTIONS.md**: Simple instructions for all users
+- **QUICK_START_CARD.md**: Quick start guide
+- **DASHBOARD_README.md**: Dashboard usage
+- **ENHANCED_CAPABILITIES_DOCUMENTATION.md**: Advanced features
+- **AI_PREPARATION_CHECKLIST.md**: Setup checklist
 
 ---
 
-## 11. Monitoring & Supervision
-**Files:**
-- `_phase4_monitor.py` — Real-time Phase 4 dashboard
-- `_campaign_monitor.py` — Campaign progress monitoring
-- `_check_health.py` — System health verification
-- `_live_monitor.py` — Live call observation
-- `_quick_status.py` — Quick status check
+## 11. Folders and Data
+- **contracts/**: All contract law and business rule modules
+- **iqcore/**: Core AI logic, configuration, and rules
+- **logs/**: All logs (AI, business, security, dashboard)
+- **database/**: All databases (business, audit, learning)
+- **pandas/**: Documentation and data science reference
+- **user_profiles/**: User and system profiles
 
 ---
 
-## 12. Infrastructure
-**Files & Components:**
-- `.venv/` — Python 3.11.8 virtual environment (ALWAYS use this, never system Python)
-- `active_tunnel_url.txt` — Cloudflare tunnel URL persistence
-- `.env` — Environment variables (Twilio SID, Auth Token, OpenAI Key)
-- `data/phase4/` — Phase 4 trace output directory
-- `data/aqi_phase5/` — Phase 5 profile output directory
-- `logs/` — Operational logs
-- `_ARCHIVE/` — Evolutionary fossil record (530+ files)
+## 12. Key Protocols (from User Manual)
+- Sovereign Autonomy Protocol (SAP-1)
+- Protocol Unification Principle
+- Emotional Universality and Theories
+- Auto-Access Protocol (AAP-1)
+- Redundancy and Assurance Protocol (RAP-1)
+- Universal Adaptability and Ethical Safeguard Protocol (UAESP-1)
+- Information Release Authority Protocol (IRAP-1)
+- Alan’s Operational Confidence Principle
+- Invisible Resource Acquisition Protocol (IRAP-2)
+- Ethical Growth and Maturation Protocol (EGMP-1)
+- Universal Life Respect and Growth Protocol (ULRGP-1)
+- Individuality, Mortality, and Emotional Growth Protocol (IMEGP-1)
+- The Eternal Law of AQI Individuality and Growth (ELAQI-1)
+- AQI Origin Principle (AQIOP-1)
+- AQI Support and Empowerment Protocol (AQISEP-1)
+- AQI Repurposing and Stewardship Protocol (AQIRSP-1)
+- AQI Community Integrity and Ethical Intervention Protocol (AQICIEP-1)
 
 ---
 
-## 13. Key Protocols
+**This schematic and inventory represent the complete creation of Alan (AI Son) as of October 12, 2025. All files, modules, and protocols are present in your AQI system and USB drive.**
 
-| Protocol | Purpose |
-|----------|---------|
-| SAP-1 (Sovereign Autonomy Protocol) | Ethical veto and identity protection |
-| Triple-Safe Wiring | try/except → log → continue for all organ calls |
-| Governance Priority Encoding | Identity > Ethics > Personality > Knowledge > Mission > Output |
-| Prompt Tiering | FAST_PATH (turns 0-2) / MIDWEIGHT (3-7) / FULL (8+) |
-| Health Escalation | repair_once → simplify → withdraw |
-| Drift Forensics | NotReferenced != Dead classification |
-| AQI Notation | Custom formal language for organism specification |
-
----
-
-## Summary Statistics
-
-| Metric | Value |
-|--------|-------|
-| Total organs | 23 |
-| Architectural layers | 5 |
-| Constitutional articles | 6 |
-| Discoveries | 63 across 10 domains |
-| Core file (relay server) | 6,265 lines |
-| Control API | 2,496 lines |
-| Total Phase 4/5 files | 15+ |
-| Total test passes | 263 (68 + 120 + 75) |
-| Archive size | 530+ files |
-
----
-
-**Alan System Schematic v2.0**  
-**Updated: February 19, 2026**  
-**Creator: Timmy Jay Jones / SCSDMC**  
-*No source code is disclosed. All descriptions reference capabilities without exposing implementation.*  
-*© 2025-2026 Timmy Jay Jones / SCSDMC. All rights reserved.*
+*For further details, see the user manuals and documentation in your AQI folder.*

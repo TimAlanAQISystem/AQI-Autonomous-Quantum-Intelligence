@@ -1,0 +1,41 @@
+# Ignore Python cache and environment
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+
+# Ignore logs and temporary files
+logs/
+*.log
+*.tmp
+*.bak
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore environment and secrets
+.env
+*.enc
+
+# Ignore VS Code and other IDE settings
+.vscode/
+.idea/
+
+# Ignore test outputs
+*.txt
+*.out
+*.db
+
+# Ignore build and dist folders
+dist/
+build/
+
+# Ignore node modules
+node_modules/
+
+# Ignore archive and backup folders
+archive/
+
+# Add more patterns as needed

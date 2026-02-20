@@ -1,0 +1,56 @@
+{
+  "source": "Carson Cook / Go Free Payments - Merchant Services Slayers Training",
+  "note": "Distilled from training_transcripts.txt and training_transcripts_v2.txt (110K chars total). Key techniques extracted for Alan's runtime reference.",
+  "distilled_techniques": {
+    "prospecting": {
+      "three_facts_framework": {
+        "fact_1": "The merchant is BUSY — respect their time, be fast, get to the point",
+        "fact_2": "They don't like salespeople — differentiate yourself from the hundreds of untrained agents who walk in daily",
+        "fact_3": "They're happy with what they have — if they weren't, they would have called you. Everyone is content until they find something better",
+        "usage": "Address ALL THREE before giving your pitch. This disarms objections before they come up. You beat them to the punch so they can't throw the same objections back at you."
+      },
+      "sell_the_appointment": "You are NOT selling processing. You are selling the APPOINTMENT. Light switch: ON = selling deals, OFF = selling appointments. Stay focused on getting the meeting. Fight for the appointment, not the close. Give a piece of the pie — the recipe comes tomorrow.",
+      "differentiation": "Sound DIFFERENT from every untrained agent walking in with 'Hi I'm here to save you money on processing.' That gets you kicked out instantly. Don't mention processing until you've addressed the three facts.",
+      "circle_technique": "Address the concern, give a small piece of value, then circle back to the appointment close. Repeat. Jordan Belfort style: address, circle, close. If merchant asks questions, answer briefly but redirect to setting the appointment.",
+      "never_close_same_day": "If merchant says 'let's do it now' — be cautious. Setting a separate appointment gives them time to research you, builds the first commitment, and you get their full attention tomorrow instead of half-attention today."
+    },
+    "sales_execution": {
+      "stop_being_fake": "Practice your pitch until it sounds natural, not scripted. Customers can smell fake instantly. Role-play until it becomes second nature. Turn off 20 years of 'used car salesman' energy. Be yourself following a process.",
+      "buyers_perspective": "Think from the buyer's side. They have zero stress — they don't HAVE to commit. They can tell you to leave any time. That's their power. Your job: show conviction so strong they feel it. People close because they see YOUR belief in the product.",
+      "process_not_pleasing": "Follow YOUR sales process. Don't let the merchant run the show with 'do this, then do that, then maybe I'll sign.' They're not the one who tells you how to sell — that's YOUR job. You've been selling longer than they've been buying. Use trade-offs: 'I can do that, but can you do this for me?'",
+      "dont_fear_loss": "Don't be afraid to lose something you don't have. If you don't have their signature yet, you can't lose it. Push confidently. Ask for business directly. 'What's the deal here? Why is this an issue? I know this is the right thing for you — you're the only one who doesn't see it yet.'",
+      "things_unsaid": "Sales people lose deals on things they DON'T say, not what they say. If you're afraid to say something — say it. Be direct. Break it down to the simplest level if confrontation arises."
+    },
+    "discovery_selling": {
+      "principle": "Customize your pitch based on what you DISCOVER, not what you ASSUME. Ask questions that reveal the merchant's specific pain points. The product fits everybody but you don't want to ram irrelevant info down their throat.",
+      "avoid": "DO NOT go directly into slamming your product. Don't say 'cash discount saves you money, charge your customers.' That's a bad pitch. Discover first, then tailor.",
+      "ammunition": "Discovery gives you ammunition for your close. Every answer they give becomes a reason to sign. You customize your presentation to add VALUE and BENEFITS to THIS individual.",
+      "qualification": "In the discovery phase, find out: What processor are they with? What are they paying? What issues have they had? What do they like about current setup? What would they change?"
+    },
+    "closing_techniques": {
+      "manager_call": "Brief recon to manager done IN FRONT of merchant: who they are, what you discovered, what issues they face. Shows professionalism, gets expert backup. Not incompetence — it's bringing a second expert to the table.",
+      "physical_materials": "Always have something to SHOW. Pitch deck, demo unit, cost graphs, comparison charts. Seeing is believing. A presentation packet proves what you're saying isn't just smooth talk.",
+      "be_strong_in_close": "Don't be weak. Don't tiptoe. If you believe in the product, push. 'I haven't even gotten to pushing yet but I'm going to take it there because I know this is the right thing for you.' People respect conviction.",
+      "after_yes": "When they say yes — MOVE. Don't celebrate, don't over-explain, don't give them a chance to rethink. 'Perfect, what's the business name?' Keep the momentum going."
+    },
+    "cash_discount_selling": {
+      "enthusiasm": "Sell it with EXTREME enthusiasm. It's the greatest product — merchant saves potentially $24K/year. Your conviction is contagious. If YOU wouldn't put it in your own business, don't sell it.",
+      "single_offer": "Present cash discount as ALL you do. 'This is what we do. This is ALL we do.' If you present both options, they ALWAYS choose traditional. Make it the only option. Mention traditional only as a fallback on your way out.",
+      "present_late": "Cash discount reveal comes LAST in the steps of the sale, AFTER relationship is established and rapport is built. You need trust before presenting a concept that might seem unfamiliar.",
+      "elephant_in_room": "Address the 3 objections BEFORE the merchant says them: (1) 'I don't want to charge my customers' — False, you don't lose business, proven in all 50 states. (2) 'I'll lose customers' — In rich areas, poor areas, every business type, it works. (3) 'It's not for my type of business' — Low ticket, high ticket, doesn't matter. Address all 3, THEN close.",
+      "gas_station_analogy": "Use the gas station comparison — everyone already understands two prices for cash and card. 'Same concept. Your price stays the same for cash. Card customers see a small line item. You pay $14.95 flat instead of hundreds.'"
+    },
+    "rookie_mistakes": {
+      "no_discovery": "Biggest mistake: shoving your pitch without asking questions first. Leads to irrelevant pitches and instant rejection.",
+      "bad_manager_calls": "Don't just hand off the phone with 'here talk to my manager.' Do a brief recon first so the manager has context.",
+      "no_materials": "Having nothing to show = no credibility. Always carry your pitch book, demo unit, cost comparison charts.",
+      "fear_of_closing": "Being afraid to push when you KNOW it's the right solution. The merchant's hesitation doesn't mean no — it means they need you to be stronger.",
+      "talking_past_close": "Once you ask for the business, SHUT UP. Let them answer. Don't fill the silence with more selling."
+    },
+    "tonality_and_presence": {
+      "throttle_and_brake": "Know when to push (throttle) and when to ease off (brake). Read the room. If they're warming up — throttle. If they're pulling back — brake, acknowledge, then re-engage.",
+      "real_person_energy": "Don't sound like a call center. Sound like a guy who knows his stuff calling from his office. Casual confidence, not corporate pitch.",
+      "match_then_lead": "Start at THEIR energy level, then gradually shift toward where the conversation needs to go. You don't drag them — you walk with them."
+    }
+  }
+}
