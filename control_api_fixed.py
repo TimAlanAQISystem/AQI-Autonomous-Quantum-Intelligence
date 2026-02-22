@@ -445,6 +445,19 @@ if MONITOR_ENDPOINTS_AVAILABLE:
     register_monitoring_endpoints(app)
     logger.info("[ORGAN] Call Monitor API endpoints registered")
 
+# [VOICEMAIL FALLBACK] Register voicemail routes
+try:
+    from voicemail_fallback import register_voicemail_routes
+    register_voicemail_routes(app)
+    VOICEMAIL_FALLBACK_AVAILABLE = True
+    logger.info("[VOICEMAIL] Fallback routes registered — Signature Card Service Direct Merchant Center")
+except ImportError:
+    VOICEMAIL_FALLBACK_AVAILABLE = False
+    logger.warning("[VOICEMAIL] voicemail_fallback.py not found — fallback routes not available")
+except Exception as _vf_err:
+    VOICEMAIL_FALLBACK_AVAILABLE = False
+    logger.warning(f"[VOICEMAIL] Fallback registration failed: {_vf_err}")
+
 # --- AQI VOICE MODULE INTEGRATION (Ascendrym Compliant) ---
 voice_functions_available = False
 disable_voice_module_for_testing = False
