@@ -1,0 +1,118 @@
+# ═══════════════════════════════════════════════════════════════
+#  AGENT ALAN — FIELD INTEGRATION CAMPAIGN CONFIG
+#  Phase 1-4 Governed Parameters
+# ═══════════════════════════════════════════════════════════════
+
+# ───────────────────────────────────────────────────────────────
+# PHASE 1: PRE-FLIGHT (5-10 validation calls)
+# ───────────────────────────────────────────────────────────────
+phase_1_preflight:
+  enabled: true
+  max_calls: 10
+  # 3 minutes between calls — maximum human oversight
+  spacing_seconds: 180
+  # Business hours (shifted to 9 AM for Monday ignition)
+  business_hours_start: 9
+  business_hours_end: 16
+  # Per-call segmented reports for diagnostic clarity
+  per_call_reports: true
+  # All calls manually monitored
+  require_manual_approval: true
+  # Halt on any failure
+  halt_on_failure: true
+  # No retries during pre-flight
+  max_attempts_per_lead: 1
+  success_criteria:
+    min_human_conversations: 2    # ≥30s connected to a human
+    max_hallucinations: 0
+    max_misclassifications: 0
+    max_transport_failures: 0
+    max_robotic_flags: 0
+
+# ───────────────────────────────────────────────────────────────
+# PHASE 2: MICRO-CAMPAIGN (10 merchants, controlled)
+# ───────────────────────────────────────────────────────────────
+phase_2_micro:
+  enabled: false                  # Enable after Phase 1 passes
+  batch_size: 10
+  # 3 minutes between calls
+  spacing_seconds: 180
+  business_hours_start: 9
+  business_hours_end: 16
+  # Per-call segmented reports for diagnostic clarity
+  per_call_reports: true
+  max_attempts_per_lead: 2
+  # Vertical diversity: require at least 3 different business types
+  min_vertical_diversity: 3
+  # Geographic diversity: require at least 2 different area codes
+  min_area_code_diversity: 2
+  # Quality gate: halt campaign if quality drops
+  quality_gate:
+    max_consecutive_no_answer: 4
+    max_robotic_flags: 1          # 1 flag = warning, 2 = halt
+    min_progression_rate: 0.10    # At least 10% of connected calls show progression
+  success_criteria:
+    min_human_conversations: 3
+    min_positive_progressions: 1  # ≥1 meeting/statement/pricing discussion
+    max_hallucinations: 0
+    max_misclassifications: 0
+
+# ───────────────────────────────────────────────────────────────
+# PHASE 3: PACING-LIMITED CAMPAIGN (25-50 merchants)
+# ───────────────────────────────────────────────────────────────
+phase_3_pacing:
+  enabled: false
+  batch_size: 50
+  # 90 seconds between calls (faster pacing)
+  spacing_seconds: 90
+  business_hours_start: 9
+  business_hours_end: 17
+  max_attempts_per_lead: 3
+  max_daily_calls: 40
+  # Re-evaluate readiness every 10 calls
+  recheck_interval: 10
+  quality_gate:
+    max_consecutive_no_answer: 6
+    max_robotic_flags: 2
+    min_progression_rate: 0.08
+    cooldown_on_score_drop: 65
+
+# ───────────────────────────────────────────────────────────────
+# PHASE 4: FULL OUTBOUND CAMPAIGN (100-300 merchants)
+# ───────────────────────────────────────────────────────────────
+phase_4_full:
+  enabled: false
+  batch_size: 200
+  # 60 seconds between calls (production pacing)
+  spacing_seconds: 60
+  business_hours_start: 8
+  business_hours_end: 17
+  max_attempts_per_lead: 3
+  max_daily_calls: 60
+  recheck_interval: 20
+  quality_gate:
+    max_consecutive_no_answer: 8
+    max_robotic_flags: 3
+    min_progression_rate: 0.06
+    cooldown_on_score_drop: 60
+
+# ───────────────────────────────────────────────────────────────
+# GLOBAL SETTINGS
+# ───────────────────────────────────────────────────────────────
+global:
+  # Control API
+  control_api_url: "http://127.0.0.1:8777"
+  # Minimum readiness score (from campaign_optimization_engine)
+  min_readiness_score: 75
+  # Cooldown between calls (enforced by cooldown_manager)
+  # Note: spacing_seconds is the CAMPAIGN spacing; cooldown_manager
+  # enforces a SEPARATE minimum via timing_config.json
+  respect_cooldown_manager: true
+  # Regime engine integration
+  use_regime_engine: true
+  # Campaign watch (quality monitoring)
+  enable_campaign_watch: true
+  # Log directory
+  log_dir: "logs"
+  # Report directory
+  report_dir: "logs/field_reports"

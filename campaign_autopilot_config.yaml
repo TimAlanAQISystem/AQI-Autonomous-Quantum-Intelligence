@@ -1,0 +1,8 @@
+min_readiness_score: 80
+# Maximum calls per day. Autopilot stops after this limit.
+max_daily_calls: 200
+# Micro-batch size determines how many calls are made before re-evaluating readiness scores.
+# Calls are executed SERIALLY (one at a time), not concurrently.
+micro_batch_size: 20
+cooldown_on_score_drop: 70
+recheck_interval_calls: 20

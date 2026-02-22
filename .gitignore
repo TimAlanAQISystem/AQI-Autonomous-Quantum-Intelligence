@@ -1,41 +1,90 @@
-# Ignore Python cache and environment
+# ═══════════════════════════════════════════════════════════════
+# AQI Autonomous Intelligence — .gitignore
+# Keep repo lean: ONLY source code, configs, and documentation
+# ═══════════════════════════════════════════════════════════════
+
+# ── Python ──
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .venv/
+*.egg-info/
 
-# Ignore logs and temporary files
+# ── Logs & Temp ──
 logs/
 *.log
 *.tmp
 *.bak
+*.out
 
-# Ignore system files
-.DS_Store
-Thumbs.db
+# ── Data & State (never commit) ──
+*.db
+*.sqlite
+*.sqlite3
+*.jsonl
+state/
+data/
+call_sessions.json
+iqcore_dashboard_state.json
+merchant_profiles.json
+merchant_queue_jan14_archived_*.json
+_merchant_queue_GARBAGE_BACKUP.json
 
-# Ignore environment and secrets
+# ── Secrets & Keys ──
 .env
 *.enc
+*.key
+alan_encryption.key
+Alan_Deployment/
 
-# Ignore VS Code and other IDE settings
+# ── System / IDE ──
+.DS_Store
+Thumbs.db
 .vscode/
 .idea/
 
-# Ignore test outputs
+# ── Text outputs (but allow specific .txt we force-add) ──
 *.txt
-*.out
-*.db
 
-# Ignore build and dist folders
+# ── Binaries & Executables ──
+*.exe
+*.dll
+*.so
+*.dylib
+
+# ── Build / Deploy ──
 dist/
 build/
-
-# Ignore node modules
 node_modules/
+Procfile
 
-# Ignore archive and backup folders
+# ── Archives & Backups ──
 archive/
+_ARCHIVE/
+_protected_production/
+snapshots/
 
-# Add more patterns as needed
+# ── Temp diagnostic scripts (prefixed _) ──
+# (We selectively force-add important ones like _preflight_field_validation.py)
+_tmp_*
+_temp_*
+distil_patch_*
+
+# ── Frontend / Static assets ──
+static/
+src/
+
+# ── Launch scripts (OS-specific, not portable) ──
+*.bat
+*.cmd
+*.sh
+*.ps1
+
+# ── Large generated docs ──
+outcome_attribution_log.jsonl
+pghs_events.jsonl
+training_knowledge_distilled.json
+
+# ── Misc ──
+twiml_conversation_relay.xml

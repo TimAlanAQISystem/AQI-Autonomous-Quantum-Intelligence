@@ -1,0 +1,221 @@
+{
+  "_meta": {
+    "description": "Alan Timing Mixing Board — Single source of truth for ALL timing values",
+    "version": "1.0.0",
+    "created": "2026-02-19",
+    "author": "Tim (Founder) + Copilot",
+    "warning": "Changes here take effect on server restart. Stay within min/max bounds."
+  },
+
+  "voice_pacing": {
+    "_section": "How fast Alan speaks and how much he says per turn",
+    "tempo_multiplier": {
+      "value": 1.06,
+      "min": 1.00,
+      "max": 1.20,
+      "unit": "multiplier",
+      "description": "Audio time-compression. 1.06 = 6% faster playback. Compounds with TTS speed."
+    },
+    "tts_default_speed": {
+      "value": 1.12,
+      "min": 0.90,
+      "max": 1.30,
+      "unit": "multiplier",
+      "description": "Default TTS speed when no prosody intent overrides. 1.12 = 12% faster than baseline."
+    },
+    "max_sentences": {
+      "value": 5,
+      "min": 1,
+      "max": 8,
+      "unit": "count",
+      "description": "Maximum sentences per turn. Extras get dropped. Was 3 (too tight), now 5."
+    },
+    "question_cap_per_turn": {
+      "value": 1,
+      "min": 1,
+      "max": 3,
+      "unit": "count",
+      "description": "Max questions per turn. Prevents double-question pattern. 1 = one question max."
+    }
+  },
+
+  "prosody_speed_map": {
+    "_section": "Per-intent TTS speed overrides. Each intent gets its own speaking pace.",
+    "neutral":             1.12,
+    "empathetic_reflect":  1.02,
+    "reassure_stability":  1.06,
+    "confident_recommend": 1.08,
+    "curious_probe":       1.16,
+    "casual_rapport":      1.12,
+    "micro_hesitate":      1.10,
+    "objection_handling":  1.06,
+    "formal_respectful":   1.08,
+    "turn_yield":          1.08,
+    "repair_clarify":      1.08,
+    "closing_momentum":    1.14
+  },
+
+  "turn_timing": {
+    "_section": "How long Alan waits for the caller and how fast he responds",
+    "turn_timeout": {
+      "value": 3.0,
+      "min": 1.5,
+      "max": 8.0,
+      "unit": "seconds",
+      "description": "How long to wait after caller stops speaking before Alan responds. Was 6.3 (too slow), now 3.0."
+    }
+  },
+
+  "llm_parameters": {
+    "_section": "LLM generation parameters — controls response length and creativity",
+    "relay_max_tokens": {
+      "value": 80,
+      "min": 40,
+      "max": 200,
+      "unit": "tokens",
+      "description": "Max tokens for relay server LLM calls (short conversational turns)."
+    },
+    "direct_max_tokens": {
+      "value": 150,
+      "min": 60,
+      "max": 300,
+      "unit": "tokens",
+      "description": "Max tokens for Alan direct LLM calls (fuller responses)."
+    },
+    "temperature": {
+      "value": 0.5,
+      "min": 0.1,
+      "max": 1.0,
+      "unit": "float",
+      "description": "LLM temperature for relay calls. Lower = more focused, higher = more creative."
+    },
+    "frequency_penalty": {
+      "value": 0.5,
+      "min": 0.0,
+      "max": 1.5,
+      "unit": "float",
+      "description": "LLM frequency penalty. Reduces repetitive phrasing."
+    }
+  },
+
+  "call_pacing": {
+    "_section": "Call-level timing — ring duration, cooldowns, machine detection",
+    "ring_timeout": {
+      "value": 50,
+      "min": 20,
+      "max": 90,
+      "unit": "seconds",
+      "description": "How long to let the phone ring before giving up. 50 = ~10-12 rings."
+    },
+    "post_call_cooldown": {
+      "value": 30,
+      "min": 10,
+      "max": 120,
+      "unit": "seconds",
+      "description": "Server-level cooldown between calls (reflection window)."
+    },
+    "campaign_cooldown": {
+      "value": 150,
+      "min": 30,
+      "max": 600,
+      "unit": "seconds",
+      "description": "Campaign cooldown between calls (tools/cooldown_manager). 150 = 2.5 minutes."
+    },
+    "machine_detection": {
+      "value": "Enable",
+      "options": ["Enable", "DetectMessageEnd", "Disable"],
+      "description": "Twilio answering machine detection mode."
+    }
+  },
+
+  "health_monitoring": {
+    "_section": "System health check intervals",
+    "health_check_interval": {
+      "value": 30,
+      "min": 10,
+      "max": 120,
+      "unit": "seconds",
+      "description": "How often the System Health Guardian runs basic checks."
+    },
+    "deep_check_interval": {
+      "value": 150,
+      "min": 60,
+      "max": 600,
+      "unit": "seconds",
+      "description": "How often the Guardian runs deep diagnostics (credential liveness, DB integrity)."
+    }
+  },
+
+  "breath_patterns": {
+    "_section": "Human breath injection timing for natural speech cadence",
+    "patterns": [
+      {"type": "inhale",  "duration_ms": 100, "peak_amp": 0.008},
+      {"type": "inhale",  "duration_ms": 130, "peak_amp": 0.010},
+      {"type": "inhale",  "duration_ms": 80,  "peak_amp": 0.006},
+      {"type": "exhale",  "duration_ms": 140, "peak_amp": 0.007},
+      {"type": "exhale",  "duration_ms": 110, "peak_amp": 0.009}
+    ]
+  },
+
+  "prosody_silence_frames": {
+    "_section": "Inter-sentence silence frames per prosody intent. 1 frame ≈ 20ms. Research-backed: Stivers et al. 2009 (mean gap +208ms), Kendrick 2015 (trouble threshold 700ms), Gong.io (2M sales calls — top reps pause longer after objections).",
+    "frame_duration_ms": 20,
+    "neutral":             10,
+    "empathetic_reflect":  14,
+    "reassure_stability":  12,
+    "confident_recommend":  8,
+    "curious_probe":        7,
+    "casual_rapport":       5,
+    "micro_hesitate":       6,
+    "objection_handling":  15,
+    "formal_respectful":    7,
+    "turn_yield":           4,
+    "repair_clarify":      10,
+    "closing_momentum":     5
+  },
+
+  "silence_thresholds": {
+    "_section": "Conversation-science silence boundaries. Kendrick 2015: within-speaker gap 520ms, trouble threshold 700ms, standard max 1s. These mark the psychological edges — past trouble_threshold, callers sense something is wrong.",
+    "trouble_threshold_ms": {
+      "value": 700,
+      "min": 400,
+      "max": 1000,
+      "unit": "milliseconds",
+      "description": "Silence beyond this feels abnormal to callers (Kendrick 2015). Alan should never exceed this between sentences."
+    },
+    "standard_max_silence_ms": {
+      "value": 1000,
+      "min": 600,
+      "max": 1500,
+      "unit": "milliseconds",
+      "description": "Absolute max silence before callers disengage. Stivers 2009: 1s = standard maximum gap in English conversation."
+    }
+  },
+
+  "conversation_science": {
+    "_section": "Research references — NOT used in code, purely for human documentation of why values are what they are.",
+    "sources": [
+      {
+        "name": "Stivers et al. 2009 (PNAS)",
+        "dataset": "3,500+ exchanges across 10 languages",
+        "key_findings": "Mean gap +208ms, English median 0ms, universals of turn-taking"
+      },
+      {
+        "name": "Kendrick 2015 (Frontiers in Psychology)",
+        "dataset": "338 question-answer exchanges",
+        "key_findings": "Within-speaker pause 520ms, trouble threshold 700ms, standard max 1s"
+      },
+      {
+        "name": "Gong.io Sales Call Analysis",
+        "dataset": "2,000,000+ real sales calls analyzed by AI/ML",
+        "key_findings": "Talk ratio 55:45 on successful cold calls, top reps pause longer after objections, 77% more speaker switches on successful calls, prospect monologue 3.5s successful vs 8s unsuccessful"
+      }
+    ],
+    "design_principles": [
+      "neutral bumped 120ms → 200ms to match Stivers mean gap (+208ms)",
+      "objection_handling bumped 180ms → 300ms — Gong: top reps pause ages longer after objections",
+      "No silence value should exceed trouble_threshold (700ms) between sentences",
+      "empathetic_reflect at 280ms — near Stivers mean, gives emotional breath space"
+    ]
+  }
+}
