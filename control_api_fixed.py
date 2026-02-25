@@ -386,40 +386,11 @@ async def lifespan(app: FastAPI):
         asyncio.create_task(_education_learning_cycle())
         logger.info("[LIFESPAN] Education learning cycle started (daily)")
         
-        # [AUTO-DIALER] Resume campaign automatically after server restart.
-        # Tim's directive: Alan should be conducting business, not sitting idle.
-        # Waits 30s for all systems to stabilize, then auto-starts campaign.
-        async def _auto_resume_campaign():
-            global CAMPAIGN_ACTIVE, CAMPAIGN_TASK
-            try:
-                await asyncio.sleep(30)  # Let everything stabilize
-                if CAMPAIGN_ACTIVE:
-                    logger.info("[AUTO-DIALER] Campaign already active, skipping auto-resume")
-                    return
-                if not LEAD_DB_AVAILABLE or not lead_db:
-                    logger.warning("[AUTO-DIALER] Lead DB not available, cannot auto-resume")
-                    return
-                next_lead = lead_db.get_next_lead()
-                if not next_lead:
-                    logger.info("[AUTO-DIALER] No callable leads available, staying idle")
-                    return
-                callable_count = lead_db.get_stats().get('callable_now', 0)
-                logger.info(f"[AUTO-DIALER] Auto-resuming campaign — {callable_count} callable leads available")
-                CAMPAIGN_ACTIVE = True
-                # [COST GUARD] Cap auto-resume to 10 calls per session with 300s pacing.
-                # Tim's directive: "Do not allow for the leads to be rapid fired. That cost money."
-                # Phase 4 testing: wider spacing (5 min) to protect budget.
-                # Manual /campaign/start can override these limits.
-                _auto_max = min(callable_count, 10)
-                CAMPAIGN_TASK = asyncio.create_task(_run_campaign(
-                    max_calls=_auto_max,
-                    delay_between=300  # 300s (5 min) between calls — Phase 4 testing pacing
-                ))
-                logger.info(f"[AUTO-DIALER] Campaign auto-started: max_calls={_auto_max}, delay=300s")
-            except Exception as e:
-                logger.error(f"[AUTO-DIALER] Auto-resume failed: {e}")
-        asyncio.create_task(_auto_resume_campaign())
-        logger.info("[LIFESPAN] Auto-dialer resume scheduled (30s delay)")
+        # [AUTO-DIALER] DISABLED — campaigns now require explicit start via POST /campaign/start
+        # Previous behavior auto-resumed campaigns 30s after boot, which caused race conditions
+        # with mode switching (instructor mode set after auto-dialer already fired).
+        # Tim can start campaigns explicitly when ready.
+        logger.info("[AUTO-DIALER] Auto-resume DISABLED — use POST /campaign/start to begin")
         
         logger.info("[LIFESPAN] Minimal startup complete.")
         yield  # Application runs here
@@ -1106,6 +1077,60 @@ async def deep_layer_status():
     }
 
 # =============================================================================
+# SYSTEM MODE MANAGEMENT — Campaign vs Instructor vs Idle
+# =============================================================================
+# Global mode state. Controls how Alan operates:
+#   - "campaign"   : Sales mode — calling leads, applying 2-strike, rate governor
+#   - "instructor" : Training mode — calling Tim's colleagues for practice
+#   - "idle"       : Standing by — no active calls, no campaigns
+# =============================================================================
+SYSTEM_MODE = "idle"  # Default on startup
+
+@app.get("/mode")
+async def get_mode():
+    """Get current system mode."""
+    global SYSTEM_MODE
+    return {
+        "mode": SYSTEM_MODE,
+        "campaign_active": CAMPAIGN_ACTIVE,
+        "available_modes": ["campaign", "instructor", "idle"],
+    }
+
+@app.post("/mode/set")
+async def set_mode(request: Request):
+    """Switch system mode. Stops campaign if switching away from campaign mode."""
+    global SYSTEM_MODE, CAMPAIGN_ACTIVE, CAMPAIGN_TASK
+    data = await request.json()
+    new_mode = data.get("mode", "").lower().strip()
+    
+    if new_mode not in ("campaign", "instructor", "idle"):
+        return JSONResponse(status_code=400, content={
+            "status": "error", 
+            "message": f"Invalid mode '{new_mode}'. Valid: campaign, instructor, idle"
+        })
+    
+    old_mode = SYSTEM_MODE
+    
+    # If leaving campaign mode, stop any active campaign
+    if old_mode == "campaign" and new_mode != "campaign":
+        if CAMPAIGN_ACTIVE:
+            CAMPAIGN_ACTIVE = False
+            if CAMPAIGN_TASK:
+                CAMPAIGN_TASK.cancel()
+                CAMPAIGN_TASK = None
+            logger.info(f"[MODE] Campaign stopped — switching to {new_mode}")
+    
+    SYSTEM_MODE = new_mode
+    logger.info(f"[MODE] System mode changed: {old_mode} → {new_mode}")
+    
+    return {
+        "status": "ok",
+        "previous_mode": old_mode,
+        "current_mode": new_mode,
+        "message": f"Alan is now in {new_mode.upper()} mode",
+    }
+
+# =============================================================================
 # INSTRUCTOR MODE — Governed Learning API
 # =============================================================================
 # Tim's approval workflow for instructor training sessions.
@@ -1192,7 +1217,7 @@ async def instructor_sessions():
                 "instructor": session.instructor_name,
                 "turn_count": session.turn_count,
                 "signal_count": session.signal_count,
-                "started": session.started_at.isoformat() if hasattr(session, 'started_at') else "unknown",
+                "started": session.start_time if hasattr(session, 'start_time') else "unknown",
             }
         
         # Completed sessions from log file
@@ -1228,8 +1253,18 @@ async def trigger_call(request: Request):
         logger.error("[DIALER] Audio Pipeline Not Ready (Cache Empty). Aborting call.")
         return JSONResponse(status_code=503, content={"status": "error", "message": "Audio Pipeline Initializing"})
 
-    # 2. Check Governor
-    if not can_fire_call():
+    # Parse data early to check for instructor/demo mode bypass
+    try:
+        _early_data = await request.json()
+    except Exception:
+        _early_form = await request.form()
+        _early_data = dict(_early_form)
+    _early_instructor = str(_early_data.get('instructor_mode', 'false')).lower() == 'true'
+    _early_demo = str(_early_data.get('demo_mode', '')).strip()
+    _bypass_governor = _early_instructor or bool(_early_demo)
+    
+    # 2. Check Governor (bypassed for instructor/demo calls)
+    if not _bypass_governor and not can_fire_call():
         return JSONResponse(
             status_code=429,
             content={"status": "blocked", "reason": "rate_governor", "cooldown": COOLDOWN}
@@ -1241,30 +1276,28 @@ async def trigger_call(request: Request):
                 # 2. Lazy Load Dialer
                 client = ensure_dialer_ready()
                 
-                # 3. Parse Data
-                try:
-                    data = await request.json()
-                except Exception:
-                    form_data = await request.form()
-                    data = dict(form_data)
+                # 3. Use already-parsed data
+                data = _early_data
                     
                 target_number = data.get("to")
                 if not target_number:
                     return JSONResponse(status_code=400, content={"status": "error", "message": "Missing 'to' number"})
                 
                 # [2-STRIKE PRE-CHECK] Tim's directive: "if it hits 2, that is it for that number"
-                try:
-                    from lead_database import LeadDB
-                    _precall_db = LeadDB()
-                    if _precall_db.apply_two_strike_check(target_number):
-                        logger.warning(f"[2-STRIKE] BLOCKED call to {target_number} — number has reached 2-strike limit")
-                        mark_call_end()
-                        return JSONResponse(status_code=403, content={
-                            "status": "blocked",
-                            "message": "2-strike rule: this number has failed 2+ times and is exhausted"
-                        })
-                except Exception as _pre_err:
-                    logger.debug(f"[2-STRIKE] Pre-check failed (allowing call): {_pre_err}")
+                # Bypassed for instructor/demo calls — these are training, not sales
+                if not _bypass_governor:
+                    try:
+                        from lead_database import LeadDB
+                        _precall_db = LeadDB()
+                        if _precall_db.apply_two_strike_check(target_number):
+                            logger.warning(f"[2-STRIKE] BLOCKED call to {target_number} — number has reached 2-strike limit")
+                            mark_call_end()
+                            return JSONResponse(status_code=403, content={
+                                "status": "blocked",
+                                "message": "2-strike rule: this number has failed 2+ times and is exhausted"
+                            })
+                    except Exception as _pre_err:
+                        logger.debug(f"[2-STRIKE] Pre-check failed (allowing call): {_pre_err}")
                     
                 from_number = os.environ.get('TWILIO_PHONE_NUMBER')
                 
@@ -1301,6 +1334,7 @@ async def trigger_call(request: Request):
                 business_name = data.get('business', data.get('business_name', ''))
                 instructor_mode = str(data.get('instructor_mode', 'false')).lower()
                 demo_mode = str(data.get('demo_mode', '')).strip()
+                _is_instructor_call = instructor_mode == 'true'
                 twiml_url = f"{base_url}/twilio/outbound?prospect_name={quote(str(prospect_name))}&business_name={quote(str(business_name))}&instructor_mode={instructor_mode}&demo_mode={quote(str(demo_mode))}"
                 status_callback_url = f"{base_url}/twilio/events"
                 
@@ -1317,8 +1351,8 @@ async def trigger_call(request: Request):
                 # We wrap the blocking Twilio SDK call in a thread pool to avoid blocking the event loop
                 loop = asyncio.get_running_loop()
                 
-                # [DEMO MODE] Skip AMD for demo/personal calls — connect straight through
-                _amd_mode = None if demo_mode else TIMING.machine_detection
+                # [DEMO/INSTRUCTOR MODE] Skip AMD for demo/personal/training calls — connect straight through
+                _amd_mode = None if (demo_mode or _is_instructor_call) else TIMING.machine_detection
                 
                 try:
                     call = await asyncio.wait_for(
@@ -1394,7 +1428,13 @@ except ImportError:
 @app.post("/campaign/start")
 async def start_campaign(request: Request):
     """Start an automated campaign that processes leads from SQLite database"""
-    global CAMPAIGN_ACTIVE, CAMPAIGN_TASK
+    global CAMPAIGN_ACTIVE, CAMPAIGN_TASK, SYSTEM_MODE
+    
+    if SYSTEM_MODE == "instructor":
+        return JSONResponse(status_code=409, content={
+            "status": "blocked", 
+            "reason": "Alan is in INSTRUCTOR mode. Switch to campaign mode first: POST /mode/set {\"mode\": \"campaign\"}"
+        })
     
     if not LEAD_DB_AVAILABLE:
         raise HTTPException(status_code=503, detail="Lead database not available")

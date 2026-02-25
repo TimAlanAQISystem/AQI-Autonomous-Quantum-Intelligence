@@ -61,7 +61,7 @@ FALLBACK_TWIML = f"""<?xml version="1.0" encoding="UTF-8"?>
         Thank you for calling {BUSINESS_NAME}.
         We are currently unavailable to take your call.
         Our business hours are {BUSINESS_HOURS}.
-        Please leave a message after the tone, and a representative will return your call as soon as possible.
+        Please leave a message after the tone, and Alan will return your call as soon as possible.
     </Say>
     <Record
         maxLength="{VOICEMAIL_MAX_LENGTH}"
@@ -83,7 +83,7 @@ LOCAL_FALLBACK_TWIML = f"""<?xml version="1.0" encoding="UTF-8"?>
     <Say voice="Polly.Matthew" language="en-US">
         Thank you for calling {BUSINESS_NAME}.
         Our system is currently being updated.
-        Please leave a message after the tone, and we will return your call shortly.
+        Please leave a message after the tone, and Alan will return your call shortly.
     </Say>
     <Record
         maxLength="{VOICEMAIL_MAX_LENGTH}"
@@ -103,7 +103,7 @@ LOCAL_FALLBACK_TWIML = f"""<?xml version="1.0" encoding="UTF-8"?>
 AFTER_RECORD_TWIML = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
     <Say voice="Polly.Matthew" language="en-US">
-        Thank you. Your message has been received. A representative from {BUSINESS_NAME} will return your call. Goodbye.
+        Thank you. Your message has been received. Alan from {BUSINESS_NAME} will return your call. Goodbye.
     </Say>
     <Hangup/>
 </Response>"""
@@ -297,7 +297,7 @@ def deploy_fallback() -> dict:
         # (since our server is down when this fires)
         standalone_twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-    <Say voice="Polly.Matthew" language="en-US">Thank you for calling {BUSINESS_NAME}. We are currently unavailable to take your call. Our business hours are {BUSINESS_HOURS}. Please leave a message after the tone, and a representative will return your call as soon as possible.</Say>
+    <Say voice="Polly.Matthew" language="en-US">Thank you for calling {BUSINESS_NAME}. We are currently unavailable to take your call. Our business hours are {BUSINESS_HOURS}. Please leave a message after the tone, and Alan will return your call as soon as possible.</Say>
     <Record maxLength="{VOICEMAIL_MAX_LENGTH}" timeout="{VOICEMAIL_TIMEOUT}" transcribe="true" playBeep="true" />
     <Say voice="Polly.Matthew" language="en-US">We did not receive a message. Thank you for calling {BUSINESS_NAME}. Goodbye.</Say>
 </Response>"""
@@ -379,7 +379,7 @@ def deploy_fallback() -> dict:
     except Exception as e:
         # If TwiML Bin creation fails, try the echo twimlet approach
         try:
-            echo_twiml_simple = f'<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="Polly.Matthew">Thank you for calling {BUSINESS_NAME}. We are currently unavailable. Our hours are {BUSINESS_HOURS}. Please leave a message after the tone.</Say><Record maxLength="{VOICEMAIL_MAX_LENGTH}" timeout="{VOICEMAIL_TIMEOUT}" playBeep="true"/><Say voice="Polly.Matthew">Thank you for calling. Goodbye.</Say></Response>'
+            echo_twiml_simple = f'<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="Polly.Matthew">Thank you for calling {BUSINESS_NAME}. We are currently unavailable. Our hours are {BUSINESS_HOURS}. Please leave a message after the tone and Alan will return your call.</Say><Record maxLength="{VOICEMAIL_MAX_LENGTH}" timeout="{VOICEMAIL_TIMEOUT}" playBeep="true"/><Say voice="Polly.Matthew">Thank you for calling. Goodbye.</Say></Response>'
             
             encoded_twiml = urllib.parse.quote(echo_twiml_simple)
             fallback_url = f"https://twimlets.com/echo?Twiml={encoded_twiml}"

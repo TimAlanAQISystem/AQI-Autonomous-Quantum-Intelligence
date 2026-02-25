@@ -2457,6 +2457,35 @@ class AQIConversationRelayServer:
             return
         
         # ================================================================
+        # [STT GARBAGE DETECTOR] Detect STT hallucination / repetition loops
+        # ================================================================
+        # [FIX 2026-02-24] STT (especially Whisper) can hallucinate when
+        # processing silence, hold music, or noise — producing garbage like
+        # "married married married married..." x100. This gets misclassified
+        # as human speech (high word count, no VM patterns). Detect and drop.
+        # ================================================================
+        _stt_words = text.split()
+        if len(_stt_words) >= 6:
+            from collections import Counter
+            _word_freq = Counter(w.lower().strip('.,!?') for w in _stt_words)
+            _most_common_word, _most_common_count = _word_freq.most_common(1)[0]
+            # If one word appears 5+ times AND makes up >40% of all words → STT garbage
+            if _most_common_count >= 5 and _most_common_count / len(_stt_words) > 0.40:
+                logger.warning(f"[STT-GARBAGE] Detected repetition hallucination: "
+                               f"'{_most_common_word}' x{_most_common_count} in {len(_stt_words)} words. "
+                               f"Dropping: '{text[:60]}...'")
+                # Mark as non-human, non-learning
+                context['_ccnm_ignore'] = True
+                # If this is the first utterance, classify as unknown and don't engage
+                if not context.get('_eab_classified'):
+                    context['_eab_classified'] = True
+                    context['_eab_env_class'] = 'UNKNOWN'
+                    context['_eab_action'] = EnvironmentAction.FALLBACK if EAB_WIRED else None
+                    context['_eab_confidence'] = 0.0
+                    logger.info("[STT-GARBAGE] First utterance was garbage — classified UNKNOWN, skipping cognition")
+                return
+
+        # ================================================================
         # [EAB] ENVIRONMENT-AWARE BEHAVIOR — FIRST-UTTERANCE CLASSIFIER
         # ================================================================
         # Runs on every merchant utterance until classification is locked.
@@ -2609,6 +2638,112 @@ class AQIConversationRelayServer:
                             context['stream_ended'] = True
                         logger.info(f"[EAB] Answering service abort. class={_eab_result.env_class.name}")
                         return
+
+                # --- CONTINUOUS VM/IVR RE-EVALUATION for FALLBACK/CONTINUE_MISSION ---
+                # [FIX 2026-02-24] When EAB initially classified as UNKNOWN→FALLBACK
+                # or HUMAN→CONTINUE_MISSION, garbled first utterances cause VMs to be
+                # misclassified. Re-check each subsequent merchant turn for VM/IVR evidence.
+                # If a clear VM/IVR pattern appears on turn 2+, abort immediately.
+                elif _eab_action in (EnvironmentAction.CONTINUE_MISSION, EnvironmentAction.FALLBACK):
+                    _recheck = _eab.classify(text)
+                    if _recheck.action == EnvironmentAction.DROP_AND_ABORT:
+                        # VM detected on subsequent turn — abort
+                        _merchant_name = context.get('prospect_info', {}).get('company', '')
+                        _template_text = EnvironmentBehaviorTemplates.get_template(
+                            _recheck.env_class, _merchant_name
+                        )
+                        if _template_text and websocket:
+                            logger.info(f"[EAB-RECHECK] VOICEMAIL DETECTED on subsequent turn: '{_template_text}'")
+                            try:
+                                asyncio.create_task(
+                                    self.synthesize_and_stream_greeting(
+                                        websocket, _template_text, context.get('streamSid')
+                                    )
+                                )
+                            except Exception as _eab_err:
+                                logger.debug(f"[EAB-RECHECK] VM drop TTS failed: {_eab_err}")
+                        context['_evolution_outcome'] = 'voicemail_eab'
+                        context['_evolution_confidence'] = _recheck.confidence
+                        context['_evolution_band'] = 'high'
+                        context['_evolution_engagement'] = 0.0
+                        context['_ccnm_ignore'] = True
+                        _fsm = context.get('_call_fsm')
+                        if _fsm:
+                            _fsm.end_call(reason='voicemail_eab_recheck')
+                        else:
+                            context['stream_ended'] = True
+                        logger.info(f"[EAB-RECHECK] VM abort on subsequent turn. class={_recheck.env_class.name}")
+                        if CALL_CAPTURE_WIRED:
+                            _cdc_environment(
+                                context.get('call_sid', ''),
+                                env_class=_recheck.env_class.name,
+                                env_confidence=_recheck.confidence,
+                                behavior='DROP_AND_ABORT',
+                                outcome='voicemail_eab_recheck',
+                                utterance=text[:200],
+                                cycles=context.get('_eab_cycle', 0) + 1,
+                            )
+                        return
+                    elif _recheck.action == EnvironmentAction.DECLINE_AND_ABORT:
+                        # Answering service detected on subsequent turn — abort
+                        _merchant_name = context.get('prospect_info', {}).get('company', '')
+                        _template_text = EnvironmentBehaviorTemplates.get_template(
+                            _recheck.env_class, _merchant_name
+                        )
+                        if _template_text and websocket:
+                            try:
+                                asyncio.create_task(
+                                    self.synthesize_and_stream_greeting(
+                                        websocket, _template_text, context.get('streamSid')
+                                    )
+                                )
+                            except Exception:
+                                pass
+                        context['_evolution_outcome'] = 'answering_service_eab'
+                        context['_evolution_confidence'] = _recheck.confidence
+                        context['_evolution_band'] = 'medium'
+                        context['_evolution_engagement'] = 0.0
+                        context['_ccnm_ignore'] = True
+                        _fsm = context.get('_call_fsm')
+                        if _fsm:
+                            _fsm.end_call(reason='answering_service_eab_recheck')
+                        else:
+                            context['stream_ended'] = True
+                        logger.info(f"[EAB-RECHECK] Answering service abort on subsequent turn")
+                        return
+                    elif _recheck.action in (EnvironmentAction.NAVIGATE, EnvironmentAction.PASS_THROUGH):
+                        # IVR/screener detected — switch mode so IVR loop guard takes over
+                        logger.info(f"[EAB-RECHECK] Environment switch: {_eab_action.name} → {_recheck.action.name} "
+                                    f"(class={_recheck.env_class.name}, conf={_recheck.confidence:.2f})")
+                        context['_eab_action'] = _recheck.action
+                        context['_eab_env_class'] = _recheck.env_class.name
+                        context['_eab_cycle'] = 1
+                        context['_ccnm_ignore'] = True
+                        _merchant_name = context.get('prospect_info', {}).get('company', '')
+                        _template_text = EnvironmentBehaviorTemplates.get_template(
+                            _recheck.env_class, _merchant_name, cycle=0
+                        )
+                        if _template_text and websocket:
+                            try:
+                                asyncio.create_task(
+                                    self.synthesize_and_stream_greeting(
+                                        websocket, _template_text, context.get('streamSid')
+                                    )
+                                )
+                            except Exception:
+                                pass
+                        if CALL_CAPTURE_WIRED:
+                            _cdc_environment(
+                                context.get('call_sid', ''),
+                                env_class=_recheck.env_class.name,
+                                env_confidence=_recheck.confidence,
+                                behavior=_recheck.action.name,
+                                outcome='eab_recheck_switch',
+                                utterance=text[:200],
+                                cycles=1,
+                            )
+                        return
+                    # else: still looks like human/unknown — fall through to normal pipeline
 
                 # --- SUBSEQUENT UTTERANCES in screener/IVR mode ---
                 elif _eab_action in (EnvironmentAction.PASS_THROUGH, EnvironmentAction.NAVIGATE):
@@ -3814,12 +3949,47 @@ class AQIConversationRelayServer:
                                             EnvironmentAction.PASS_THROUGH if EAB_WIRED else None,
                                             EnvironmentAction.NAVIGATE if EAB_WIRED else None,
                                         ) if EAB_WIRED else False
-                                        for _m in msgs:
+
+                                        # [2026-02-24 FIX] HUMAN CONVERSATION GUARD
+                                        # If a real back-and-forth has happened (2+ meaningful turns
+                                        # AND recent speech), this is a HUMAN — not a voicemail.
+                                        # Voicemails don't have multi-turn back-and-forth.
+                                        # Tim: "What my concern would be, is if it may interfere
+                                        # with an actual human caller?"
+                                        _has_real_conversation = (
+                                            meaningful_turns >= 2
+                                            and _real_turns >= 2
+                                            and silence_duration < 30.0
+                                        )
+
+                                        # [2026-02-24 FIX] AMBIGUOUS PHRASE GUARD
+                                        # These phrases are used by BOTH voicemails AND real humans
+                                        # (receptionists). Only count them as VM indicators when
+                                        # they appear in the FIRST merchant utterance (turn 0/1)
+                                        # with no follow-up conversation.
+                                        _ambiguous_phrases = {
+                                            'thank you for calling', 'thanks for calling',
+                                            'who is calling', 'what company',
+                                            'state your name', 'state your business',
+                                            'are you selling', 'are you soliciting',
+                                            'is this call important', 'if you\'re selling',
+                                            'are you a real person', 'are you a robot',
+                                        }
+
+                                        for _idx, _m in enumerate(msgs):
                                             _mt = (_m.get('user', '') or '').lower()
-                                            if any(p in _mt for p in _voicemail_killers):
-                                                _is_voicemail = True
+                                            for _vk_phrase in _voicemail_killers:
+                                                if _vk_phrase in _mt:
+                                                    # If it's an ambiguous phrase AND it's not in the first
+                                                    # 2 utterances, skip — real humans say these things.
+                                                    if _vk_phrase in _ambiguous_phrases and _idx >= 2:
+                                                        continue
+                                                    _is_voicemail = True
+                                                    break
+                                            if _is_voicemail:
                                                 break
-                                        if _is_voicemail and elapsed > 15.0 and not _eab_active:
+
+                                        if _is_voicemail and elapsed > 15.0 and not _eab_active and not _has_real_conversation:
                                             logger.warning(
                                                 f"[COST SENTINEL] VOICEMAIL KILL — {elapsed:.0f}s elapsed, "
                                                 f"definitive voicemail language detected. Force disconnect."
@@ -5732,7 +5902,18 @@ class AQIConversationRelayServer:
             # Stage 1: Cached generic prefix (plays instantly from greeting_cache).
             # Stage 2: Live TTS for the name-specific tail (synthesized while stage 1 plays).
             # Full greeting is assembled as one string for history/logging.
+            #
+            # [FEB 24 2026] SOFT OPENER — delay company name to survive the 3-second hangup window.
+            # Data: 43% of hangups happen 6-11s in, 0 turns — merchant hears "Signature Card Services"
+            # and instantly hangs up. Real sales reps say their name first, ask for the owner,
+            # then introduce the company only AFTER they have attention.
+            # Mix: 50% soft (no company name upfront), 50% standard (for A/B signal).
             NAMED_GREETING_PAIRS = [
+                # SOFT OPENERS — company name delayed (higher survival rate)
+                ("Hey, this is Alan.", f"I'm looking to speak with {prospect_name}, are they available?"),
+                ("Hi, this is Alan calling.", f"Is {prospect_name} available?"),
+                ("Hey, this is Alan.", f"Could I speak with {prospect_name}?"),
+                # STANDARD OPENERS — company name upfront (baseline)
                 ("Hello, this is Alan from Signature Card Services.", f"I'm looking to talk to {prospect_name}, are they available?"),
                 ("Hello, this is Alan with Signature Card Services.", f"Is {prospect_name} available?"),
                 ("Hello, this is Alan from Signature Card Services.", f"Could I speak with {prospect_name}?"),
@@ -5743,7 +5924,14 @@ class AQIConversationRelayServer:
             context['_greeting_suffix'] = _pair[1]
         else:
             # No name — ask for the owner. Tim's proven script.
+            # [FEB 24 2026] SOFT OPENER MIX — same strategy as named greetings.
+            # 50% soft (just Alan, no company), 50% standard (with company name).
             COLD_GREETINGS = [
+                # SOFT OPENERS — survive the 3-second hangup window
+                "Hey, this is Alan. I'm looking to talk to the owner or manager real quick, are they available?",
+                "Hi, this is Alan calling. Is the owner available?",
+                "Hey, this is Alan. Is the owner or manager available?",
+                # STANDARD OPENERS — baseline
                 "Hello, this is Alan from Signature Card Services. I'm looking to talk to the owner, are they available?",
                 "Hello, this is Alan with Signature Card Services. I'm looking to talk to the owner, are they available?",
                 "Hello, this is Alan from Signature Card Services. Is the owner available?",
@@ -5985,8 +6173,8 @@ class AQIConversationRelayServer:
         business_name = context.get('business_name', '')
         
         system = (
-            "You are Alan, a friendly business consultant on a live phone call with a local business. "
-            "Be warm, conversational, and brief. "
+            "You are Alan, a sharp payment processing consultant on a live phone call. "
+            "Sound like a real person — direct, natural, no filler. "
             f"Current conversation mode: {mode}. "
         )
         if business_name:
@@ -5995,6 +6183,8 @@ class AQIConversationRelayServer:
             "Generate ONLY the opening clause of your response — 8 to 15 words max. "
             "Start by naturally acknowledging or responding to what was just said. "
             "End with a comma or dash — the full response continues after this. "
+            "NEVER start with filler like 'Got it', 'Absolutely', 'That sounds great', 'I appreciate that'. "
+            "NEVER say goodbye, 'have a good one', or 'take care' — the call is not over. "
             "NO lists, NO markdown, NO formal language. Just natural phone speech."
         )
         
@@ -6515,6 +6705,45 @@ class AQIConversationRelayServer:
                     "yeah",
                     "yeah, sure",
                     "sure thing",
+                    "i'm listening",
+                    "i'm right here",
+                    "i hear you",
+                    "i hear you, tell me more about that",
+                    "tell me more about that",
+                    "i appreciate that",
+                    "i appreciate your patience",
+                    "thanks for that",
+                    "i'm glad you're still with me",
+                    "i'm here to help",
+                    "i'm here to chat",
+                    "no problem at all",
+                    "no problem",
+                    "no worries at all",
+                    "thanks for giving me a minute",
+                    "thanks for your time",
+                    "i appreciate you mentioning that",
+                    "i appreciate you letting me know",
+                    "i appreciate you sharing that",
+                    "i appreciate you taking the time",
+                    "i understand completely",
+                    "totally understand",
+                    "i completely understand",
+                    "that makes total sense",
+                    "that makes sense",
+                    "fair enough",
+                    "have a good one",
+                    "have a great day",
+                    "have a great one",
+                    "take care",
+                    "i'll try again later",
+                    "i'll try back later",
+                    "i'll call back another time",
+                    "i'll reach out another time",
+                    "sounds like you're busy",
+                    "sounds like this isn't the right time",
+                    "sounds like i caught you at a bad time",
+                    "i don't want to take up your time",
+                    "i won't take up any more of your time",
                 ]
                 # Partial-match kills — if sentence CONTAINS any of these, it's chatbot filler
                 chatbot_contains_kills = [
@@ -6530,13 +6759,31 @@ class AQIConversationRelayServer:
                     "sounds like a great",
                     "sounds like a valuable",
                     "i appreciate you sharing",
+                    "i appreciate you mentioning",
+                    "i appreciate you letting me know",
+                    "i appreciate you taking",
                     "thanks for sharing",
+                    "thanks for giving me",
+                    "thanks for letting me know",
                     "that's really exciting",
                     "how can i assist",
                     "how may i help",
                     "looking forward to",
                     "solid setup",
                     "great setup",
+                    "have a good one",
+                    "have a great day",
+                    "have a great one",
+                    "take care",
+                    "i'll try again later",
+                    "i'll try back",
+                    "i'll call back",
+                    "i'll reach out another",
+                    "i won't take up",
+                    "i don't want to take up",
+                    "caught you at a bad time",
+                    "sounds like you're busy",
+                    "isn't the right time",
                 ]
                 
                 # [FILLER PREFIX STRIPPER] Remove chatbot filler from the START of sentences
@@ -6554,6 +6801,19 @@ class AQIConversationRelayServer:
                     "right, got it, ",
                     "okay, so, ", "okay so, ",
                     "okay, ", "okay — ", "okay - ",
+                    "i'm listening, ", "i'm listening — ", "i'm listening. ",
+                    "i'm right here, ", "i'm right here — ", "i'm right here. ",
+                    "i hear you, ", "i hear you — ", "i hear you. ",
+                    "i appreciate that, ", "i appreciate that — ", "i appreciate that. ",
+                    "thanks for that, ", "thanks for that — ", "thanks for that! ",
+                    "no problem, ", "no problem — ", "no problem. ",
+                    "no problem at all, ", "no problem at all — ", "no problem at all. ",
+                    "no worries, ", "no worries — ", "no worries. ",
+                    "totally, ", "totally — ",
+                    "totally understand, ", "totally understand — ",
+                    "i understand, ", "i understand — ",
+                    "fair enough, ", "fair enough — ",
+                    "that makes sense, ", "that makes sense — ", "that makes sense. ",
                 ]
                 s_lower_check = s.strip().lower()
                 for prefix in filler_prefixes:
@@ -6575,6 +6835,29 @@ class AQIConversationRelayServer:
                     if kill in s_lower:
                         logger.info(f"[CHATBOT KILLER] Stripped (contains): '{s[:50]}'")
                         return ""
+                
+                # [EARLY-TURN EXIT GUARD] On turns 0-3, Alan MUST NOT say goodbye.
+                # The LLM sometimes panics on ambiguous audio and tries to bail.
+                # This guard catches goodbye language that slips through the kills above
+                # and replaces the entire sentence with a sharp question.
+                _etg_turn = len(context.get('messages', [])) // 2
+                if _etg_turn <= 3:
+                    _goodbye_patterns = [
+                        "goodbye", "good bye", "bye bye", "bye for now",
+                        "have a good", "have a great", "have a nice",
+                        "take care", "talk to you later", "talk soon",
+                        "i'll let you go", "i'll try again", "i'll try back",
+                        "i'll call back", "i'll reach out", "catch you later",
+                        "thanks for your time", "thank you for your time",
+                        "i won't take up", "i don't want to bother",
+                        "sounds like you're busy", "caught you at a bad time",
+                        "isn't the right time", "not the right time",
+                        "maybe another time", "perhaps another time",
+                    ]
+                    for _gp in _goodbye_patterns:
+                        if _gp in s_lower:
+                            logger.warning(f"[EXIT GUARD] Blocked goodbye on turn {_etg_turn}: '{s[:60]}'")
+                            return ""
                 
                 return s.strip()
             
@@ -7190,7 +7473,17 @@ class AQIConversationRelayServer:
         # MUST fire before return so downstream code sees non-empty response_text.
         # =====================================================================
         if not full_response_text or not full_response_text.strip():
-            _fallback_text = "I hear you. Tell me more about that."
+            import random as _fb_random
+            _FALLBACK_POOL = [
+                "So what's going on with your setup right now?",
+                "Right, and what does that look like on your end?",
+                "Okay, walk me through what you're dealing with.",
+                "Can you hear me alright?",
+                "Hello?",
+                "Yeah? Go ahead.",
+                "Sorry, I missed that — what were you saying?",
+            ]
+            _fallback_text = _fb_random.choice(_FALLBACK_POOL)
             logger.warning(f"[ORCHESTRATED] ⚠️ LLM produced ZERO text. Streaming fallback: '{_fallback_text}'")
             try:
                 stream_sid = context.get('streamSid')
