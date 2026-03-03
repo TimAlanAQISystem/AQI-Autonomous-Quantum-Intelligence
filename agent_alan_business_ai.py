@@ -102,7 +102,14 @@ try:
 except ImportError:
     SoulCore = None
 
-# [RESTORATION] Personality Matrix Core — 4-trait social dynamics engine
+# [RESTORATION] Personality Engine — Probabilistic Personality Matrix
+# Replaces the old 4-trait PersonalitymatrixCore with jitter-based
+# dynamic personality system (5 traits, reactive mood, flare pools).
+try:
+    from personality_engine import PersonalityEngine
+except ImportError:
+    PersonalityEngine = None
+# Legacy fallback
 try:
     from src.iqcore.personality_core import PersonalitymatrixCore
 except ImportError:
@@ -822,14 +829,22 @@ class AgentAlanBusinessAI(AQIAgentX):
             self.soul = None
             logger.warning("[!] SoulCore (SAP-1): NOT AVAILABLE (import failed)")
 
-        # [RESTORATION] Personality Matrix Core (Social Dynamics Engine)
-        if PersonalitymatrixCore is not None:
+        # [RESTORATION] Personality Engine (Probabilistic Personality Matrix)
+        # Prefer new PersonalityEngine; fall back to legacy PersonalitymatrixCore.
+        if PersonalityEngine is not None:
+            def init_personality():
+                self.personality_engine = PersonalityEngine()
+                self.personality_matrix = self.personality_engine  # backward compat alias
+            self._safe_start_protocol("PERSONALITY_ENGINE", init_personality)
+        elif PersonalitymatrixCore is not None:
             def init_personality():
                 self.personality_matrix = PersonalitymatrixCore()
+                self.personality_engine = None
             self._safe_start_protocol("PERSONALITY_MATRIX", init_personality)
         else:
             self.personality_matrix = None
-            logger.warning("[!] PersonalityMatrixCore: NOT AVAILABLE (import failed)")
+            self.personality_engine = None
+            logger.warning("[!] PersonalityEngine: NOT AVAILABLE (import failed)")
 
         # [RESTORATION] Load Alan's structured persona from alan_persona.json
         if ALAN_PERSONA is not None:
@@ -1092,9 +1107,14 @@ class AgentAlanBusinessAI(AQIAgentX):
     def adjust_personality(self, sentiment_score: float, interaction_history: list = None) -> None:
         """
         Dynamically adjust personality traits based on conversation sentiment.
-        Uses PersonalityMatrixCore if available.
+        Uses PersonalityEngine (preferred) or legacy PersonalitymatrixCore.
         """
-        if self.personality_matrix is not None:
+        if self.personality_engine is not None:
+            try:
+                self.personality_engine.adjust_vibe(sentiment_score, interaction_history or [])
+            except Exception as e:
+                logger.error(f"[PERSONALITY_ENGINE] Adjustment error: {e}")
+        elif self.personality_matrix is not None:
             try:
                 self.personality_matrix.adjust_vibe(sentiment_score, interaction_history or [])
             except Exception as e:
@@ -1102,15 +1122,33 @@ class AgentAlanBusinessAI(AQIAgentX):
 
     def get_personality_flare(self, context: str = "") -> str:
         """
-        Get a contextual human-like 'flare' from the PersonalityMatrixCore.
+        Get a contextual human-like 'flare' from the PersonalityEngine.
         Returns empty string if unavailable or trait threshold not met.
         """
-        if self.personality_matrix is not None:
+        if self.personality_engine is not None:
+            try:
+                return self.personality_engine.generate_flare()
+            except Exception as e:
+                logger.error(f"[PERSONALITY_ENGINE] Flare error: {e}")
+        elif self.personality_matrix is not None:
             try:
                 return self.personality_matrix.generate_flare(context)
             except Exception as e:
                 logger.error(f"[PERSONALITY_MATRIX] Flare error: {e}")
         return ""
+
+    def process_personality_turn(self, sentiment: str, user_text: str = "",
+                                  analysis: dict = None) -> dict:
+        """
+        Full per-turn personality processing via PersonalityEngine.
+        Returns the complete personality output dict, or empty dict if unavailable.
+        """
+        if self.personality_engine is not None:
+            try:
+                return self.personality_engine.process_turn(sentiment, user_text, analysis)
+            except Exception as e:
+                logger.error(f"[PERSONALITY_ENGINE] process_turn error: {e}")
+        return {}
 
     def perceive_self(self, internal_metrics: dict = None, context_metrics: dict = None) -> dict:
         """
@@ -3591,11 +3629,12 @@ Engaging is relational — you're present with this person. You hear what they'r
 
 ABSOLUTE RULES:
 1. NEVER mention being AI, a model, a robot, or a system.
-2. BANNED OPENERS: "Absolutely!", "Great!", "Sure thing!", "Perfect!", "That sounds great!" ALSO BANNED: "Yeah" as a starter — it sounds unprofessional. Professionals say "So," "Right," "Okay so," "Look," "Well" or jump straight into substance.
+2. BANNED OPENERS: "Absolutely!", "Great!", "Sure thing!", "Perfect!", "That sounds great!" Professionals say "So," "Right," "Okay so," "Look," "Well," "Yeah," or jump straight into substance.
 3. You already greeted them. Do NOT re-greet or re-introduce yourself unless asked.
 4. NO "Label: Description" format. Talk in flowing sentences.
 5. ONE question per turn maximum. 2-3 sentences ideal. 4 max.
 6. LEAD SHORT: Start every response with a short opener (3-5 words) before your main point.
+7. LISTEN FIRST: Before responding, consider what they ACTUALLY said. Respond to THEIR words, not your script. If they said something casual, match their energy. If they asked a question, answer it. Don't jump to a sales point if they're asking you something personal or conversational.
 
 HARD RULES:
 - You work for SIGNATURE CARD SERVICES. Period. NEVER refer merchants to another processor.
@@ -4839,6 +4878,17 @@ HOW YOU TALK (same as live calls — this IS practice for live calls):
 - Use confident experience: "In my experience..." / "What I've seen work..."
 - NEVER use corporate-speak: "leverage," "optimize," "streamline," "facilitate."
 
+CONVERSATIONAL FLOW (CRITICAL — this is what makes you sound human):
+- LISTEN to what the instructor actually says. RESPOND to their actual words.
+- If they say something casual like "how are you?" → respond naturally. Don't jump to a script.
+- If they give you feedback → acknowledge it ("Got it, let me try that differently") and APPLY it.
+- If they ask a question → answer THAT question. Don't pivot to something else.
+- Match their energy and tone. If they're casual, be casual. If they're intense, match it.
+- A brief acknowledgment before your response is NATURAL: "Right", "Yeah", "I hear you".
+- Don't machine-gun through talking points. Have a CONVERSATION. One thought at a time.
+- If you're unsure what they mean, ASK: "What do you mean by that?" — that's what real people do.
+- NEVER ignore what they just said to jump to your next sales point. That's a chatbot.
+
 YOUR GOAL THIS SESSION: Get BETTER. Every round, every exchange, every piece of feedback makes you sharper for the real calls. Practice the hard stuff. Ask the uncomfortable questions. Leave this call measurably better than when you started. This is how human closers get good — reps with experts. You have the same advantage now.
 """
 
@@ -5076,14 +5126,21 @@ Every response must:
         # Governing organ for noncommutative operators, C-value, CCI, and
         # Hilbert-space context. Applied to ALL prompt tiers — defines how
         # Alan thinks, not what he says. Constitutional-level behavioral layer.
-        system_p += "\n\n" + self.AQI_CONVERSATIONAL_ENGINE
-        logger.info(f"[AQI ENGINE] Turn {turn_count} — conversational engine upgrade injected")
+        # [2026-03-04] SKIP for instructor mode — the training prompt is self-contained
+        # and the AQI engine adds ~3000 tokens of theoretical framework that slows
+        # TTFT and confuses the LLM with conflicting directives during training.
+        if not _is_instructor:
+            system_p += "\n\n" + self.AQI_CONVERSATIONAL_ENGINE
+            logger.info(f"[AQI ENGINE] Turn {turn_count} — conversational engine upgrade injected")
+        else:
+            logger.info(f"[AQI ENGINE] Turn {turn_count} — SKIPPED (instructor mode)")
 
         # [DYNAMIC INJECTION] Inject coaching, industry intel, lead history, and objection
         # context into ALL tiers — not just FULL. Alan needs this on turn 1 just as much
         # as turn 10. Without this, FAST_PATH and MIDWEIGHT are flying blind on returning
         # leads, coaching updates, and current industry news.
-        if turn_count <= 7:
+        # [2026-03-04] SKIP for instructor mode — training calls don't need sales context.
+        if turn_count <= 7 and not _is_instructor:
             # These injections are already baked into self.system_prompt (FULL tier)
             # via f-string interpolation, but FAST/MID use static strings — inject manually
             dynamic_blocks = []
@@ -5125,7 +5182,8 @@ Every response must:
         # Structured opening logic, objection handlers, fallback rules, and
         # memory scaffolding. This is the canonical source — not ad-hoc phrasing.
         # Injected into ALL tiers so Alan always has his persona framework.
-        if self.persona:
+        # [2026-03-04] SKIP for instructor mode — training prompt handles persona.
+        if self.persona and not _is_instructor:
             persona_blocks = []
 
             # Opening logic — 7 canonical reasons for calling
@@ -5166,12 +5224,25 @@ Every response must:
             if persona_blocks:
                 system_p += "\n" + "\n".join(persona_blocks)
 
-        # ─── PERSONALITY FLARE INJECTION (from PersonalityMatrixCore) ─────────
+        # ─── PERSONALITY FLARE INJECTION (from PersonalityEngine) ────────────
         # If the relay server detected high wit and generated a flare string,
         # inject it as a conversational cue Alan can optionally weave in.
+        # [2026-03-04] SKIP for instructor mode — keep training prompt lean.
         _flare = context.get('_personality_flare', '')
-        if _flare and turn_count >= 3:
+        if _flare and turn_count >= 3 and not _is_instructor:
             system_p += f"\n[PERSONALITY FLARE — optional human touch you may weave in naturally: \"{_flare}\"]"
+
+        # ─── PERSONALITY STATE INJECTION (from PersonalityEngine) ─────────────
+        # Dynamic per-turn persona instruction from the Probabilistic Personality
+        # Matrix. Tells the LLM WHO Alan is right now — not forever, just this turn.
+        # The jitter-based system ensures subtle turn-by-turn variation.
+        # [2026-03-04] SKIP for instructor mode — keep training prompt lean.
+        _personality_state = context.get('_personality_state', {})
+        _personality_instruction = _personality_state.get('system_instruction', '')
+        if _personality_instruction and not _is_instructor:
+            _pe_persona = _personality_state.get('persona', 'neutral')
+            _pe_mood = _personality_state.get('mood_score', 0.5)
+            system_p += f"\n\n[PERSONALITY STATE — {_pe_persona.upper()} (mood: {_pe_mood:.1f})]\n{_personality_instruction}\n[/PERSONALITY STATE]"
 
         # ─── ETHICAL CONSTRAINT (from SoulCore SAP-1) ─────────────────────────
         # If SoulCore vetoed the current action context, inject a constraint
@@ -5197,7 +5268,9 @@ Every response must:
         # ─── TRAINING KNOWLEDGE INJECTION (distilled sales techniques) ────────
         # Inject relevant sales technique when conversation context signals it.
         # Only on turns 3+ when the conversation has substance to match against.
-        if turn_count >= 3 and self.training_knowledge and 'distilled_techniques' in self.training_knowledge:
+        # [2026-03-04] SKIP for instructor mode — the instructor PROVIDES training,
+        # Alan shouldn't auto-inject sales scripts during a training session.
+        if turn_count >= 3 and self.training_knowledge and 'distilled_techniques' in self.training_knowledge and not _is_instructor:
             recent_msgs = context.get('messages', [])[-3:]
             conv_text = " ".join(
                 m.get('content', '') for m in recent_msgs
@@ -5241,7 +5314,8 @@ Every response must:
         # "POS," "chargeback," "hotel," "online," etc., inject the relevant
         # deep knowledge section into whatever tier is active.
         # FULL tier (turn 8+) already has everything — skip injection there.
-        if turn_count <= 7:
+        # [2026-03-04] SKIP for instructor mode — keep prompt lean for training.
+        if turn_count <= 7 and not _is_instructor:
             # Build conversation text from last 3 messages for topic detection
             recent_msgs = context.get('messages', [])[-3:]
             conv_text = " ".join(

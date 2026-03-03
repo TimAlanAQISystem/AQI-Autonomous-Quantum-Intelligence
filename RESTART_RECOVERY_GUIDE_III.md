@@ -510,6 +510,187 @@ Each phase gates the next — no promotion without meeting success criteria.
 
 ## CHANGELOG
 
+### March 3, 2026 — VOICEMAIL KILLER FALSE POSITIVE FIX + BRIDGE-AWARE FALLBACK SYSTEM
+
+**Root Cause:** Call #3 (CAc906568f) to Tim — Alan said "Good question..." then hung up after 28 seconds.
+Two compounding bugs killed the call:
+
+1. **Voicemail killer false positive.** Tim said *"Well, thank you for calling me, Alan. What would you like to know?"* — clearly a human addressing Alan by name and asking a question. The phrase `"thank you for calling"` was in the definitive `_voicemail_killers` list. The ambiguous phrase guard had a **backwards logic bug**: it said `if _idx >= 2: continue` — this PROTECTED ambiguous phrases in later turns (2+) but KILLED them in early turns (0-1). Combined with `_has_real_conversation` requiring `meaningful_turns >= 2` (Tim only had 1 turn), the VM kill fired at 28 seconds.
+
+2. **Dead air after bridge.** "Good question..." was a latency bridge from `conversational_intelligence.py` — a pre-cached utterance sent to fill silence while the LLM generates. The LLM then hit a 3-second SSE ReadTimeout (OpenAI unresponsive), producing zero text. The pipeline's 6.0s timeout fired its own fallback, but by then 9+ seconds of dead air had passed. The voicemail killer killed the call before any fallback audio reached Tim.
+
+#### Fix 1: Voicemail Killer Overhaul (`aqi_conversation_relay_server.py` ~lines 4226-4370)
+
+**Moved phrases from definitive → ambiguous:**
+- `'thank you for calling'` and `'thanks for calling'` — REMOVED from `_voicemail_killers`, now in `_ambiguous_phrases` only
+- `'unavailable'` — REMOVED from `_voicemail_killers` (standalone "unavailable" too broad — "the owner is unavailable" is a human)
+- `'what company did you say'`, `'what company'`, `'state your name'`, `'state your business'` — REMOVED from `_voicemail_killers` (receptionists say these)
+- `'are you a real person'`, `'are you a robot'` — REMOVED from `_voicemail_killers` (suspicious humans ask these)
+- `'is this call important'`, `'if you're selling'`, `'are you selling'`, `'are you soliciting'` — REMOVED from `_voicemail_killers` (gatekeepers say these)
+
+**New ambiguous phrase detection system** (replaces broken `_idx >= 2` guard):
+Ambiguous phrases now only flag as VM when ALL three conditions are true:
+1. Turn index ≤ 1 (early in call — consistent with VM greeting)
+2. Short utterance (< 15 words — VM greetings are brief)
+3. **No human-speech indicators** in the same utterance
+
+**Human-speech indicator list** (24 patterns):
+```
+'alan', 'what would you', 'how can i help', 'what do you', 'who are you',
+'what are you', 'calling me', 'called me', 'how are you', 'what can i do',
+'how may i help', 'yes?', 'yeah?', 'hello?', 'speaking', 'this is',
+"you're looking for", 'go ahead', 'sure, what', 'okay, what',
+'can you call', 'call back', 'call me back', 'try again', 'come back',
+'sorry,', 'no problem', 'sure thing', 'one moment', 'hold on', 'let me',
+"i'll get", "he's not", "she's not", "they're not", 'the owner',
+'the manager', 'my boss', "what's this about", "what's this regarding",
+'can i help', 'may i help', 'help you with'
+```
+Voicemails never address the caller by name, ask questions, or use interactive second-person phrases.
+
+**Lowered `_has_real_conversation` threshold:** `meaningful_turns >= 2` → `meaningful_turns >= 1`.
+A merchant who says 13+ words in their first response is a human. Voicemails never have multi-word first responses that address the caller.
+
+**Instructor mode bypass:** `_is_instructor_call` — training calls are NEVER voicemail. Added check: if instructor mode and VM detected, override to False.
+
+**Diagnostic logging:** Ambiguous phrase hits now log whether they were flagged or skipped, with word count and human-signal data, for post-call analysis.
+
+#### Fix 2: Bridge-Aware Fallback System (`aqi_conversation_relay_server.py`)
+
+**Problem:** When a bridge phrase fires ("Good question...") and the LLM subsequently times out, every fallback path produced a full standalone sentence with its own greeting ("Hey, I'm still here — ..."). This creates nonsensical audio: `"Good question... Hey, I'm still here — so who handles..."`.
+
+**Solution:** Track whether a bridge was sent this turn. If so, all fallback paths produce **continuation text** that flows naturally from the bridge, not standalone sentences.
+
+**Bridge tracking** (~line 9198):
+```python
+_bridge_sent = True
+context['_bridge_sent'] = True
+context['_bridge_text'] = _bridge_text  # "Good question..." etc.
+```
+
+**Bridge-aware timeout** (~line 9230):
+Pipeline timeout reduced from 6.0s → 4.0s when bridge was sent. Merchant already heard the bridge — they expect the answer in ~2s, not 6s.
+```python
+_pipeline_timeout = 4.0 if _bridge_sent else 6.0
+```
+
+**4 fallback paths updated to be bridge-aware:**
+
+| Fallback Path | Without Bridge | With Bridge (continuation) |
+|--------------|---------------|---------------------------|
+| TTFT deadline (~7198) | "So who handles the card processing for you guys?" | (random from 3 continuations) |
+| SSE/LLM error (~7319) | "Hey, I'm still with you — are you guys set up..." | (random from 3 continuations) |
+| Pipeline timeout (~9581) | "Hey, I'm still here — so who handles..." | (random from 4 continuations) |
+| Zero-text fallback (~7876) | Full 7-item fallback pool | 4-item continuation pool |
+
+**Bridge continuation pool** (no filler starts, flow from bridge):
+```
+"who handles the card processing for you guys right now?"
+"what system are you using for payments currently?"
+"are you set up to take cards there?"
+"do you mind if I ask what you're paying on your processing?"
+```
+
+#### Negative Proof (`_neg_proof_vm_bridge.py`)
+
+**25/25 tests PASSED:**
+- 6 false-positive scenarios (must NOT kill): Tim's exact phrase, polite receptionist, human saying "unavailable" with context, short human with question mark, human with name + "speaking", instructor mode response
+- 8 true-positive scenarios (must KILL): classic voicemail, reached voicemail, mailbox full, call screener, short VM greeting, IVR menu, VM thanks + leave message, short "thank you for calling" alone
+- 4 bridge continuation tests: no filler starts
+- 7 non-bridge fallback tests: all valid full sentences
+
+**Full test suite: 112/112 passed (0.80s)**
+**Compile: CLEAN**
+
+#### Timeline — What Happened on Call #3 (CAc906568f)
+```
+T+0.0s   Greeting plays: "Hey, it's Alan. Tim said you'd be a great person to train with."
+T+8.0s   Tim responds: "Well, thank you for calling me, Alan. What would you like to know?"
+T+8.0s   [BRIDGE] "Good question..." sent to TTS (pre-cached, plays instantly)
+T+8.5s   [LLM] Stream started → OpenAI SSE read timeout at 3s
+T+11.5s  [LLM] Fallback pushed to sentence queue
+T+14.0s  [TTS] Fallback synthesized + queued
+T+17.0s  Dead air detected (5020ms)
+T+22.0s  Dead air detected (9040ms)
+T+28.0s  [COST SENTINEL] VOICEMAIL KILL — "thank you for calling" matched ← BUG: TIM IS HUMAN
+T+28.0s  Call terminated. Tim heard: "Good question..." then 20 seconds of silence then hangup.
+```
+
+After fix:
+```
+T+8.0s   [BRIDGE] "Good question..." sent
+T+8.5s   [LLM] Stream started
+T+11.5s  [LLM] SSE timeout → bridge-aware fallback: "who handles the card processing for you guys?"
+T+12.0s  [TTS] Continuation synthesized → plays after bridge
+T+12.5s  Tim hears: "Good question... who handles the card processing for you guys?"
+T+28.0s  [COST SENTINEL] "thank you for calling" → ambiguous, 13 words, human signal ('alan', 'calling me')
+         → SKIPPED. Call continues.
+```
+
+### March 3, 2026 — PERSONALITY ENGINE + ALGEBRAIC QUANTUM LAYER
+
+**Summary:** Replaced the static 50-line `PersonalitymatrixCore` (4 traits, 3 hardcoded flares) with a two-layer dynamic personality system in `personality_engine.py` (1045 lines).
+
+#### Layer 1: Algebraic Quantum Personality State (`AQIPersonalityState`)
+
+Alan's personality exists as a state vector |ψ⟩ in ℝ⁵: [Wit, Empathy, Precision, Patience, Entropy]. Conversation events apply **non-commutative operator matrices** (5×5) that evolve the state. The ORDER of events matters — insult-then-apologize ≠ apologize-then-insult. The Born rule (|amplitude|²) collapses the state into trait probabilities.
+
+**7 conversation event operators:**
+| Operator | Trigger | Key Effect |
+|----------|---------|------------|
+| POSITIVE | Warm/friendly sentiment | Boosts Wit, Entropy (creativity) |
+| NEGATIVE | Frustrated/angry sentiment | Surges Empathy, dampens Wit/Entropy |
+| QUESTION | Technical/specific question | Boosts Precision |
+| OBJECTION | "too expensive", "not interested" | Patience surges, Wit/Entropy dampened |
+| ENGAGEMENT | "sounds good", buying intent | Wit + Entropy up (confidence→creativity) |
+| SILENCE | Dead air, "huh", confusion | Patience + Precision up |
+| NEUTRAL | No strong signal | Gentle regression toward baseline |
+
+**Key property: Non-commutativity.** Matrix multiplication M_A · M_B ≠ M_B · M_A. Alan's personality is PATH-DEPENDENT — shaped by the SEQUENCE of what happened, not just the aggregate. This differentiates a quantum personality from a Markov system.
+
+**Event detection function** (`detect_conversation_event()`): Classifies each turn via keyword matching + sentiment fallback → selects operator.
+
+#### Layer 2: Probabilistic Jitter + Reactive Mood (`PersonalityEngine`)
+
+- **5 core traits** with Gaussian jitter per turn (σ=0.12): wit, analytical, empathy, brevity, patience
+- **Reactive mood engine**: Momentum-based (consecutive positive/negative accelerate shift), empathy surge on negative, wit dampening
+- **Relationship depth accrual**: +0.04 per engaged turn toward trust
+- **Blended output**: 40% quantum collapse + 60% jitter state → persona classification
+- **6 persona keys**: playful, empathetic, analytical, conversational, punchy, neutral
+- **30+ contextual flares** across 5 categorized pools
+- **6 system instruction templates** for LLM persona shaping
+- **Prosody bias hints**: preferred_intent, speed_mod, silence_mod for Organ 7
+- **MIP persistence**: Export/restore with partial decay (mood 50%, depth 80%, traits 70%, quantum 60%)
+
+#### Integration Points (4 files modified)
+
+1. **`aqi_conversation_relay_server.py`** (~line 84): Import + pipeline block at ~line 9181 calls `agent.process_personality_turn()`, stores `context['_personality_flare']`, `context['_personality_state']`, `context['_personality_prosody_bias']`
+2. **`agent_alan_business_ai.py`** (~lines 105, 826, 1092, 5189): Import with legacy fallback → `__init__` creates `PersonalityEngine` → `process_personality_turn()` pass-through → prompt builder injects `[PERSONALITY STATE]` into system prompt
+3. **`personality_engine.py`** (NEW, 1045 lines): Full engine + quantum layer
+4. **`CONSTITUTIONAL_CORE/personality_core.py`** (UNCHANGED, kept as legacy fallback)
+
+#### Negative Proof (`_neg_proof_personality_quantum.py`)
+
+**75/75 tests PASSED:**
+- 8 quantum normalization tests (all 7 operators + initial state)
+- 2 non-commutativity proofs (positive↔negative, question↔objection)
+- 4 Born rule collapse validity tests
+- 2 sustained signal → correct dominant trait
+- 2 Shannon entropy + complexity index bounds
+- 3 operator history tracking
+- 3 export/restore round-trip
+- 7 operator matrix shape validation
+- 11 event detection classification tests
+- 10 jitter boundary + variation tests
+- 3 mood momentum + empathy surge tests
+- 2 flare generation + anti-repetition
+- 3 persona classification with mood conditions
+- 13 full `process_turn` integration tests (quantum diagnostics in output)
+- 3 persistence round-trip tests
+- 3 backward compatibility tests
+
+**Compile: CLEAN** (personality_engine.py, aqi_conversation_relay_server.py, agent_alan_business_ai.py)
+
 ### March 3, 2026 — PHASE 5 REFLEX ARC CLOSED + RELAY DECOMPOSITION + TEST SUITE
 
 **Summary:** Implemented the top 3 priorities from the 15-point perfection roadmap.

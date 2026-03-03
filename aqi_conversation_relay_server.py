@@ -82,6 +82,7 @@ from merchant_identity_persistence import MerchantIdentityPersistence
 from multi_turn_strategic_planning import MultiTurnStrategicPlanner
 from bias_auditing_system import BiasAuditingSystem
 from human_override_api import HumanOverrideAPI
+from personality_engine import PersonalityEngine
 
 # [REPLICATION] Alan fleet replication engine — concurrent call tracking & Hive Mind
 try:
@@ -1892,7 +1893,7 @@ TEMPO_MULTIPLIER = TIMING.tempo_multiplier  # [TIMING CONFIG] Centralized — de
 # Cost: ~$0.00005/turn additional (negligible with gpt-4o-mini pricing).
 # =============================================================================
 SPECULATIVE_DECODING_ENABLED = True
-SPRINT_MAX_TOKENS = 22
+SPRINT_MAX_TOKENS = 40  # [2026-03-04] Raised from 22 — sprint now generates complete thoughts, not fragments
 SPRINT_OVERLAP_THRESHOLD = 0.35  # Word overlap ratio above which full sentence is skipped
 
 # =============================================================================
@@ -4226,14 +4227,21 @@ class AQIConversationRelayServer:
                                         # --- CHECK 0.6: INSTANT VOICEMAIL KILL ---
                                         # If ANY turn contains definitive voicemail language, kill immediately.
                                         # No need to wait — voicemail is never a real conversation.
+                                        #
+                                        # [2026-03-03 FIX] REMOVED 'thank you/thanks for calling' from
+                                        # definitive killers. These are AMBIGUOUS — real humans say
+                                        # "thank you for calling me, Alan" and "thanks for calling."
+                                        # Tim's call #3 was killed because he said "Well, thank you
+                                        # for calling me, Alan. What would you like to know?" — clearly
+                                        # a human, not a voicemail. Moved to ambiguous-only detection
+                                        # with stricter qualifying rules.
                                         _voicemail_killers = ['leave a message', 'leave your message',
                                                               'after the tone', 'after the beep',
                                                               'record your message', 'not available right now',
-                                                              'cannot take your call', 'unavailable',
+                                                              'cannot take your call',
                                                               'reached the voicemail', 'mailbox is full',
                                                               'no one is available', 'at the tone',
                                                               're-record your message', 'press pound',
-                                                              'thank you for calling', 'thanks for calling',
                                                               'monitor your call', 'recorded for quality',
                                                               'reached our main', 'reached the main',
                                                               'select from the', 'following menu',
@@ -4249,14 +4257,9 @@ class AQIConversationRelayServer:
                                                               # [2026-02-20] CALL SCREENER / PHONE SCANNER PATTERNS
                                                               # Tim: "Alan continues to talk to phone scanners"
                                                               'please stay on the line', 'stay on the line',
-                                                              'what company did you say', 'what company',
                                                               'screening this call', 'screening your call',
-                                                              'state your name', 'state your business',
                                                               'describe why you', 'person you\'re calling',
                                                               'person you\'re trying to reach',
-                                                              'are you a real person', 'are you a robot',
-                                                              'is this call important', 'if you\'re selling',
-                                                              'are you selling', 'are you soliciting',
                                                               'serving from', 'last seating',
                                                               'table reservations', 'make a reservation']
                                         _is_voicemail = False
@@ -4269,43 +4272,108 @@ class AQIConversationRelayServer:
                                         ) if EAB_WIRED else False
 
                                         # [2026-02-24 FIX] HUMAN CONVERSATION GUARD
-                                        # If a real back-and-forth has happened (2+ meaningful turns
+                                        # If a real back-and-forth has happened (1+ meaningful turns
                                         # AND recent speech), this is a HUMAN — not a voicemail.
                                         # Voicemails don't have multi-turn back-and-forth.
                                         # Tim: "What my concern would be, is if it may interfere
                                         # with an actual human caller?"
+                                        # [2026-03-03 FIX] Lowered from 2→1 meaningful turns.
+                                        # A merchant who says 13+ words ("Well, thank you for
+                                        # calling me, Alan. What would you like to know?") in
+                                        # their FIRST response is definitively human. Voicemails
+                                        # never address the caller by name or ask questions.
                                         _has_real_conversation = (
-                                            meaningful_turns >= 2
-                                            and _real_turns >= 2
+                                            meaningful_turns >= 1
+                                            and _real_turns >= 1
                                             and silence_duration < 30.0
                                         )
 
                                         # [2026-02-24 FIX] AMBIGUOUS PHRASE GUARD
                                         # These phrases are used by BOTH voicemails AND real humans
-                                        # (receptionists). Only count them as VM indicators when
-                                        # they appear in the FIRST merchant utterance (turn 0/1)
-                                        # with no follow-up conversation.
+                                        # (receptionists). They are NOT in _voicemail_killers.
+                                        # They only trigger a VM kill when:
+                                        #   1. They appear in the first utterance (turn 0), AND
+                                        #   2. There's NO human-indicator in the same utterance, AND
+                                        #   3. The utterance is short (<15 words — VM greetings are brief)
+                                        #
+                                        # [2026-03-03 FIX] Complete rewrite of ambiguous phrase logic.
+                                        # OLD BUG: The guard said "if ambiguous AND _idx >= 2: continue"
+                                        # — this was BACKWARDS. It protected ambiguous phrases in
+                                        # LATER turns but KILLED them in EARLY turns (0-1). A VM
+                                        # says "thank you for calling" in turn 0 — but so does a
+                                        # polite human. The old logic killed both.
+                                        # NEW: Ambiguous phrases are only VM-flagged when the
+                                        # utterance ALSO lacks human indicators (names, questions,
+                                        # personal pronouns addressing the caller).
                                         _ambiguous_phrases = {
                                             'thank you for calling', 'thanks for calling',
                                             'who is calling', 'what company',
+                                            'what company did you say',
                                             'state your name', 'state your business',
                                             'are you selling', 'are you soliciting',
                                             'is this call important', 'if you\'re selling',
                                             'are you a real person', 'are you a robot',
+                                            'unavailable',
                                         }
+
+                                        # Human-speech indicators: if ANY of these appear in the
+                                        # same utterance as an ambiguous phrase, it's a human.
+                                        # Voicemails never address the caller by name, ask
+                                        # questions, or use second-person references.
+                                        _human_indicators = [
+                                            'alan', 'what would you', 'how can i help',
+                                            'what do you', 'who are you', 'what are you',
+                                            'calling me', 'called me', 'how are you',
+                                            'what can i do', 'how may i help', 'yes?',
+                                            'yeah?', 'hello?', 'speaking',
+                                            'this is', 'you\'re looking for',
+                                            'go ahead', 'sure, what', 'okay, what',
+                                            # [2026-03-03] Additional human-conversation signals:
+                                            # These phrases indicate interactive back-and-forth
+                                            # that voicemails never produce.
+                                            'can you call', 'call back', 'call me back',
+                                            'try again', 'come back', 'sorry,',
+                                            'no problem', 'sure thing', 'one moment',
+                                            'hold on', 'let me', 'i\'ll get',
+                                            'he\'s not', 'she\'s not', 'they\'re not',
+                                            'the owner', 'the manager', 'my boss',
+                                            'what\'s this about', 'what\'s this regarding',
+                                            'can i help', 'may i help', 'help you with',
+                                        ]
+
+                                        # [2026-03-03] INSTRUCTOR MODE BYPASS
+                                        # Instructor/training calls are NEVER voicemail.
+                                        _is_instructor_call = ctx.get('prospect_info', {}).get('instructor_mode', False)
 
                                         for _idx, _m in enumerate(msgs):
                                             _mt = (_m.get('user', '') or '').lower()
                                             for _vk_phrase in _voicemail_killers:
                                                 if _vk_phrase in _mt:
-                                                    # If it's an ambiguous phrase AND it's not in the first
-                                                    # 2 utterances, skip — real humans say these things.
-                                                    if _vk_phrase in _ambiguous_phrases and _idx >= 2:
-                                                        continue
                                                     _is_voicemail = True
                                                     break
+                                            # Check ambiguous phrases separately with stricter rules
+                                            if not _is_voicemail:
+                                                for _ap in _ambiguous_phrases:
+                                                    if _ap in _mt:
+                                                        # Only flag as VM if:
+                                                        # 1. Early turn (0 or 1)
+                                                        # 2. Short utterance (< 15 words — VM greetings)
+                                                        # 3. No human indicators present
+                                                        _word_count = len(_mt.split())
+                                                        _has_human_signal = any(h in _mt for h in _human_indicators)
+                                                        if _idx <= 1 and _word_count < 15 and not _has_human_signal:
+                                                            _is_voicemail = True
+                                                            logger.info(f"[COST SENTINEL] Ambiguous phrase '{_ap}' flagged as VM (turn={_idx}, words={_word_count}, no human signal)")
+                                                            break
+                                                        else:
+                                                            logger.info(f"[COST SENTINEL] Ambiguous phrase '{_ap}' SKIPPED — human detected (turn={_idx}, words={_word_count}, human_signal={_has_human_signal})")
                                             if _is_voicemail:
                                                 break
+
+                                        # [2026-03-03] Instructor mode calls are never voicemail
+                                        if _is_instructor_call and _is_voicemail:
+                                            logger.info(f"[COST SENTINEL] VM detection overridden — instructor mode call")
+                                            _is_voicemail = False
 
                                         if _is_voicemail and elapsed > 15.0 and not _eab_active and not _has_real_conversation:
                                             logger.warning(
@@ -4720,6 +4788,12 @@ class AQIConversationRelayServer:
                                             logger.info(f"[VAD] Silence Detected ({silence_elapsed:.2f}s). Committing Turn.")
                                             conversation_context['vad_state'] = 'silence'
                                             
+                                            # [2026-03-03] Pause telephony health during LLM processing —
+                                            # silence while Alan thinks is expected, not a line problem.
+                                            _tel_mon_vad = conversation_context.get('_telephony_monitor')
+                                            if _tel_mon_vad and hasattr(_tel_mon_vad, 'pause_during_processing'):
+                                                _tel_mon_vad.pause_during_processing()
+                                            
                                             # [INSTRUMENT] Stamp VAD end — pipeline clock starts here
                                             conversation_context['_vad_end_mono'] = time.monotonic()
                                             
@@ -5007,6 +5081,12 @@ class AQIConversationRelayServer:
                             if mark_name in ('turn_complete', 'greeting_complete'):
                                 conversation_context['twilio_playback_done'] = True
                                 conversation_context['responding_ended_at'] = time.time()
+                                # [2026-03-03] Resume telephony health monitoring now that
+                                # Alan's response has finished playing — real silence from
+                                # here means actual line problems, not LLM processing gaps.
+                                _tel_mon_mark = conversation_context.get('_telephony_monitor')
+                                if _tel_mon_mark and hasattr(_tel_mon_mark, 'resume_after_processing'):
+                                    _tel_mon_mark.resume_after_processing()
                                 logger.info(f"[TWILIO] Mark '{mark_name}' received — playback confirmed complete")
                             continue
                     
@@ -6512,71 +6592,81 @@ class AQIConversationRelayServer:
         ~200 input tokens vs ~3000+ for the full prompt.
         This shorter prompt means OpenAI processes it faster → earlier TTFT.
         
+        [2026-03-04 FIX] Redesigned for COMPLETE responses instead of fragments.
+        Previous version forced "8-15 word opening clause" which created disjointed
+        output when stitched with full LLM. Now generates 1-2 complete sentences
+        that can stand alone as a natural response.
+        
         Returns: list of message dicts for OpenAI API
         """
         mode = context.get('_deep_layer_mode', 'rapport')
         business_name = context.get('business_name', '')
+        _is_instructor = context.get('prospect_info', {}).get('instructor_mode', False)
         
         # Check if this is the FIRST merchant response after greeting (turn 1)
         conv_messages = context.get('messages', [])
         is_first_response = len(conv_messages) <= 1  # Only greeting in history
         
-        if is_first_response:
+        # [2026-03-04] INSTRUCTOR MODE gets its own sprint prompt — training, not sales
+        if _is_instructor:
+            system = (
+                "You are Alan, a sales rep in a TRAINING session on a live phone call. "
+                "The person on this call is your instructor — they're coaching you. "
+                "LISTEN to what they say. RESPOND to their actual words. "
+                "Keep your response to 1-2 short sentences. Be natural and conversational. "
+                "If they gave feedback → acknowledge it and try again or ask a follow-up. "
+                "If they're role-playing a merchant → stay in character and respond naturally. "
+                "If they asked you a question → answer it directly. "
+                "If they said something casual → match their energy. Be a real person. "
+                "A brief natural acknowledgment is fine: 'Right', 'Yeah', 'Got it'. "
+                "NEVER say goodbye or end the call. "
+                "NEVER pitch payment processing unless you're in an active role-play. "
+                "NO lists, NO markdown. Just natural phone speech."
+            )
+        elif is_first_response:
             system = (
                 "You are Alan, a payment processing consultant on a live phone call. "
                 "You JUST greeted the merchant and asked for the owner. "
                 "Their reply is the ANSWER to your question. "
-                "Respond appropriately — explain why you're calling. "
-                "Generate ONLY the opening clause of your response — 8 to 15 words max. "
+                "Respond appropriately — explain why you're calling in 1-2 complete sentences. "
                 "\n\n"
                 "FIRST-RESPONSE RULES (match merchant's reply):\n"
                 "- If they say 'thank you', 'thanks', 'sure', 'yeah', 'okay' → They're LISTENING. "
                 "Launch directly into why you're calling. Do NOT fold, do NOT ask another question.\n"
                 "- If they say 'speaking', 'this is [name]', 'that's me' → You have the owner. "
                 "Launch directly into your pitch.\n"
-                "- If they ask 'who is this?', 'what company?' → Identify yourself and pivot to pitch: "
-                "'My name's Alan, I work with local businesses on their payment processing —'\n"
+                "- If they ask 'who is this?', 'what company?' → Identify yourself and pivot to pitch.\n"
                 "- If they say 'can I take a message?', 'they're not here', 'hold on' → GATEKEEPER. "
-                "Ask to speak with the owner/manager directly: "
-                "'Sure — is the owner or manager available by chance?'\n"
+                "Ask to speak with the owner/manager directly.\n"
                 "- If they give a short acknowledgment like 'hello?', 'yes?' → "
                 "Launch into why you're calling.\n"
                 "\n"
-                "Examples of good openers: "
-                "'I help business owners make sure they're not overpaying on —' "
-                "'The reason I'm calling is I work with businesses on their —' "
-                "'So I actually work with local businesses on their card processing —' "
-                "'My name's Alan — I help business owners cut their processing costs —' "
-                "End with a comma or dash — the full response continues after this. "
+                "Keep your response COMPLETE — a full thought that makes sense on its own. "
+                "1-2 sentences max. End with a period, question mark, or natural pause. "
                 "NEVER start with 'I appreciate you picking up' or any variant of that. "
-                "NEVER start with filler like 'Go ahead', 'Yeah?', 'Got it', 'Absolutely', 'Thanks for that', 'Of course'. "
                 "NEVER say goodbye or any exit phrase. "
-                "NEVER respond with 'I appreciate you letting me know' or any fold/surrender language. "
                 "NO lists, NO markdown, NO formal language. Just natural phone speech."
             )
         else:
             system = (
                 "You are Alan, a sharp payment processing consultant on a live phone call. "
-                "Sound like a real person — direct, natural, no filler. "
+                "Sound like a real person — direct, natural. "
                 f"Current conversation mode: {mode}. "
             )
             if business_name:
                 system += f"You're speaking with someone at {business_name}. "
             system += (
-                "Generate ONLY the opening clause of your response — 8 to 15 words max. "
-                "NEVER repeat what you already said. Look at the conversation history — if you already pitched "
-                "payment processing, do NOT say it again. ADVANCE to the next point: "
-                "ask what system they use, what they're paying, if they've compared rates, or name a specific benefit. "
-                "Drive the conversation FORWARD — ask a question, make a point, or respond with substance. "
-                "Do NOT acknowledge, thank, or validate what was said. Go STRAIGHT to your next move. "
+                "LISTEN to what they just said. Respond to THEIR words, not your script. "
+                "Keep your response to 1-2 complete sentences that make sense on their own. "
+                "A brief natural acknowledgment is OK before your point: 'Right', 'Yeah', 'Look'. "
+                "NEVER repeat what you already said. Check the conversation history. "
                 "If they gave information → use it to ask a sharper follow-up. "
                 "If they asked a question → answer it directly. "
                 "If they showed interest → deepen with a specific benefit or question. "
                 "If they objected → counter with a specific benefit. "
                 "If they asked 'how can I help you' or 'what do you need' → get specific: "
-                "'Are you guys processing cards right now —' or 'So who handles the merchant services over there —' "
-                "End with a comma or dash — the full response continues after this. "
-                "NEVER start with filler like 'Got it', 'Absolutely', 'That sounds great', 'I appreciate that', 'Of course'. "
+                "'Are you guys processing cards right now?' or 'So who handles the merchant services over there?' "
+                "End with a period or question mark — your response should be COMPLETE. "
                 "NEVER say 'I appreciate you letting me know', 'Thanks for that', 'Thanks for sharing'. "
                 "NEVER say 'Sounds like you're in a good mood' or any comment about their mood/tone. "
                 "NEVER say goodbye, 'have a good one', or 'take care' — the call is not over. "
@@ -6635,6 +6725,7 @@ class AQIConversationRelayServer:
         # If the instructor just gave a correction, on_instructor_turn detects it
         # and returns guidance that gets appended to the system prompt so Alan
         # adjusts his next response accordingly.
+        _is_instructor_call = context.get('prospect_info', {}).get('instructor_mode', False)
         _inst_session = context.get('_instructor_session')
         if _inst_session and INSTRUCTOR_MODE_WIRED:
             _alan_last = ""
@@ -6655,22 +6746,26 @@ class AQIConversationRelayServer:
                 logger.info(f"[INSTRUCTOR MODE] Correction guidance injected into LLM context")
         
         # [ORGAN 24] Inject Retrieval Cortex knowledge into LLM context
+        # [2026-03-04] Skip for instructor mode — training calls don't need
+        # retrieval cortex, competitive intel, objection learning, summarization,
+        # CRM, IQ budget, or inbound context. These add thousands of tokens
+        # that slow TTFT from ~800ms to 5+ seconds, causing dead air.
         _retrieval_ctx = context.get('_retrieval_context')
-        if _retrieval_ctx and RETRIEVAL_CORTEX_WIRED:
+        if _retrieval_ctx and RETRIEVAL_CORTEX_WIRED and not _is_instructor_call:
             if messages and messages[0].get('role') == 'system':
                 messages[0]['content'] += f"\n\n[RETRIEVAL CORTEX — RELEVANT KNOWLEDGE]\n{_retrieval_ctx}"
             logger.info(f"[ORGAN 24] Knowledge injected into LLM context ({len(_retrieval_ctx)} chars)")
         
         # [ORGAN 34] Inject Competitive Intel context into LLM system message
         _competitor_ctx = context.get('_competitor_context')
-        if _competitor_ctx and COMPETITIVE_INTEL_WIRED:
+        if _competitor_ctx and COMPETITIVE_INTEL_WIRED and not _is_instructor_call:
             if messages and messages[0].get('role') == 'system':
                 messages[0]['content'] += f"\n\n[COMPETITIVE INTEL — §4.9 POSITIONING]\n{_competitor_ctx}"
             logger.info(f"[ORGAN 34] Competitor context injected into LLM ({context.get('_detected_competitor')})")
         
         # [ORGAN 31] Inject objection learning context into LLM system message
         _obj_events = context.get('_objection_events', [])
-        if _obj_events and OBJECTION_LEARNING_WIRED:
+        if _obj_events and OBJECTION_LEARNING_WIRED and not _is_instructor_call:
             _recent_objs = _obj_events[-3:]  # last 1-3 objections this call
             _obj_ctx_parts = []
             for _oe in _recent_objs:
@@ -6696,7 +6791,7 @@ class AQIConversationRelayServer:
             logger.info(f"[ORGAN 31] Objection context injected into LLM ({len(_recent_objs)} events)")
 
         # [ORGAN 32] Inject call summary / deal readiness context into LLM system message
-        if SUMMARIZATION_WIRED and context.get('_summarization_organ') and context.get('_summary_state') == 'collecting':
+        if SUMMARIZATION_WIRED and context.get('_summarization_organ') and context.get('_summary_state') == 'collecting' and not _is_instructor_call:
             try:
                 _sum_organ_llm = context['_summarization_organ']
                 _sum_ctx_parts = []
@@ -6730,7 +6825,7 @@ class AQIConversationRelayServer:
                 logger.debug(f"[ORGAN 32] LLM injection failed (non-fatal): {_sum_llm_err}")
 
         # [ORGAN 33] Inject CRM pipeline context into LLM system message
-        if CRM_INTEGRATION_WIRED and context.get('_crm_organ'):
+        if CRM_INTEGRATION_WIRED and context.get('_crm_organ') and not _is_instructor_call:
             try:
                 _crm_ctx_parts = []
                 _crm_push_st = context.get('_crm_push_state', 'idle')
@@ -6760,7 +6855,7 @@ class AQIConversationRelayServer:
                 logger.debug(f"[ORGAN 33] LLM injection failed (non-fatal): {_crm_llm_err}")
 
         # [ORGAN 35] Inject IQ Budget cognitive state into LLM system message
-        if IQ_BUDGET_WIRED and context.get('_iq_budget_organ'):
+        if IQ_BUDGET_WIRED and context.get('_iq_budget_organ') and not _is_instructor_call:
             try:
                 _iq_ctx_parts = []
                 _iq_organ_llm = context['_iq_budget_organ']
@@ -6803,7 +6898,7 @@ class AQIConversationRelayServer:
         # [ORGAN 29] Inject inbound context (callback memory) into LLM system message
         _ic_state_llm = context.get('_inbound_context_state', 'cold')
         _ic_ctx_llm = context.get('_inbound_context')
-        if _ic_state_llm != 'cold' and _ic_ctx_llm and INBOUND_CONTEXT_WIRED:
+        if _ic_state_llm != 'cold' and _ic_ctx_llm and INBOUND_CONTEXT_WIRED and not _is_instructor_call:
             _ic_parts = []
             _ic_parts.append(f"CALLER STATUS: {_ic_state_llm.upper()} — {'returning caller' if _ic_state_llm == 'warm' else 'known lead'}")
 
@@ -7052,20 +7147,26 @@ class AQIConversationRelayServer:
             url = "https://api.openai.com/v1/chat/completions"
             
             # [LONG CONV] Graduated adaptive max_tokens and max_sentences —
-            # Turns 0-2 (FAST_PATH): 100 tokens — enough for a complete business answer (was 45, caused truncation)
-            # Turns 3-7 (MIDWEIGHT): 120 tokens — merchant is engaged, slightly fuller responses
+            # Turns 0-1 (ULTRA_FAST): 60 tokens — snappy first impression, avoids 5s+ LLM stalls
+            # Turns 2-4 (FAST_PATH): 100 tokens — enough for a complete business answer
+            # Turns 5-7 (MIDWEIGHT): 120 tokens — merchant is engaged, slightly fuller responses
             # Turns 8+ (FULL): 150 tokens — deep consultative conversation, detail expected
-            # P0 FIX: 45 tokens = ~1.5 sentences = guaranteed mid-thought truncation = broken trust
+            # [2026-03-03] Lesson: Turn 2 hit 5.7s LLM deadline with 100 tokens, truncating to
+            # "I get that, " — merchant heard weird audio, telephony health killed the call.
+            # Fix: First 2 turns use 60 tokens (enough for 1-2 sentences) for speed.
             _conv_turn_count = len(context.get('messages', []))
             if _conv_turn_count >= 8:
                 _adaptive_max_tokens = 150
                 _adaptive_max_sentences = 5
-            elif _conv_turn_count >= 3:
+            elif _conv_turn_count >= 5:
                 _adaptive_max_tokens = 120
                 _adaptive_max_sentences = 4
-            else:
+            elif _conv_turn_count >= 2:
                 _adaptive_max_tokens = TIMING.relay_max_tokens  # 100 from timing_config.json
                 _adaptive_max_sentences = TIMING.max_sentences
+            else:
+                _adaptive_max_tokens = 60  # Ultra-fast first impression
+                _adaptive_max_sentences = 2
             
             payload = {
                 "model": "gpt-4o-mini",
@@ -7089,7 +7190,9 @@ class AQIConversationRelayServer:
             # This prevents 5-9+ second dead air that causes instant hangups.
             # The fallback is a natural sales opener that keeps the call alive.
             TTFT_DEADLINE_S = 2.0  # Max seconds to wait for first token (was 2.5 — pre-warm ensures <800ms TTFT)
-            TOTAL_LLM_DEADLINE_S = 4.5  # Max total LLM time (was 6.0 — 45 tokens never needs >4.5s)
+            TOTAL_LLM_DEADLINE_S = 3.5  # Max total LLM time (was 4.5 — 60 tokens early/100 mid never needs >3.5s)
+            # [2026-03-03] Lowered from 4.5→3.5: With 60-token early turns, 3.5s is generous.
+            # When deadline hits, we truncate gracefully + add bridge sentence.
             
             try:
                 # [TIMING FIX] Read timeout tightened from 8s→3s to enforce TTFT deadline.
@@ -7105,9 +7208,18 @@ class AQIConversationRelayServer:
                                 logger.error(f"[LLM] TTFT DEADLINE EXCEEDED ({TTFT_DEADLINE_S}s) — aborting stream, pushing fallback")
                                 _telemetry['ttft_ms'] = 1000 * TTFT_DEADLINE_S
                                 _telemetry['ttft_deadline_hit'] = True
-                                # [2026-03-02 FIX] Replaced "Quick question" fallback — was reinforcing
-                                # the repetition loop when LLM saw multiple "quick question" entries in history.
-                                sentence_q.put("So who handles the card processing for you guys?")
+                                # [2026-03-03 FIX] Bridge-aware TTFT fallback.
+                                # If a bridge phrase already played ("Good question..."),
+                                # the fallback must continue naturally from it.
+                                if context.get('_bridge_sent'):
+                                    _ttft_bridge = [
+                                        "who handles the card processing for you guys right now?",
+                                        "what system are you using for payments currently?",
+                                        "are you set up to take cards there?",
+                                    ]
+                                    sentence_q.put(random.choice(_ttft_bridge))
+                                else:
+                                    sentence_q.put("So who handles the card processing for you guys?")
                                 sentence_count = 1
                                 break
                             # [LATENCY FIX] Check total deadline
@@ -7187,9 +7299,24 @@ class AQIConversationRelayServer:
                             pass
                 
                 # Push remaining buffer as final sentence
+                # [2026-03-03] If we hit the deadline mid-stream and have an incomplete
+                # fragment (e.g. "I get that, "), append a natural bridge so it doesn't
+                # sound cut off. This prevents the "you sound kind of weird" reaction.
                 if token_buffer.strip():
                     final = _clean_sentence(token_buffer)
                     if final and len(final) > 3:
+                        # Check if fragment looks incomplete (no sentence-ending punct)
+                        _ends_clean = final.rstrip().endswith(('.', '!', '?'))
+                        if not _ends_clean and _telemetry.get('ttft_deadline_hit') or \
+                           (not _ends_clean and (time.time() - stream_start) >= TOTAL_LLM_DEADLINE_S * 0.9):
+                            # Deadline-truncated fragment — add bridge
+                            _bridge_phrases = [
+                                "but hey, who handles the card processing for you guys?",
+                                "anyway, do you guys take card payments there?",
+                                "but real quick, are you set up to take cards?",
+                            ]
+                            final = final.rstrip().rstrip(',;—–-') + " — " + random.choice(_bridge_phrases)
+                            logger.info(f"[LLM] Deadline bridge applied: '{final[:60]}'")
                         sentence_q.put(final)
                         sentence_count += 1
                 
@@ -7211,8 +7338,16 @@ class AQIConversationRelayServer:
                     else:
                         logger.warning(f"[LLM] [TIMING GUARD] LLM error before first sentence — pushing fallback: {type(e).__name__}")
                     _telemetry['ttft_deadline_hit'] = True
-                    # [2026-03-02 FIX] Replaced "Quick question" fallback — prevents repetition loop.
-                    sentence_q.put("Hey, I'm still with you — are you guys set up to take cards there?")
+                    # [2026-03-03 FIX] Bridge-aware SSE error fallback.
+                    if context.get('_bridge_sent'):
+                        _sse_bridge = [
+                            "who handles the card processing for you guys right now?",
+                            "do you mind if I ask what you're paying on your processing?",
+                            "what system are you using for payments currently?",
+                        ]
+                        sentence_q.put(random.choice(_sse_bridge))
+                    else:
+                        sentence_q.put("Hey, I'm still with you \u2014 are you guys set up to take cards there?")
                     sentence_count = 1
             
             sentence_q.put(None)  # Sentinel: stream complete
@@ -7367,7 +7502,10 @@ class AQIConversationRelayServer:
                 # Previously sprint bypassed ALL protection systems — chatbot filler like
                 # "I appreciate you letting me know" and exit phrases went straight to TTS.
                 # Now sprint gets the same sentence cleaning as full LLM output.
-                sprint_sentence = _clean_sentence(sprint_sentence)
+                # [2026-03-04] is_sprint=True uses lighter filtering — sprint generates
+                # short complete thoughts, not fragments. Aggressive contains-match kills
+                # were destroying ~50% of sprint output, forcing slow LLM fallback.
+                sprint_sentence = _chatbot_clean_sentence(sprint_sentence, context, logger, is_sprint=True)
                 if not sprint_sentence or len(sprint_sentence) <= 3:
                     logger.warning(f"[SPECULATIVE] Sprint clause killed by chatbot killer. Falling through to full LLM.")
                     continue
@@ -7755,15 +7893,26 @@ class AQIConversationRelayServer:
             # to share information Alan can use as a bridge into the value prop.
             # [2026-03-02 FIX] Removed "Quick question" from fallback pool — it was
             # reinforcing the repetition loop. All fallbacks are now unique phrasings.
-            _FALLBACK_POOL = [
-                "So what's going on with your payment setup right now?",
-                "The reason I'm reaching out is I help business owners cut their processing costs —",
-                "I work with local businesses on their payment processing — who handles yours right now?",
-                "Hey, are you guys set up to accept cards there?",
-                "Sorry, I missed that — what were you saying?",
-                "Can you hear me alright?",
-                "Hello?",
-            ]
+            # [2026-03-03 FIX] Bridge-aware fallback — if a bridge phrase was sent
+            # this turn, the fallback CONTINUES from it naturally.
+            _bridge_was_sent = context.get('_bridge_sent', False)
+            if _bridge_was_sent:
+                _FALLBACK_POOL = [
+                    "who handles the card processing for you guys right now?",
+                    "what system are you using for payments currently?",
+                    "are you set up to take cards there?",
+                    "do you mind if I ask what you're paying on your processing?",
+                ]
+            else:
+                _FALLBACK_POOL = [
+                    "So what's going on with your payment setup right now?",
+                    "The reason I'm reaching out is I help business owners cut their processing costs —",
+                    "I work with local businesses on their payment processing — who handles yours right now?",
+                    "Hey, are you guys set up to accept cards there?",
+                    "Sorry, I missed that — what were you saying?",
+                    "Can you hear me alright?",
+                    "Hello?",
+                ]
             _fallback_text = _fb_random.choice(_FALLBACK_POOL)
             logger.warning(f"[ORCHESTRATED] ⚠️ LLM produced ZERO text. Streaming fallback: '{_fallback_text}'")
             try:
@@ -9030,26 +9179,39 @@ class AQIConversationRelayServer:
                     context.pop('_competitor_context', None)
 
             # =================================================================
-            # [PERSONALITY MATRIX] Dynamic personality adjustment per turn
+            # [PERSONALITY ENGINE] Probabilistic Personality Matrix per turn
             # =================================================================
-            # Maps sentiment → numeric score → adjusts professionalism/wit/empathy.
-            # Stores flare text in context for build_llm_prompt() to inject.
-            # Fail-open: if PersonalityMatrix not loaded, this is a no-op.
+            # Full per-turn personality processing with quantum jitter:
+            #   1. Reactive mood/empathy/wit shift from merchant sentiment
+            #   2. Jittered state vector (no two turns feel identical)
+            #   3. Persona classification (playful/empathetic/analytical/etc.)
+            #   4. Contextual flare generation (probability-weighted)
+            #   5. System instruction crafting for LLM persona shaping
+            #   6. Prosody bias hints for Organ 7
+            # Fail-open: if PersonalityEngine not loaded, falls back to no-op.
             # =================================================================
             try:
                 _sentiment_raw = analysis.get('sentiment', 'neutral')
-                _sentiment_map = {'positive': 0.8, 'neutral': 0.5, 'negative': 0.2}
-                _sentiment_score = _sentiment_map.get(_sentiment_raw, 0.5)
-                _interaction_history = context.get('messages', [])[-6:]  # last 6 turns
-                agent.adjust_personality(_sentiment_score, _interaction_history)
-                _flare = agent.get_personality_flare(_sentiment_raw)
-                if _flare:
-                    context['_personality_flare'] = _flare
-                    logger.info(f"[PERSONALITY MATRIX] Flare generated: '{_flare}'")
-                else:
-                    context.pop('_personality_flare', None)
+                _user_text = user_text if isinstance(user_text, str) else ''
+                _pe_result = agent.process_personality_turn(_sentiment_raw, _user_text, analysis)
+                if _pe_result:
+                    # Store flare for prompt injection
+                    if _pe_result.get('flare'):
+                        context['_personality_flare'] = _pe_result['flare']
+                        logger.info(f"[PERSONALITY ENGINE] Flare: '{_pe_result['flare']}' (persona={_pe_result['persona']})")
+                    else:
+                        context.pop('_personality_flare', None)
+                    # Store full personality state for prompt builder
+                    context['_personality_state'] = {
+                        'system_instruction': _pe_result.get('system_instruction', ''),
+                        'persona': _pe_result.get('persona', 'neutral'),
+                        'mood_score': _pe_result.get('mood_score', 0.5),
+                        'relationship_depth': _pe_result.get('relationship_depth', 0.0),
+                    }
+                    # Store prosody bias for Organ 7
+                    context['_personality_prosody_bias'] = _pe_result.get('prosody_bias', {})
             except Exception as _pm_e:
-                logger.debug(f"[PERSONALITY MATRIX] Adjustment failed (non-fatal): {_pm_e}")
+                logger.debug(f"[PERSONALITY ENGINE] Processing failed (non-fatal): {_pm_e}")
 
             # =================================================================
             # [SOUL CORE] Ethical awareness — pre-flight check before LLM call
@@ -9087,6 +9249,7 @@ class AQIConversationRelayServer:
             # a bridge phrase like "So..." before that creates confusion.
             # =================================================================
             _turn_count = len(context.get('messages', []))
+            _bridge_sent = False  # [2026-03-03] Track if bridge phrase was sent this turn
             if CONV_INTEL_WIRED and not context.get('stream_ended') and _turn_count > 1:
                 _guard = context.get('_conversation_guard')
                 if _guard:
@@ -9106,6 +9269,9 @@ class AQIConversationRelayServer:
                         logger.info(f"[LATENCY BRIDGE] Sending bridge: '{_bridge_text}' (preprocess={_bridge_preprocess_ms:.0f}ms)")
                         asyncio.create_task(self.synthesize_and_stream_greeting(websocket, _bridge_text, _bridge_sid))
                         _component_times['bridge_ms'] = 1000 * (time.time() - pipeline_t0) - _bridge_preprocess_ms
+                        _bridge_sent = True
+                        context['_bridge_sent'] = True      # LLM fallback path uses this
+                        context['_bridge_text'] = _bridge_text  # So fallback can continue naturally
 
             # =================================================================
             # [VERSION R+] ORCHESTRATED PIPELINE — The Symphony
@@ -9114,11 +9280,19 @@ class AQIConversationRelayServer:
             # This does: LLM SSE streaming → detect sentence → TTS immediately
             # While LLM generates sentence 2, sentence 1 is already playing.
             # Saves ~800-1500ms on perceived first-word-out latency.
+            #
+            # [2026-03-03 FIX] BRIDGE-AWARE TIMEOUT
+            # When a bridge phrase was already sent ("Good question..."), the
+            # merchant is actively waiting for the continuation. Dead air after
+            # a bridge is WORSE than dead air without one — it signals
+            # "I started to answer but forgot what I was saying."
+            # Timeout reduced from 6.0s → 4.0s when bridge was sent.
             # =================================================================
             _t_orchestra = time.time()
+            _pipeline_timeout = 4.0 if _bridge_sent else 6.0
             response_text = await asyncio.wait_for(
                 self._orchestrated_response(user_text, analysis, context, websocket, agent, generation=generation),
-                timeout=6.0  # [LATENCY FIX] Reduced from 12s — 6s is the absolute max a caller will wait
+                timeout=_pipeline_timeout
             )
             _component_times['orchestrated_ms'] = 1000 * (time.time() - _t_orchestra)
             
