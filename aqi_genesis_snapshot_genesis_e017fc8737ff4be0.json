@@ -1,0 +1,62 @@
+{
+  "metadata": {
+    "snapshot_id": "genesis_e017fc8737ff4be0",
+    "timestamp": "2025-12-20T10:14:02.848056",
+    "date": "December 20, 2025",
+    "event": "AQI Constitutional Ratification",
+    "version": "1.0.0",
+    "founder_steward": "REDACTED",
+    "description": "First official immutable snapshot of AQI constitutional state"
+  },
+  "constitutional_documents": {
+    "AQI_GOVERNANCE_CHARTER.md": {
+      "hash": "18d257615a09be5510495e40bc10b4605750f22c293d220f34c261f777ee2134",
+      "size": 5424,
+      "lines": 180
+    },
+    "AQI_FOUNDATIONAL_DOCTRINE.md": {
+      "hash": "3b749ba9d26cbc666752755ffcb9d957e5f40581949f79327e283c4085607d9d",
+      "size": 5525,
+      "lines": 154
+    },
+    "AQI_PHILOSOPHICAL_FOUNDATION.md": {
+      "hash": "74c0b44192acb493ef77454adbb86565f0062604e7b403fdb244e019afa42dae",
+      "size": 4532,
+      "lines": 138
+    },
+    "AQI_FOUNDING_DECLARATION.md": {
+      "hash": "b45885553c2e6f6df7f1c5e6ab063ea92fa129231ad98b4d02394ec782add799",
+      "size": 41667,
+      "lines": 1406
+    }
+  },
+  "packages": {
+    "talk": {
+      "exists": true,
+      "python_files": 33
+    },
+    "aqi_delta": {
+      "exists": true,
+      "python_files": 4
+    },
+    "aqi_governance": {
+      "exists": true,
+      "python_files": 7
+    },
+    "aqi_storage": {
+      "exists": true,
+      "python_files": 3
+    },
+    "aqi_governance_intelligence": {
+      "exists": true,
+      "python_files": 6
+    }
+  },
+  "system_state": {},
+  "integrity_verification": {
+    "master_document_hash": "ad796f352d32ac32dadd57cb41be1a5b563d2c94334e8f987fbaab53ea10880e",
+    "snapshot_hash": "f721ba90ca83c86d4936c774f82df4c9c8f6d13e718f6df8542cab9d30b8fe64",
+    "algorithm": "SHA-256",
+    "verification_date": "2025-12-20T10:14:02.871830"
+  }
+}

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AQI Voice Client – Alan Realtime Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      padding: 20px;
+    }
+    h1 {
+      color: #58a6ff;
+    }
+    button {
+      padding: 10px 16px;
+      margin-right: 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    #startBtn {
+      background-color: #238636;
+      color: white;
+    }
+    #stopBtn {
+      background-color: #da3633;
+      color: white;
+    }
+    #status {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #8b949e;
+    }
+    #log {
+      margin-top: 20px;
+      padding: 10px;
+      background: #161b22;
+      border-radius: 4px;
+      height: 300px;
+      overflow-y: auto;
+      font-family: Consolas, monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h1>AQI Voice Client – Alan Realtime Test</h1>
+
+  <div>
+    <button id="startBtn">Start Voice Session</button>
+    <button id="stopBtn" disabled>Stop Session</button>
+  </div>
+
+  <div id="status">Status: idle</div>
+
+  <div id="log"></div>
+
+  <script>
+    const API_BASE = "http://localhost:8777"; // TODO: set to your AQI backend base URL
+    const START_ENDPOINT = "/voice-session/start";
+    const WS_ENDPOINT = "/voice-session/ws";
+
+    let mediaRecorder = null;
+    let websocket = null;
+    let sessionId = null;
+    let audioStream = null;
+
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const statusDiv = document.getElementById("status");
+    const logDiv = document.getElementById("log");
+
+    function log(message) {
+      const ts = new Date().toISOString();
+      logDiv.textContent += `[${ts}] ${message}\n`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    function setStatus(text) {
+      statusDiv.textContent = `Status: ${text}`;
+    }
+
+    async function startSession() {
+      try {
+        setStatus("requesting mic access...");
+        log("Requesting microphone access...");
+        audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        log("Microphone access granted.");
+
+        setStatus("creating voice session...");
+        const res = await fetch(API_BASE + START_ENDPOINT, {
+          method: "POST"
+        });
+        const data = await res.json();
+        sessionId = data.session_id;
+        log(`Voice session created. session_id=${sessionId}`);
+
+        const wsUrl = API_BASE.replace(/^http/, "ws") + `${WS_ENDPOINT}/${sessionId}`;
+        log(`Connecting WebSocket to ${wsUrl} ...`);
+
+        websocket = new WebSocket(wsUrl);
+
+        websocket.onopen = () => {
+          log("WebSocket connected.");
+          setStatus("connected, streaming audio...");
+          startStreamingAudio();
+          startBtn.disabled = true;
+          stopBtn.disabled = false;
+        };
+
+        websocket.onmessage = (event) => {
+          const msg = JSON.parse(event.data);
+          if (msg.type === "tts_text") {
+            log(`[Alan TTS Text] ${msg.text}`);
+          } else if (msg.type === "tts_audio_chunk") {
+            log(`[Alan TTS Audio Chunk] format=${msg.format}, size=${msg.data.length} (base64 chars)`);
+            // TODO: later - decode base64 and play via Web Audio API
+          } else {
+            log(`Received message: ${event.data}`);
+          }
+        };
+
+        websocket.onclose = () => {
+          log("WebSocket closed.");
+          cleanupSession();
+        };
+
+        websocket.onerror = (err) => {
+          log("WebSocket error: " + JSON.stringify(err));
+          cleanupSession();
+        };
+
+      } catch (err) {
+        console.error(err);
+        log("Error starting session: " + err.message);
+        setStatus("error");
+        cleanupSession();
+      }
+    }
+
+    function startStreamingAudio() {
+      if (!audioStream) {
+        log("No audio stream available.");
+        return;
+      }
+
+      mediaRecorder = new MediaRecorder(audioStream, { mimeType: "audio/webm" });
+      log("MediaRecorder started for audio/webm chunks.");
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0 && websocket && websocket.readyState === WebSocket.OPEN) {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const base64data = reader.result.split(",")[1];
+            websocket.send(JSON.stringify({
+              type: "audio_chunk",
+              format: "audio/webm",
+              data: base64data
+            }));
+          };
+          reader.readAsDataURL(event.data);
+        }
+      };
+
+      mediaRecorder.start(250); // send ~4 chunks per second
+      log("MediaRecorder streaming started (interval: 250ms).");
+    }
+
+    function stopSession() {
+      if (websocket && websocket.readyState === WebSocket.OPEN) {
+        websocket.send(JSON.stringify({ type: "end_session" }));
+        websocket.close();
+      }
+      cleanupSession();
+    }
+
+    function cleanupSession() {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+        log("MediaRecorder stopped.");
+      }
+      if (audioStream) {
+        audioStream.getTracks().forEach(track => track.stop());
+        log("Audio tracks stopped.");
+      }
+      mediaRecorder = null;
+      audioStream = null;
+      websocket = null;
+      sessionId = null;
+      setStatus("idle");
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+    }
+
+    startBtn.addEventListener("click", startSession);
+    stopBtn.addEventListener("click", stopSession);
+  </script>
+</body>
+</html>

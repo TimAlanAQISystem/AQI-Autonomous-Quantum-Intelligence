@@ -1,0 +1,10 @@
+criteria:
+  - field: "chargebacks"
+    threshold: 3
+    level: 1
+  - field: "complaints"
+    threshold: 2
+    level: 2
+levels:
+  "1": "Compliance Review"
+  "2": "Executive Escalation"

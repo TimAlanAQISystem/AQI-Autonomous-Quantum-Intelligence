@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AQI Illustration Request",
+  "type": "object",
+  "required": ["mode", "output_path"],
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": ["simple_image", "draw_elements", "plot"]
+    },
+    "output_path": {
+      "type": "string",
+      "description": "Filesystem path where the rendered asset will be saved"
+    },
+    "width": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 800
+    },
+    "height": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 600
+    },
+    "background": {
+      "type": "string",
+      "default": "white"
+    },
+    "dpi": {
+      "type": "integer",
+      "minimum": 72,
+      "default": 300
+    },
+    "elements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type"],
+        "oneOf": [
+          {
+            "properties": {
+              "type": { "const": "text" },
+              "text": { "type": "string" },
+              "position": {
+                "type": "array",
+                "items": { "type": "number" },
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "size": { "type": "integer", "minimum": 1, "default": 24 },
+              "color": { "type": "string", "default": "black" }
+            },
+            "required": ["text", "position"]
+          },
+          {
+            "properties": {
+              "type": { "const": "shape" },
+              "shape": { "type": "string", "enum": ["rectangle", "ellipse", "line"] },
+              "coords": {
+                "type": "array",
+                "items": { "type": "number" },
+                "minItems": 4,
+                "maxItems": 4
+              },
+              "color": { "type": "string", "default": "black" },
+              "thickness": { "type": "integer", "minimum": 1, "default": 2 }
+            },
+            "required": ["shape", "coords"]
+          }
+        ]
+      }
+    },
+    "x": {
+      "type": "array",
+      "items": { "type": "number" }
+    },
+    "y": {
+      "type": "array",
+      "items": { "type": "number" }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "mode": { "const": "draw_elements" } } },
+      "then": { "required": ["elements"] }
+    },
+    {
+      "if": { "properties": { "mode": { "const": "plot" } } },
+      "then": { "required": ["x", "y"] }
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "concept:stub": {
+    "files": [
+      "__init__.py",
+      "__pycache__\\__init__.cpython-313.pyc",
+      "crossrefs\\__init__.py",
+      "crossrefs\\__pycache__\\__init__.cpython-313.pyc",
+      "crossrefs\\__pycache__\\crossrefs.cpython-313.pyc",
+      "crossrefs\\crossrefs.py",
+      "delta\\__init__.py",
+      "delta\\__pycache__\\__init__.cpython-313.pyc",
+      "delta\\__pycache__\\delta.cpython-313.pyc",
+      "delta\\delta.py",
+      "graph\\__init__.py",
+      "graph\\__pycache__\\__init__.cpython-313.pyc",
+      "graph\\__pycache__\\graph_builder.cpython-313.pyc",
+      "graph\\__pycache__\\run_graph.cpython-313.pyc",
+      "graph\\graph_builder.py",
+      "graph\\run_graph.py",
+      "inventory\\__init__.py",
+      "inventory\\__pycache__\\__init__.cpython-313.pyc",
+      "inventory\\__pycache__\\inventory.cpython-313.pyc",
+      "inventory\\inventory.py",
+      "metadata\\__init__.py",
+      "metadata\\__pycache__\\__init__.cpython-313.pyc",
+      "metadata\\__pycache__\\metadata.cpython-313.pyc",
+      "metadata\\metadata.py",
+      "normalization\\__init__.py",
+      "normalization\\__pycache__\\__init__.cpython-313.pyc",
+      "normalization\\__pycache__\\normalization.cpython-313.pyc",
+      "normalization\\normalization.py",
+      "orchestrator\\__init__.py",
+      "orchestrator\\__pycache__\\__init__.cpython-313.pyc",
+      "orchestrator\\__pycache__\\run_all.cpython-313.pyc",
+      "orchestrator\\run_all.py",
+      "summaries\\__init__.py",
+      "summaries\\__pycache__\\__init__.cpython-313.pyc",
+      "summaries\\__pycache__\\summaries.cpython-313.pyc",
+      "summaries\\summaries.py"
+    ],
+    "summary": "Concept 'concept:stub' appears in 36 files."
+  }
+}

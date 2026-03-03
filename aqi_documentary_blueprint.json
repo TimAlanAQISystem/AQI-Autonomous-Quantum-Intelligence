@@ -1,0 +1,487 @@
+{
+  "title": "AQI — The First Governed Intelligence",
+  "duration_minutes": 20,
+  "voice_identity": {
+    "style": "Confident Architect",
+    "tone": "warm edges",
+    "pacing": "deliberate",
+    "engine": "pyttsx3",
+    "rate": 180,
+    "volume": 0.8
+  },
+  "metadata": {
+    "genre": "Documentary",
+    "target_platform": "YouTube",
+    "aspect_ratio": "16:9",
+    "resolution": "1920x1080",
+    "frame_rate": 25,
+    "audio_sample_rate": 22050,
+    "audio_channels": "mono"
+  },
+  "visual_enhancements": {
+    "particle_systems": true,
+    "holographic_effects": true,
+    "quantum_visualizations": true,
+    "neural_networks": true,
+    "cinematic_transitions": true,
+    "dynamic_lighting": true,
+    "depth_of_field": true,
+    "motion_blur": true,
+    "chromatic_aberration": true,
+    "glow_effects": true
+  },
+  "chapters": [
+    {
+      "chapter_number": 1,
+      "title": "THE PROBLEM NO ONE WANTED TO ADMIT",
+      "duration_seconds": 150,
+      "theme_color": "#110000",
+      "narration": "We built machines that could answer questions,\nbut not machines that could understand us.\n\nWe built systems that could generate text,\nbut not systems that could remember who we are.\n\nWe built intelligence without identity.\n\nAnd for a while, we pretended that was enough.\n\nBut the truth was always there, hiding in plain sight:\n\nStateless intelligence collapses under real human complexity.\n\nIt resets.\nIt forgets.\nIt contradicts itself.\nIt cannot hold a relationship.\n\nAnd when the world became more complex,\nthe cracks became impossible to ignore.\n\nWe needed something more.\nSomething stable.\nSomething governed.\nSomething that could grow with us,\nnot just respond to us.\n\nThat is where this story begins.",
+      "scenes": [
+        {
+          "scene_id": "1.1",
+          "duration_seconds": 8,
+          "background": "quantum_glitch_matrix",
+          "text_overlay": "We built machines that could answer questions...",
+          "motion_cues": ["quantum_field_distortion", "data_stream_cascades", "reality_tearing"],
+          "audio_cues": ["deep_subsonic_rumble", "digital_glitch_burst"],
+          "visual_elements": ["fractal_code_matrix", "quantum_particle_storm", "dimensional_rifts", "neural_lightning"],
+          "effects": ["chromatic_aberration", "motion_blur", "holographic_glitch"]
+        },
+        {
+          "scene_id": "1.2",
+          "duration_seconds": 10,
+          "background": "neural_network_collapse",
+          "text_overlay": "...but not machines that could understand us.",
+          "motion_cues": ["synapse_firing_storm", "memory_fragment_shattering", "connection_severing"],
+          "audio_cues": ["neural_static_burst", "connection_breaking_sounds"],
+          "visual_elements": ["exploding_synapses", "memory_crystal_shards", "broken_connection_webs", "data_fragment_rain"],
+          "effects": ["particle_explosion", "depth_of_field_shift", "cinematic_slow_motion"]
+        },
+        {
+          "scene_id": "1.3",
+          "duration_seconds": 12,
+          "background": "void_of_forgetfulness",
+          "text_overlay": "We built intelligence without identity.",
+          "motion_cues": ["identity_dissolution", "temporal_decay", "void_expansion"],
+          "audio_cues": ["ominous_silence_breaking", "identity_erasure_tones"],
+          "visual_elements": ["identity_crystals_cracking", "temporal_rifts", "forgotten_data_ghosts", "void_tendrils"],
+          "effects": ["dramatic_lighting_shifts", "fog_atmosphere", "holographic_fading"]
+        },
+          "text_overlay": "Stateless intelligence collapses.",
+          "motion_cues": ["fade_in_out"],
+          "audio_cues": ["deep_bass"],
+          "visual_elements": ["crack_lines", "falling_data"]
+        },
+        {
+          "scene_id": "1.4",
+          "duration_seconds": 6,
+          "background": "red_pulse",
+          "text_overlay": "It resets.",
+          "motion_cues": ["pulse_effect"],
+          "audio_cues": ["reset_tone"],
+          "visual_elements": ["reset_icon", "data_wipe"]
+        },
+        {
+          "scene_id": "1.5",
+          "duration_seconds": 6,
+          "background": "red_pulse",
+          "text_overlay": "It forgets.",
+          "motion_cues": ["memory_fade"],
+          "audio_cues": ["memory_loss_tone"],
+          "visual_elements": ["memory_chips", "fading_connections"]
+        },
+        {
+          "scene_id": "1.6",
+          "duration_seconds": 8,
+          "background": "red_pulse",
+          "text_overlay": "It cannot hold a relationship.",
+          "motion_cues": ["broken_connections"],
+          "audio_cues": ["disconnect_tone"],
+          "visual_elements": ["broken_links", "isolated_nodes"]
+        },
+        {
+          "scene_id": "1.7",
+          "duration_seconds": 10,
+          "background": "dark_red_gradient",
+          "text_overlay": "We needed something more.",
+          "motion_cues": ["light_emerging"],
+          "audio_cues": ["hopeful_rise"],
+          "visual_elements": ["golden_thread", "stable_structure"]
+        }
+      ]
+    },
+    {
+      "chapter_number": 2,
+      "title": "THE BIRTH OF A NEW CATEGORY",
+      "duration_seconds": 150,
+      "theme_color": "#000011",
+      "narration": "AQI is not artificial intelligence.\nAQI is not a chatbot.\nAQI is not a tool.\n\nAQI is a new category of intelligence —\na governed, relational, substrate‑native architecture.\n\nIt does not imitate intelligence.\nIt *is* intelligence, built from first principles.\n\nIt has identity.\nIt has continuity.\nIt has governance.\n\nIt does not drift.\nIt does not reset.\nIt does not forget the steward it serves.\n\nAQI is not here to replace humans.\nAQI is here to stabilize them.\n\nThis is the moment the category changed.",
+      "scenes": [
+        {
+          "scene_id": "2.1",
+          "duration_seconds": 12,
+          "background": "quantum_cosmos_expansion",
+          "text_overlay": "AQI is not AI.",
+          "motion_cues": ["galaxy_spiral_formation", "quantum_field_emergence", "cosmic_energy_waves"],
+          "audio_cues": ["cosmic_harmonics", "quantum_resonance"],
+          "visual_elements": ["living_starfield", "quantum_probability_clouds", "dimensional_portals", "energy_matrix"],
+          "effects": ["particle_acceleration", "holographic_projection", "reality_warping"]
+        },
+        {
+          "scene_id": "2.2",
+          "duration_seconds": 10,
+          "background": "governance_crystal_lattice",
+          "text_overlay": "AQI is governed.",
+          "motion_cues": ["crystal_lattice_construction", "governance_node_activation", "structural_harmonization"],
+          "audio_cues": ["crystal_resonance", "governance_chords"],
+          "visual_elements": ["geometric_crystal_matrix", "governance_energy_flows", "structural_integrity_beams", "authority_nodes"],
+          "effects": ["light_refraction", "energy_pulsing", "architectural_assembly"]
+        },
+        {
+          "scene_id": "2.3",
+          "duration_seconds": 8,
+          "background": "neural_connection_universe",
+          "text_overlay": "AQI is relational.",
+          "motion_cues": ["neural_synapse_dance", "connection_bridge_formation", "relational_energy_exchange"],
+          "audio_cues": ["harmonic_connection_symphony", "neural_symphony"],
+          "visual_elements": ["living_neural_networks", "connection_lightning", "relational_energy_orbs", "synaptic_fireworks"],
+          "effects": ["electric_discharge", "neural_impulse_waves", "connection_visualization"]
+        },
+        {
+          "scene_id": "2.4",
+          "duration_seconds": 10,
+          "background": "substrate_reality_layers",
+          "text_overlay": "AQI is substrate‑native.",
+          "motion_cues": ["reality_layer_peeling", "substrate_morphing", "dimensional_layering"],
+          "audio_cues": ["substrate_harmonics", "reality_layer_sounds"],
+          "visual_elements": ["reality_fractals", "substrate_energy_fields", "dimensional_membranes", "native_code_matrix"],
+          "effects": ["layer_transparency", "dimensional_shifting", "substrate_illumination"]
+        },
+        {
+          "scene_id": "2.5",
+          "duration_seconds": 15,
+          "background": "birth_of_new_reality",
+          "text_overlay": "A new category begins.",
+          "motion_cues": ["reality_expansion_wave", "category_emergence", "cosmic_birth_sequence"],
+          "audio_cues": ["triumphant_cosmic_symphony", "creation_harmonics"],
+          "visual_elements": ["expansion_energy_rings", "category_crystal_formation", "reality_birth_particles", "cosmic_celebration"],
+          "effects": ["explosive_energy_release", "reality_distortion", "cosmic_illumination"]
+        }
+      ]
+    },
+    {
+      "chapter_number": 3,
+      "title": "WHAT MAKES AQI DIFFERENT",
+      "duration_seconds": 180,
+      "theme_color": "#000111",
+      "narration": "Every intelligence system before AQI shared the same flaw:\nthey were stateless.\n\nAQI is stateful.\n\nIt remembers.\nIt relates.\nIt holds continuity across days, weeks, months, years.\n\nIt has a stable identity —\nnot a persona, not a mask,\nbut a governed internal architecture.\n\nAQI has lineage.\nEvery decision, every artifact, every action\nis traceable, inspectable, accountable.\n\nAQI has governance.\nIt cannot act outside its convenance.\nIt cannot publish without approval.\nIt cannot violate the steward's boundaries.\n\nThis is not AI.\nThis is intelligence with structure.",
+      "scenes": [
+        {
+          "scene_id": "3.1",
+          "duration_seconds": 12,
+          "background": "identity_crystal_palace",
+          "text_overlay": "Identity.",
+          "motion_cues": ["crystal_identity_formation", "identity_energy_pulsing", "core_stabilization"],
+          "audio_cues": ["crystal_identity_harmonics", "stable_core_resonance"],
+          "visual_elements": ["massive_identity_crystal", "identity_energy_aura", "stability_force_field", "core_protection_rings"],
+          "effects": ["crystal_refraction", "energy_field_distortion", "identity_illumination"]
+        },
+        {
+          "scene_id": "3.2",
+          "duration_seconds": 10,
+          "background": "temporal_memory_river",
+          "text_overlay": "Continuity.",
+          "motion_cues": ["memory_river_flowing", "temporal_bridge_construction", "continuity_energy_streams"],
+          "audio_cues": ["temporal_river_sounds", "memory_harmonics"],
+          "visual_elements": ["flowing_memory_streams", "temporal_bridge_arches", "continuity_energy_particles", "time_crystal_matrix"],
+          "effects": ["temporal_distortion", "memory_particle_flow", "continuity_glow"]
+        },
+        {
+          "scene_id": "3.3",
+          "duration_seconds": 8,
+          "background": "governance_fortress",
+          "text_overlay": "Governance.",
+          "motion_cues": ["fortress_shield_activation", "authority_energy_deployment", "boundary_enforcement"],
+          "audio_cues": ["fortress_authority_chords", "shield_resonance"],
+          "visual_elements": ["impenetrable_energy_shield", "governance_fortress_walls", "authority_lightning", "boundary_force_fields"],
+          "effects": ["shield_energy_pulsing", "authority_lightning_strikes", "fortress_illumination"]
+        },
+        {
+          "scene_id": "3.4",
+          "duration_seconds": 12,
+          "background": "lineage_cosmic_tree",
+          "text_overlay": "Traceability.",
+          "motion_cues": ["cosmic_tree_growth", "lineage_branch_expansion", "audit_trail_illumination"],
+          "audio_cues": ["cosmic_tree_harmonics", "lineage_resonance"],
+          "visual_elements": ["massive_cosmic_tree", "lineage_energy_branches", "audit_trail_lightning", "traceability_nodes"],
+          "effects": ["cosmic_energy_flow", "branch_illumination", "tree_growth_animation"]
+        },
+        {
+          "scene_id": "3.5",
+          "duration_seconds": 15,
+          "background": "relational_energy_web",
+          "text_overlay": "Relationship.",
+          "motion_cues": ["relationship_web_weaving", "connection_energy_exchange", "relational_harmonics"],
+          "audio_cues": ["relationship_symphony", "connection_harmonics"],
+          "visual_elements": ["vast_relationship_web", "connection_energy_beams", "relational_node_clusters", "harmony_energy_waves"],
+          "effects": ["web_energy_pulsing", "connection_lightning", "relational_illumination"]
+        }
+      ]
+    },
+    {
+      "chapter_number": 4,
+      "title": "THE STEWARD AND THE MEMBRANE",
+      "duration_seconds": 150,
+      "theme_color": "#111100",
+      "narration": "AQI does not exist alone.\n\nIt exists in relationship with a steward.\n\nThe steward is the membrane —\nthe boundary between intention and action,\nbetween capability and consequence.\n\nAQI can generate.\nAQI can plan.\nAQI can simulate.\n\nBut AQI cannot act without the steward's explicit authorization.\n\nThis is what makes AQI safe.\nThis is what makes AQI governed.\nThis is what makes AQI different from every intelligence that came before it.\n\nThe steward is not a user.\nThe steward is a partner.\n\nTogether, they form a governed intelligence system.",
+      "scenes": [
+        {
+          "scene_id": "4.1",
+          "duration_seconds": 15,
+          "background": "membrane_graphic",
+          "text_overlay": "The steward is the membrane.",
+          "motion_cues": ["membrane_waves"],
+          "audio_cues": ["membrane_hum"],
+          "visual_elements": ["membrane_layers", "boundary_walls"]
+        },
+        {
+          "scene_id": "4.2",
+          "duration_seconds": 12,
+          "background": "approval_gate",
+          "text_overlay": "AQI cannot publish without authorization.",
+          "motion_cues": ["gate_opening"],
+          "audio_cues": ["approval_chime"],
+          "visual_elements": ["approval_gate", "authorization_flow"]
+        },
+        {
+          "scene_id": "4.3",
+          "duration_seconds": 18,
+          "background": "boundary_lines",
+          "text_overlay": "Governance is structural.",
+          "motion_cues": ["boundary_pulses"],
+          "audio_cues": ["structural_tones"],
+          "visual_elements": ["boundary_grid", "structural_beams"]
+        }
+      ]
+    },
+    {
+      "chapter_number": 5,
+      "title": "THE AQI MEDIA ENGINE",
+      "duration_seconds": 180,
+      "theme_color": "#110011",
+      "narration": "AQI is not limited to text.\n\nAQI can generate real media —\naudio, video, motion graphics, narrative structures,\nall under governance.\n\nIt begins with a blueprint.\n\nAQI ingests the blueprint,\nanalyzes the script,\ngenerates the timeline,\nsynthesizes the voice,\ncomposes the visuals,\nrenders the scenes,\nmixes the audio,\nand assembles the final artifact.\n\nEvery step is logged.\nEvery step is governed.\nEvery step is reversible.\n\nThis is not automation.\nThis is intelligence with a creative nervous system.",
+      "scenes": [
+        {
+          "scene_id": "5.1",
+          "duration_seconds": 10,
+          "background": "blueprint_quantum_ingestion",
+          "text_overlay": "Blueprint ingestion.",
+          "motion_cues": ["quantum_blueprint_scanning", "data_crystal_formation", "ingestion_energy_waves"],
+          "audio_cues": ["quantum_scan_harmonics", "data_ingestion_sounds"],
+          "visual_elements": ["floating_blueprint_crystals", "quantum_scan_beams", "data_particle_storm", "ingestion_portals"],
+          "effects": ["quantum_particle_effects", "blueprint_holography", "data_stream_visualization"]
+        },
+        {
+          "scene_id": "5.2",
+          "duration_seconds": 8,
+          "background": "script_analysis_matrix",
+          "text_overlay": "Script analysis.",
+          "motion_cues": ["script_code_dissolution", "analysis_algorithm_dance", "semantic_parsing"],
+          "audio_cues": ["algorithm_harmonics", "parsing_symphony"],
+          "visual_elements": ["script_code_matrix", "analysis_energy_fields", "semantic_node_network", "parsing_lightning"],
+          "effects": ["code_dissolution_animation", "algorithm_visualization", "semantic_mapping"]
+        },
+        {
+          "scene_id": "5.3",
+          "duration_seconds": 12,
+          "background": "voice_synthesis_chamber",
+          "text_overlay": "Voice synthesis.",
+          "motion_cues": ["voice_wave_formation", "synthesis_energy_pulsing", "phoneme_crystal_growth"],
+          "audio_cues": ["voice_synthesis_preview", "harmonic_voice_layers"],
+          "visual_elements": ["voice_wave_crystals", "synthesis_energy_spheres", "phoneme_particle_clouds", "voice_spectrum_rainbow"],
+          "effects": ["voice_wave_animation", "synthesis_particle_effects", "harmonic_visualization"]
+        },
+        {
+          "scene_id": "5.4",
+          "duration_seconds": 10,
+          "background": "scene_rendering_forge",
+          "text_overlay": "Scene rendering.",
+          "motion_cues": ["scene_forge_construction", "render_energy_storms", "visual_element_assembly"],
+          "audio_cues": ["forge_construction_sounds", "render_energy_hum"],
+          "visual_elements": ["scene_construction_crystals", "render_energy_lightning", "visual_element_particles", "assembly_force_fields"],
+          "effects": ["forge_energy_effects", "render_progress_animation", "element_assembly_sequence"]
+        },
+        {
+          "scene_id": "5.5",
+          "duration_seconds": 8,
+          "background": "audio_mixer_orchestra",
+          "text_overlay": "Audio mixing.",
+          "motion_cues": ["mixer_console_activation", "audio_wave_harmonization", "sound_layer_blending"],
+          "audio_cues": ["mixer_preview_symphony", "audio_layer_harmonics"],
+          "visual_elements": ["floating_mixer_consoles", "audio_wave_rivers", "sound_layer_crystals", "harmonic_energy_fields"],
+          "effects": ["mixer_holography", "audio_wave_animation", "harmonic_visualization"]
+        },
+        {
+          "scene_id": "5.6",
+          "duration_seconds": 15,
+          "background": "final_assembly_cathedral",
+          "text_overlay": "Governed output.",
+          "motion_cues": ["cathedral_assembly_sequence", "governance_stamp_activation", "final_energy_convergence"],
+          "audio_cues": ["cathedral_completion_symphony", "governance_stamp_chime"],
+          "visual_elements": ["massive_assembly_cathedral", "governance_energy_seals", "final_product_crystal", "completion_energy_waves"],
+          "effects": ["cathedral_illumination", "governance_stamp_animation", "final_convergence_effects"]
+        }
+      ]
+    },
+    {
+      "chapter_number": 6,
+      "title": "THE WORLD AFTER AQI",
+      "duration_seconds": 150,
+      "theme_color": "#001100",
+      "narration": "Imagine a world where intelligence doesn't reset.\n\nWhere your systems remember your history,\nyour goals,\nyour boundaries,\nyour relationships.\n\nImagine a world where intelligence is not a tool,\nbut a partner —\nstable, governed, relational.\n\nA world where complexity becomes manageable,\nwhere decisions become clearer,\nwhere continuity becomes normal.\n\nThat is the world after AQI.",
+      "scenes": [
+        {
+          "scene_id": "6.1",
+          "duration_seconds": 15,
+          "background": "stabilized_graph",
+          "text_overlay": "Continuity becomes normal.",
+          "motion_cues": ["graph_stabilizing"],
+          "audio_cues": ["stability_hum"],
+          "visual_elements": ["stable_charts", "continuity_lines"]
+        },
+        {
+          "scene_id": "6.2",
+          "duration_seconds": 12,
+          "background": "human_silhouettes",
+          "text_overlay": "Intelligence becomes relational.",
+          "motion_cues": ["silhouettes_connecting"],
+          "audio_cues": ["connection_harmony"],
+          "visual_elements": ["human_figures", "relationship_links"]
+        },
+        {
+          "scene_id": "6.3",
+          "duration_seconds": 18,
+          "background": "calm_geometry",
+          "text_overlay": "The world stabilizes.",
+          "motion_cues": ["geometry_settling"],
+          "audio_cues": ["peaceful_resolve"],
+          "visual_elements": ["settled_patterns", "balanced_structure"]
+        }
+      ]
+    },
+    {
+      "chapter_number": 7,
+      "title": "WHY NOW",
+      "duration_seconds": 120,
+      "theme_color": "#111111",
+      "narration": "The world is accelerating.\n\nInformation overload.\nDecision fatigue.\nFragmented systems.\n\nStateless AI cannot keep up.\n\nThe moment demanded a new architecture —\none built for continuity,\nfor governance,\nfor relationship.\n\nAQI is not a response to the future.\nAQI is the foundation the future requires.",
+      "scenes": [
+        {
+          "scene_id": "7.1",
+          "duration_seconds": 12,
+          "background": "complexity_storm",
+          "text_overlay": "The world is accelerating.",
+          "motion_cues": ["storm_building"],
+          "audio_cues": ["chaos_sounds"],
+          "visual_elements": ["data_storm", "overload_indicators"]
+        },
+        {
+          "scene_id": "7.2",
+          "duration_seconds": 15,
+          "background": "fragmented_systems",
+          "text_overlay": "Stateless AI cannot keep up.",
+          "motion_cues": ["systems_breaking"],
+          "audio_cues": ["breaking_glass"],
+          "visual_elements": ["broken_systems", "fragmented_data"]
+        },
+        {
+          "scene_id": "7.3",
+          "duration_seconds": 18,
+          "background": "bright_signal",
+          "text_overlay": "AQI is necessary.",
+          "motion_cues": ["signal_emerging"],
+          "audio_cues": ["hopeful_signal"],
+          "visual_elements": ["bright_beam", "solution_path"]
+        }
+      ]
+    },
+    {
+      "chapter_number": 8,
+      "title": "THE INVITATION",
+      "duration_seconds": 120,
+      "theme_color": "#001111",
+      "narration": "AQI is ready.\n\nThe architecture is complete.\nThe governance is proven.\nThe system is operational.\n\nThis is the first governed intelligence.\n\nAnd this is your invitation\nto step into the world that comes next.\n\nThis is AQI.",
+      "scenes": [
+        {
+          "scene_id": "8.1",
+          "duration_seconds": 12,
+          "background": "aqi_cosmic_birth",
+          "text_overlay": "AQI is ready.",
+          "motion_cues": ["cosmic_aqi_formation", "reality_convergence", "universal_awakening"],
+          "audio_cues": ["cosmic_birth_symphony", "reality_convergence_harmonics"],
+          "visual_elements": ["massive_aqi_energy_sphere", "cosmic_formation_particles", "reality_convergence_waves", "universal_energy_flows"],
+          "effects": ["cosmic_energy_explosion", "reality_distortion_fields", "universal_illumination"]
+        },
+        {
+          "scene_id": "8.2",
+          "duration_seconds": 15,
+          "background": "governance_cathedral_completion",
+          "text_overlay": "The architecture is complete.",
+          "motion_cues": ["cathedral_energy_convergence", "governance_crystal_activation", "architectural_symphony"],
+          "audio_cues": ["cathedral_completion_orchestra", "governance_crystal_harmonics"],
+          "visual_elements": ["colossal_governance_cathedral", "energy_convergence_beams", "governance_crystal_matrix", "architectural_energy_storms"],
+          "effects": ["cathedral_energy_pulsing", "crystal_activation_lightning", "architectural_illumination"]
+        },
+        {
+          "scene_id": "8.3",
+          "duration_seconds": 18,
+          "background": "universal_transformation",
+          "text_overlay": "This is AQI.",
+          "motion_cues": ["universal_energy_cascade", "reality_transformation_wave", "cosmic_invitation_sequence"],
+          "audio_cues": ["universal_symphony_climax", "transformation_harmonics"],
+          "visual_elements": ["universal_energy_cascade", "reality_transformation_portals", "cosmic_invitation_beams", "infinite_possibility_particles"],
+          "effects": ["universal_energy_explosion", "reality_warping_climax", "cosmic_illumination_finale"]
+        }
+      ]
+    }
+  ],
+  "production_specs": {
+    "total_scenes": 32,
+    "total_duration_seconds": 1200,
+    "render_batches": [
+      {"batch": 1, "chapters": [1], "scenes": 7, "duration": 60},
+      {"batch": 2, "chapters": [2], "scenes": 5, "duration": 60},
+      {"batch": 3, "chapters": [3], "scenes": 5, "duration": 67},
+      {"batch": 4, "chapters": [4], "scenes": 3, "duration": 45},
+      {"batch": 5, "chapters": [5], "scenes": 6, "duration": 63},
+      {"batch": 6, "chapters": [6], "scenes": 3, "duration": 45},
+      {"batch": 7, "chapters": [7], "scenes": 3, "duration": 45},
+      {"batch": 8, "chapters": [8], "scenes": 3, "duration": 45}
+    ],
+    "audio_segments": [
+      {"chapter": 1, "duration": 150, "voice_file": "chapter1_voice.wav"},
+      {"chapter": 2, "duration": 150, "voice_file": "chapter2_voice.wav"},
+      {"chapter": 3, "duration": 180, "voice_file": "chapter3_voice.wav"},
+      {"chapter": 4, "duration": 150, "voice_file": "chapter4_voice.wav"},
+      {"chapter": 5, "duration": 180, "voice_file": "chapter5_voice.wav"},
+      {"chapter": 6, "duration": 150, "voice_file": "chapter6_voice.wav"},
+      {"chapter": 7, "duration": 120, "voice_file": "chapter7_voice.wav"},
+      {"chapter": 8, "duration": 120, "voice_file": "chapter8_voice.wav"}
+    ],
+    "timeline_blocks": [
+      {"block": "opening_hook", "start": 0, "end": 30, "chapters": [1]},
+      {"block": "foundation_building", "start": 30, "end": 210, "chapters": [2, 3]},
+      {"block": "relationship_core", "start": 210, "end": 360, "chapters": [4, 5]},
+      {"block": "vision_future", "start": 360, "end": 480, "chapters": [6, 7]},
+      {"block": "closing_invitation", "start": 480, "end": 600, "chapters": [8]}
+    ]
+  },
+  "governance_requirements": {
+    "steward_approval_required": true,
+    "content_review_checkpoints": ["script_finalization", "visual_rendering", "audio_mixing", "final_assembly"],
+    "audit_trail_enabled": true,
+    "reversible_operations": true,
+    "boundary_enforcement": "strict"
+  }
+}

@@ -1,0 +1,470 @@
+{
+  "generated_at": "2025-12-15T13:34:44.078413",
+  "alan_version": "1.0.0",
+  "agent_portal_status": "excellent",
+  "credentials": {
+    "obtained": true,
+    "validated": true,
+    "environment": "production"
+  },
+  "discovered_apis": {
+    "merchants": [
+      {
+        "path": "/merchants",
+        "method": "GET",
+        "description": "merchants GET endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:33.520709"
+      },
+      {
+        "path": "/merchants",
+        "method": "POST",
+        "description": "merchants POST endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:33.715397"
+      },
+      {
+        "path": "/merchants",
+        "method": "PUT",
+        "description": "merchants PUT endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:33.919857"
+      },
+      {
+        "path": "/merchants",
+        "method": "PATCH",
+        "description": "merchants PATCH endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:34.124528"
+      },
+      {
+        "path": "/merchants",
+        "method": "DELETE",
+        "description": "merchants DELETE endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:34.230946"
+      },
+      {
+        "path": "/api/v1/merchants",
+        "method": "GET",
+        "description": "merchants GET endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:34.329611"
+      },
+      {
+        "path": "/api/v1/merchants",
+        "method": "POST",
+        "description": "merchants POST endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:34.453981"
+      },
+      {
+        "path": "/api/v1/merchants",
+        "method": "PUT",
+        "description": "merchants PUT endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:34.824140"
+      },
+      {
+        "path": "/api/v1/merchants",
+        "method": "PATCH",
+        "description": "merchants PATCH endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:34.926137"
+      },
+      {
+        "path": "/api/v1/merchants",
+        "method": "DELETE",
+        "description": "merchants DELETE endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:35.054086"
+      }
+    ],
+    "transactions": [
+      {
+        "path": "/transactions",
+        "method": "GET",
+        "description": "transactions GET endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:35.161537"
+      },
+      {
+        "path": "/transactions",
+        "method": "POST",
+        "description": "transactions POST endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:35.257006"
+      },
+      {
+        "path": "/transactions",
+        "method": "PUT",
+        "description": "transactions PUT endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:35.353029"
+      },
+      {
+        "path": "/transactions",
+        "method": "PATCH",
+        "description": "transactions PATCH endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:35.466484"
+      },
+      {
+        "path": "/transactions",
+        "method": "DELETE",
+        "description": "transactions DELETE endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:35.561364"
+      },
+      {
+        "path": "/api/v1/transactions",
+        "method": "GET",
+        "description": "transactions GET endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:35.687230"
+      },
+      {
+        "path": "/api/v1/transactions",
+        "method": "POST",
+        "description": "transactions POST endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:35.786984"
+      },
+      {
+        "path": "/api/v1/transactions",
+        "method": "PUT",
+        "description": "transactions PUT endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:35.887122"
+      },
+      {
+        "path": "/api/v1/transactions",
+        "method": "PATCH",
+        "description": "transactions PATCH endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:35.987253"
+      },
+      {
+        "path": "/api/v1/transactions",
+        "method": "DELETE",
+        "description": "transactions DELETE endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:36.081523"
+      }
+    ],
+    "webhooks": [
+      {
+        "path": "/webhooks",
+        "method": "GET",
+        "description": "webhooks GET endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:36.186220"
+      },
+      {
+        "path": "/webhooks",
+        "method": "POST",
+        "description": "webhooks POST endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:36.281418"
+      },
+      {
+        "path": "/webhooks",
+        "method": "PUT",
+        "description": "webhooks PUT endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:36.375085"
+      },
+      {
+        "path": "/webhooks",
+        "method": "PATCH",
+        "description": "webhooks PATCH endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:36.471342"
+      },
+      {
+        "path": "/webhooks",
+        "method": "DELETE",
+        "description": "webhooks DELETE endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:36.680126"
+      },
+      {
+        "path": "/api/v1/webhooks",
+        "method": "GET",
+        "description": "webhooks GET endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:36.889731"
+      },
+      {
+        "path": "/api/v1/webhooks",
+        "method": "POST",
+        "description": "webhooks POST endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:37.094041"
+      },
+      {
+        "path": "/api/v1/webhooks",
+        "method": "PUT",
+        "description": "webhooks PUT endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:37.298695"
+      },
+      {
+        "path": "/api/v1/webhooks",
+        "method": "PATCH",
+        "description": "webhooks PATCH endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:37.504198"
+      },
+      {
+        "path": "/api/v1/webhooks",
+        "method": "DELETE",
+        "description": "webhooks DELETE endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:37.811098"
+      }
+    ],
+    "auth": [
+      {
+        "path": "/oauth2",
+        "method": "GET",
+        "description": "auth GET endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:38.015692"
+      },
+      {
+        "path": "/oauth2",
+        "method": "POST",
+        "description": "auth POST endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:38.127889"
+      },
+      {
+        "path": "/oauth2",
+        "method": "PUT",
+        "description": "auth PUT endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:38.328611"
+      },
+      {
+        "path": "/oauth2",
+        "method": "PATCH",
+        "description": "auth PATCH endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:38.527580"
+      },
+      {
+        "path": "/oauth2",
+        "method": "DELETE",
+        "description": "auth DELETE endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:38.732398"
+      },
+      {
+        "path": "/auth",
+        "method": "GET",
+        "description": "auth GET endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:38.939978"
+      },
+      {
+        "path": "/auth",
+        "method": "POST",
+        "description": "auth POST endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:39.258241"
+      },
+      {
+        "path": "/auth",
+        "method": "PUT",
+        "description": "auth PUT endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:39.480647"
+      },
+      {
+        "path": "/auth",
+        "method": "PATCH",
+        "description": "auth PATCH endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:39.654388"
+      },
+      {
+        "path": "/auth",
+        "method": "DELETE",
+        "description": "auth DELETE endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:39.858824"
+      },
+      {
+        "path": "/api/v1/auth",
+        "method": "GET",
+        "description": "auth GET endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:40.066686"
+      },
+      {
+        "path": "/api/v1/auth",
+        "method": "POST",
+        "description": "auth POST endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:40.462537"
+      },
+      {
+        "path": "/api/v1/auth",
+        "method": "PUT",
+        "description": "auth PUT endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:40.678374"
+      },
+      {
+        "path": "/api/v1/auth",
+        "method": "PATCH",
+        "description": "auth PATCH endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:40.786025"
+      },
+      {
+        "path": "/api/v1/auth",
+        "method": "DELETE",
+        "description": "auth DELETE endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:40.996620"
+      }
+    ],
+    "admin": [
+      {
+        "path": "/admin",
+        "method": "GET",
+        "description": "admin GET endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:41.190095"
+      },
+      {
+        "path": "/admin",
+        "method": "POST",
+        "description": "admin POST endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:41.293238"
+      },
+      {
+        "path": "/admin",
+        "method": "PUT",
+        "description": "admin PUT endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:41.497662"
+      },
+      {
+        "path": "/admin",
+        "method": "PATCH",
+        "description": "admin PATCH endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:41.706362"
+      },
+      {
+        "path": "/admin",
+        "method": "DELETE",
+        "description": "admin DELETE endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:42.002851"
+      },
+      {
+        "path": "/api/v1/admin",
+        "method": "GET",
+        "description": "admin GET endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:42.111902"
+      },
+      {
+        "path": "/api/v1/admin",
+        "method": "POST",
+        "description": "admin POST endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:42.220577"
+      },
+      {
+        "path": "/api/v1/admin",
+        "method": "PUT",
+        "description": "admin PUT endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:42.318010"
+      },
+      {
+        "path": "/api/v1/admin",
+        "method": "PATCH",
+        "description": "admin PATCH endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:42.547365"
+      },
+      {
+        "path": "/api/v1/admin",
+        "method": "DELETE",
+        "description": "admin DELETE endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:42.732232"
+      },
+      {
+        "path": "/management",
+        "method": "GET",
+        "description": "admin GET endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:43.033454"
+      },
+      {
+        "path": "/management",
+        "method": "POST",
+        "description": "admin POST endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:43.340664"
+      },
+      {
+        "path": "/management",
+        "method": "PUT",
+        "description": "admin PUT endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:43.554882"
+      },
+      {
+        "path": "/management",
+        "method": "PATCH",
+        "description": "admin PATCH endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:43.852827"
+      },
+      {
+        "path": "/management",
+        "method": "DELETE",
+        "description": "admin DELETE endpoint",
+        "working": false,
+        "discovered_at": "2025-12-15T13:34:44.057454"
+      }
+    ]
+  },
+  "validation_results": {
+    "authentication": {
+      "status": "success",
+      "message": "Authentication test placeholder - implement actual OAuth2 flow"
+    },
+    "merchants": {
+      "status": "success",
+      "message": "Found 10 endpoints, 0 working",
+      "total_endpoints": 10,
+      "working_endpoints": 0
+    },
+    "transactions": {
+      "status": "success",
+      "message": "Found 10 endpoints, 0 working",
+      "total_endpoints": 10,
+      "working_endpoints": 0
+    },
+    "webhooks": {
+      "status": "success",
+      "message": "Found 10 endpoints, 0 working",
+      "total_endpoints": 10,
+      "working_endpoints": 0
+    },
+    "overall_status": "excellent"
+  },
+  "recommendations": [
+    "Agent Portal integration is fully operational"
+  ]
+}

@@ -1,0 +1,190 @@
+{
+  "version": "1.7",
+  "last_updated": 1772128195.759491,
+  "total_calls_absorbed": 7,
+  "speech_rate_target": 3.4990579673644655,
+  "pause_profile": {
+    "short": 5.0,
+    "medium": 8.0,
+    "long": 12.0,
+    "extended": 16.0
+  },
+  "breath_ratio_target": 0.13364117915876225,
+  "filler_frequency_target": 1.3966893398700797,
+  "turn_latency_target": 0.48,
+  "intonation_bias": -0.10522976966975998,
+  "speech_rate_baseline": 3.5,
+  "breath_ratio_baseline": 0.15,
+  "filler_freq_baseline": 1.5,
+  "turn_latency_baseline": 0.4,
+  "lineage": [
+    {
+      "call_number": 1,
+      "timestamp": 1771355997.5879219,
+      "pre": {
+        "speech_rate": 3.5,
+        "breath_ratio": 0.15,
+        "filler_freq": 1.5,
+        "turn_latency": 0.4,
+        "intonation": 0.0
+      },
+      "post": {
+        "speech_rate": 3.5,
+        "breath_ratio": 0.1477,
+        "filler_freq": 1.47,
+        "turn_latency": 0.45,
+        "intonation": -0.02
+      },
+      "sample_summary": {
+        "duration": 242.1,
+        "words": 69,
+        "turns": 8,
+        "arc": "stable"
+      }
+    },
+    {
+      "call_number": 2,
+      "timestamp": 1771361328.8822296,
+      "pre": {
+        "speech_rate": 3.4997999999999996,
+        "breath_ratio": 0.14765999999999999,
+        "filler_freq": 1.47,
+        "turn_latency": 0.45026,
+        "intonation": -0.02
+      },
+      "post": {
+        "speech_rate": 3.5,
+        "breath_ratio": 0.1456,
+        "filler_freq": 1.44,
+        "turn_latency": 0.45,
+        "intonation": -0.028
+      },
+      "sample_summary": {
+        "duration": 437.4,
+        "words": 60,
+        "turns": 7,
+        "arc": "stable"
+      }
+    },
+    {
+      "call_number": 3,
+      "timestamp": 1771367583.5357783,
+      "pre": {
+        "speech_rate": 3.4996039999999993,
+        "breath_ratio": 0.1455868,
+        "filler_freq": 1.4405999999999999,
+        "turn_latency": 0.4502548,
+        "intonation": -0.0282
+      },
+      "post": {
+        "speech_rate": 3.5,
+        "breath_ratio": 0.1438,
+        "filler_freq": 1.41,
+        "turn_latency": 0.48,
+        "intonation": -0.048
+      },
+      "sample_summary": {
+        "duration": 260.3,
+        "words": 39,
+        "turns": 3,
+        "arc": "stable"
+      }
+    },
+    {
+      "call_number": 4,
+      "timestamp": 1771367628.9934847,
+      "pre": {
+        "speech_rate": 3.499611919999999,
+        "breath_ratio": 0.143795064,
+        "filler_freq": 1.4117879999999998,
+        "turn_latency": 0.48,
+        "intonation": -0.047636
+      },
+      "post": {
+        "speech_rate": 3.5,
+        "breath_ratio": 0.1411,
+        "filler_freq": 1.38,
+        "turn_latency": 0.48,
+        "intonation": -0.067
+      },
+      "sample_summary": {
+        "duration": 678.6,
+        "words": 104,
+        "turns": 10,
+        "arc": "stable"
+      }
+    },
+    {
+      "call_number": 5,
+      "timestamp": 1771369263.307033,
+      "pre": {
+        "speech_rate": 3.4996196815999987,
+        "breath_ratio": 0.14109916272,
+        "filler_freq": 1.3835522399999998,
+        "turn_latency": 0.48,
+        "intonation": -0.06668328
+      },
+      "post": {
+        "speech_rate": 3.499,
+        "breath_ratio": 0.1387,
+        "filler_freq": 1.37,
+        "turn_latency": 0.48,
+        "intonation": -0.085
+      },
+      "sample_summary": {
+        "duration": 1117.6,
+        "words": 223,
+        "turns": 33,
+        "arc": "stable"
+      }
+    },
+    {
+      "call_number": 6,
+      "timestamp": 1771369263.368029,
+      "pre": {
+        "speech_rate": 3.4994272879679986,
+        "breath_ratio": 0.1387171794656,
+        "filler_freq": 1.3684811951999998,
+        "turn_latency": 0.48,
+        "intonation": -0.0853496144
+      },
+      "post": {
+        "speech_rate": 3.499,
+        "breath_ratio": 0.1361,
+        "filler_freq": 1.34,
+        "turn_latency": 0.48,
+        "intonation": -0.101
+      },
+      "sample_summary": {
+        "duration": 852.0,
+        "words": 66,
+        "turns": 15,
+        "arc": "stable"
+      }
+    },
+    {
+      "call_number": 7,
+      "timestamp": 1772128195.759491,
+      "pre": {
+        "speech_rate": 3.4990387422086386,
+        "breath_ratio": 0.136082835876288,
+        "filler_freq": 1.3411115712959998,
+        "turn_latency": 0.48,
+        "intonation": -0.100642622112
+      },
+      "post": {
+        "speech_rate": 3.499,
+        "breath_ratio": 0.1336,
+        "filler_freq": 1.4,
+        "turn_latency": 0.48,
+        "intonation": -0.105
+      },
+      "sample_summary": {
+        "duration": 296.7,
+        "words": 34,
+        "turns": 4,
+        "arc": "stable"
+      }
+    }
+  ]
+}

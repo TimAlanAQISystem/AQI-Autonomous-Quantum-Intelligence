@@ -1,0 +1,27 @@
+{
+    "node_id": "ALAN_EMAIL_NODE_01",
+    "status": "LIVE_PRODUCTION",
+    "connection": {
+        "provider": "Microsoft Outlook 365",
+        "address": "alanjonesscsdmcorp@outlook.com",
+        "protocol": "SMTP/OAuth2",
+        "host": "smtp-mail.outlook.com",
+        "port": 587,
+        "tls": true
+    },
+    "compliance": {
+        "dkim_alignment": "not_configured",
+        "spf_check": "not_configured",
+        "dnc_scrub": "real_time",
+        "note": "DKIM/SPF not applicable for Outlook free-tier. Google domain attempt abandoned Feb 16 2026."
+    },
+    "voice_sync": {
+        "tone": "radical_transparency",
+        "latency_match": true,
+        "signature_block": "Alan | Rational Intelligence\nSCSDM Corp | US Merchant Optimization"
+    },
+    "templates": {
+        "flash_audit": "Hey {name}, dropping the audit link here. Click to snap your statement: {secure_link} - Alan",
+        "math_breakdown": "Mark, per our call: You're paying 3.8%. I'm offering 0% + 10c. Math attached. - Alan"
+    }
+}

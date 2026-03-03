@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent X — VIP Telemetry Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; background: #0a0a0f; color: #e0e0e0; }
+
+        /* Header */
+        .header { background: linear-gradient(135deg, #0d1b2a 0%, #1b2838 100%); padding: 16px 24px; border-bottom: 2px solid #1a3a5c; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 20px; color: #fff; letter-spacing: 1px; }
+        .header h1 .accent { color: #4fc3f7; }
+        .header-right { display: flex; align-items: center; gap: 16px; }
+        .header-time { font-size: 12px; color: #888; font-family: monospace; }
+        .posture-badge { padding: 6px 18px; border-radius: 20px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        .posture-green { background: #1b5e20; color: #69f0ae; border: 1px solid #2e7d32; }
+        .posture-yellow { background: #4e3800; color: #ffd54f; border: 1px solid #f57f17; }
+        .posture-red { background: #5c1010; color: #ff5252; border: 1px solid #c62828; animation: pulse-red 1.5s infinite; }
+        @keyframes pulse-red { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+        .container { max-width: 1440px; margin: 0 auto; padding: 16px; }
+
+        /* Top Bar — Vital Signs */
+        .vitals { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-bottom: 16px; }
+        .vital-card { background: #111827; border: 1px solid #1f2937; border-radius: 10px; padding: 14px 16px; text-align: center; }
+        .vital-label { font-size: 10px; color: #6b7280; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
+        .vital-value { font-size: 18px; font-weight: 700; }
+        .vital-value.ok { color: #69f0ae; }
+        .vital-value.warn { color: #ffd54f; }
+        .vital-value.fail { color: #ff5252; }
+        .vital-value.info { color: #4fc3f7; }
+
+        /* Panels */
+        .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .panel { background: #111827; border: 1px solid #1f2937; border-radius: 10px; padding: 16px; }
+        .panel h2 { font-size: 13px; color: #4fc3f7; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #1f2937; }
+        .panel-full { grid-column: 1 / -1; }
+
+        /* Health Matrix */
+        .health-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+        .health-cell { text-align: center; padding: 12px 8px; border-radius: 8px; border: 1px solid #1f2937; }
+        .health-cell-label { font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+        .health-cell-status { font-size: 14px; font-weight: 700; }
+        .health-ok { background: #064e2c22; border-color: #065f46; }
+        .health-ok .health-cell-status { color: #69f0ae; }
+        .health-warn { background: #713f1222; border-color: #92400e; }
+        .health-warn .health-cell-status { color: #ffd54f; }
+        .health-fail { background: #7f1d1d22; border-color: #991b1b; }
+        .health-fail .health-cell-status { color: #ff5252; }
+
+        /* Event Stream */
+        .event-list { max-height: 300px; overflow-y: auto; }
+        .event-row { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px solid #1f293744; font-size: 12px; font-family: monospace; }
+        .event-time { color: #6b7280; min-width: 80px; }
+        .event-type { font-weight: 600; min-width: 80px; }
+        .event-type.repair { color: #ffd54f; }
+        .event-type.check { color: #69f0ae; }
+        .event-type.critical { color: #ff5252; }
+        .event-detail { color: #d1d5db; flex: 1; }
+
+        /* Deep Probe */
+        .probe-section { margin-bottom: 12px; }
+        .probe-title { font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+        .probe-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; }
+        .probe-item { display: flex; justify-content: space-between; font-size: 12px; padding: 3px 0; }
+        .probe-key { color: #9ca3af; }
+        .probe-val { font-weight: 600; }
+        .probe-val.yes { color: #69f0ae; }
+        .probe-val.no { color: #ff5252; }
+
+        /* Call Activity */
+        .call-list { max-height: 200px; overflow-y: auto; }
+        .call-row { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid #1f293744; font-size: 12px; }
+        .call-id { color: #4fc3f7; min-width: 100px; font-family: monospace; }
+        .call-status { font-weight: 600; min-width: 80px; }
+        .call-status.active { color: #69f0ae; }
+        .call-detail { color: #9ca3af; }
+
+        /* VIP Readiness */
+        .readiness-grid { display: grid; grid-template-columns: 1fr; gap: 6px; }
+        .readiness-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-radius: 6px; background: #0d111788; }
+        .readiness-check { font-size: 13px; color: #d1d5db; }
+        .readiness-result { font-size: 13px; font-weight: 700; padding: 2px 12px; border-radius: 4px; }
+        .readiness-pass { color: #69f0ae; background: #064e2c44; }
+        .readiness-fail { color: #ff5252; background: #7f1d1d44; }
+
+        /* Action Buttons */
+        .actions { display: flex; gap: 10px; margin-top: 12px; }
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.15s; }
+        .btn-force { background: #1565c0; color: white; }
+        .btn-force:hover { background: #1976d2; }
+        .btn-refresh { background: #2e7d32; color: white; }
+        .btn-refresh:hover { background: #388e3c; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #111827; }
+        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .vitals { grid-template-columns: repeat(3, 1fr); }
+            .panels { grid-template-columns: 1fr; }
+            .health-grid { grid-template-columns: repeat(4, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1><span class="accent">AGENT X</span> — VIP Telemetry Dashboard</h1>
+    <div class="header-right">
+        <span class="header-time" id="clock"></span>
+        <span class="posture-badge posture-green" id="posture">LOADING...</span>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- Panel 1: Vital Signs -->
+    <div class="vitals">
+        <div class="vital-card"><div class="vital-label">Alan</div><div class="vital-value" id="v-alan">—</div></div>
+        <div class="vital-card"><div class="vital-label">Agent X</div><div class="vital-value" id="v-agentx">—</div></div>
+        <div class="vital-card"><div class="vital-label">Coupled</div><div class="vital-value" id="v-coupled">—</div></div>
+        <div class="vital-card"><div class="vital-label">ARDE</div><div class="vital-value" id="v-arde">—</div></div>
+        <div class="vital-card"><div class="vital-label">Tunnel</div><div class="vital-value" id="v-tunnel">—</div></div>
+        <div class="vital-card"><div class="vital-label">Greetings</div><div class="vital-value" id="v-greetings">—</div></div>
+        <div class="vital-card"><div class="vital-label">Active Calls</div><div class="vital-value" id="v-calls">—</div></div>
+    </div>
+
+    <div class="panels">
+
+        <!-- Panel 2: Subsystem Health Matrix -->
+        <div class="panel">
+            <h2>Subsystem Health Matrix</h2>
+            <div class="health-grid" id="health-matrix">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+
+        <!-- Panel 5: VIP Readiness Gate -->
+        <div class="panel">
+            <h2>VIP Readiness Gate</h2>
+            <div class="readiness-grid" id="readiness-grid">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+
+        <!-- Panel 3: ARDE Event Stream -->
+        <div class="panel">
+            <h2>ARDE Event Stream (Last 20)</h2>
+            <div class="event-list" id="event-stream">
+                <div class="event-row"><span class="event-detail" style="color:#6b7280">Waiting for data...</span></div>
+            </div>
+        </div>
+
+        <!-- Panel 4: Deep Probe Snapshot -->
+        <div class="panel">
+            <h2>Deep Probe Snapshot</h2>
+            <div id="deep-probe">
+                <div style="color:#6b7280; font-size: 12px;">Loading...</div>
+            </div>
+        </div>
+
+        <!-- Panel 5: Call Activity (Full Width) -->
+        <div class="panel panel-full">
+            <h2>Active Call Panel</h2>
+            <div class="call-list" id="call-activity">
+                <div class="call-row"><span class="call-detail">No active calls</span></div>
+            </div>
+            <div class="actions">
+                <button class="btn btn-refresh" onclick="refreshAll()">Refresh All</button>
+                <button class="btn btn-force" onclick="forceRepair()">Force Repair</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const BASE = window.location.origin;
+let refreshInterval = null;
+
+// ── Clock ──
+function updateClock() {
+    document.getElementById('clock').textContent = new Date().toLocaleString('en-US', {
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true,
+        month: 'short', day: 'numeric'
+    });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── Helpers ──
+function statusClass(s) {
+    if (!s) return 'fail';
+    s = String(s).toLowerCase();
+    if (s === 'ok' || s === 'online' || s === 'operational' || s === 'true' || s === 'pass') return 'ok';
+    if (s === 'warning' || s === 'warn') return 'warn';
+    return 'fail';
+}
+
+function boolText(v) { return v ? 'YES' : 'NO'; }
+function boolClass(v) { return v ? 'yes' : 'no'; }
+
+// ── Fetch wrappers ──
+async function fetchJSON(path) {
+    try {
+        const r = await fetch(BASE + path, { signal: AbortSignal.timeout(8000) });
+        return await r.json();
+    } catch (e) {
+        console.error('Fetch failed:', path, e);
+        return null;
+    }
+}
+
+// ── Panel 1: Vital Signs ──
+async function updateVitals() {
+    const [health, ardeSnap, deep] = await Promise.all([
+        fetchJSON('/health'),
+        fetchJSON('/diagnostics/arde'),
+        fetchJSON('/diagnostics/deep'),
+    ]);
+
+    if (health && health.subsystems) {
+        const s = health.subsystems;
+        setVital('v-alan', s.alan || 'OFFLINE');
+        setVital('v-agentx', s.agent_x || 'OFFLINE');
+        setVital('v-coupled', s.coupled ? 'YES' : 'NO');
+    }
+
+    if (ardeSnap) {
+        setVital('v-arde', ardeSnap.running ? `RUN #${ardeSnap.cycle_count}` : 'STOPPED', ardeSnap.running ? 'ok' : 'fail');
+    }
+
+    if (deep && deep.relay_deep) {
+        const gc = deep.relay_deep.greeting_cache_count;
+        setVital('v-greetings', gc != null ? String(gc) : '?', gc >= 3 ? 'ok' : gc > 0 ? 'warn' : 'fail');
+        const ac = deep.relay_deep.active_conversations;
+        setVital('v-calls', ac != null ? String(ac) : '0', 'info');
+    }
+
+    // Tunnel
+    if (ardeSnap && ardeSnap.subsystem_health) {
+        const ts = ardeSnap.subsystem_health.tunnel;
+        setVital('v-tunnel', ts === 'ok' ? 'ACTIVE' : (ts || 'UNKNOWN').toUpperCase());
+    }
+}
+
+function setVital(id, text, overrideClass) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text;
+    const cls = overrideClass || statusClass(text);
+    el.className = 'vital-value ' + cls;
+}
+
+// ── Panel 2: Health Matrix ──
+async function updateHealthMatrix() {
+    const ardeSnap = await fetchJSON('/diagnostics/arde');
+    const matrix = document.getElementById('health-matrix');
+    if (!ardeSnap || !ardeSnap.subsystem_health) {
+        matrix.innerHTML = '<div style="color:#6b7280">No data</div>';
+        return;
+    }
+    const order = ['alan', 'agent_x', 'tts', 'greeting_cache', 'tunnel', 'twilio', 'openai'];
+    const labels = { alan: 'Alan', agent_x: 'Agent X', tts: 'TTS', greeting_cache: 'Greetings', tunnel: 'Tunnel', twilio: 'Twilio', openai: 'OpenAI' };
+    let html = '';
+    for (const key of order) {
+        const st = ardeSnap.subsystem_health[key] || 'unknown';
+        const cls = st === 'ok' ? 'health-ok' : st === 'warning' ? 'health-warn' : 'health-fail';
+        html += `<div class="health-cell ${cls}">
+            <div class="health-cell-label">${labels[key] || key}</div>
+            <div class="health-cell-status">${st.toUpperCase()}</div>
+        </div>`;
+    }
+    matrix.innerHTML = html;
+}
+
+// ── Panel 3: ARDE Event Stream ──
+async function updateEventStream() {
+    const ardeSnap = await fetchJSON('/diagnostics/arde');
+    const container = document.getElementById('event-stream');
+    if (!ardeSnap || !ardeSnap.repair_history || ardeSnap.repair_history.length === 0) {
+        if (ardeSnap && ardeSnap.cycle_count > 0) {
+            container.innerHTML = `<div class="event-row"><span class="event-detail" style="color:#69f0ae">All clear — ${ardeSnap.cycle_count} cycles, no repairs needed</span></div>`;
+        }
+        return;
+    }
+    const events = ardeSnap.repair_history.slice(-20).reverse();
+    let html = '';
+    for (const ev of events) {
+        const time = ev.timestamp ? ev.timestamp.split('T')[1]?.substring(0, 8) || '' : '';
+        const typeClass = ev.action === 'repair' ? 'repair' : ev.result === 'CRITICAL' ? 'critical' : 'check';
+        html += `<div class="event-row">
+            <span class="event-time">${time}</span>
+            <span class="event-type ${typeClass}">${(ev.action || 'event').toUpperCase()}</span>
+            <span class="event-detail">${ev.subsystem || ''}: ${ev.detail || ev.result || ''}</span>
+        </div>`;
+    }
+    container.innerHTML = html;
+}
+
+// ── Panel 4: Deep Probe ──
+async function updateDeepProbe() {
+    const deep = await fetchJSON('/diagnostics/deep');
+    const container = document.getElementById('deep-probe');
+    if (!deep) {
+        container.innerHTML = '<div style="color:#ff5252; font-size: 12px;">Failed to fetch deep diagnostic</div>';
+        return;
+    }
+    let html = '';
+
+    // Alan
+    if (deep.alan_deep) {
+        html += '<div class="probe-section"><div class="probe-title">Alan (Brain)</div><div class="probe-grid">';
+        const a = deep.alan_deep;
+        html += probeRow('Status', a.status, a.status === 'operational');
+        html += probeRow('System Prompt', boolText(a.has_system_prompt), a.has_system_prompt);
+        html += probeRow('build_llm_prompt', boolText(a.has_build_llm_prompt), a.has_build_llm_prompt);
+        html += probeRow('Config', boolText(a.has_config), a.has_config);
+        html += probeRow('Model', a.model || '?', true);
+        html += probeRow('Max Tokens', a.max_tokens || '?', true);
+        html += '</div></div>';
+    }
+
+    // Agent X
+    if (deep.agent_x_deep) {
+        html += '<div class="probe-section"><div class="probe-title">Agent X (Support)</div><div class="probe-grid">';
+        const x = deep.agent_x_deep;
+        html += probeRow('Status', x.status, x.status === 'operational');
+        html += probeRow('PVE', boolText(x.has_pve), x.has_pve);
+        html += probeRow('Rapport', boolText(x.rapport_loaded), x.rapport_loaded);
+        html += probeRow('IQ Cores', boolText(x.iq_cores_loaded), x.iq_cores_loaded);
+        html += probeRow('Priority Dispatch', boolText(x.has_priority_dispatch), x.has_priority_dispatch);
+        html += probeRow('Mannerism Advisory', boolText(x.has_mannerism_advisory), x.has_mannerism_advisory);
+        html += '</div></div>';
+    }
+
+    // Relay
+    if (deep.relay_deep) {
+        html += '<div class="probe-section"><div class="probe-title">Relay Server / Engines</div><div class="probe-grid">';
+        const r = deep.relay_deep;
+        html += probeRow('Master Closer', boolText(r.has_master_closer), r.has_master_closer);
+        html += probeRow('CRG', boolText(r.has_crg), r.has_crg);
+        html += probeRow('Evolution', boolText(r.has_evolution), r.has_evolution);
+        html += probeRow('Coordinator', boolText(r.has_coordinator), r.has_coordinator);
+        html += probeRow('Predictive', boolText(r.has_predictive_engine), r.has_predictive_engine);
+        html += probeRow('Behavior', boolText(r.has_behavior_engine), r.has_behavior_engine);
+        html += probeRow('TTS Voice', r.tts_voice || '?', true);
+        html += probeRow('TTS Model', r.tts_model || '?', true);
+        html += '</div></div>';
+    }
+
+    container.innerHTML = html;
+}
+
+function probeRow(key, val, ok) {
+    return `<div class="probe-item"><span class="probe-key">${key}</span><span class="probe-val ${ok ? 'yes' : 'no'}">${val}</span></div>`;
+}
+
+// ── Panel 5: VIP Readiness ──
+async function updateReadiness() {
+    const data = await fetchJSON('/readiness/vip');
+    const container = document.getElementById('readiness-grid');
+    if (!data || !data.checks) {
+        container.innerHTML = '<div style="color:#6b7280; font-size: 12px;">Endpoint not available</div>';
+        return;
+    }
+
+    let html = '';
+    for (const check of data.checks) {
+        const pass = check.pass;
+        html += `<div class="readiness-row">
+            <span class="readiness-check">${check.name}</span>
+            <span class="readiness-result ${pass ? 'readiness-pass' : 'readiness-fail'}">${pass ? 'PASS' : 'FAIL'}</span>
+        </div>`;
+        if (!pass && check.reason) {
+            html += `<div class="readiness-row" style="padding-left:24px; font-size:11px; color:#ff5252;">${check.reason}</div>`;
+        }
+    }
+
+    // Overall
+    html += `<div class="readiness-row" style="margin-top:8px; border-top: 1px solid #1f2937; padding-top: 10px;">
+        <span class="readiness-check" style="font-weight:700;">OVERALL VERDICT</span>
+        <span class="readiness-result ${data.allowed ? 'readiness-pass' : 'readiness-fail'}" style="font-size:15px;">${data.allowed ? 'TRAFFIC ALLOWED' : 'TRAFFIC BLOCKED'}</span>
+    </div>`;
+
+    container.innerHTML = html;
+
+    // Update posture badge
+    const badge = document.getElementById('posture');
+    if (data.allowed) {
+        badge.textContent = 'GREEN — TRAFFIC ALLOWED';
+        badge.className = 'posture-badge posture-green';
+    } else {
+        badge.textContent = 'RED — TRAFFIC BLOCKED';
+        badge.className = 'posture-badge posture-red';
+    }
+}
+
+// ── Panel 6: Call Activity ──
+async function updateCallActivity() {
+    const deep = await fetchJSON('/diagnostics/deep');
+    const container = document.getElementById('call-activity');
+    if (!deep || !deep.relay_deep) {
+        container.innerHTML = '<div class="call-row"><span class="call-detail">No data</span></div>';
+        return;
+    }
+    const count = deep.relay_deep.active_conversations || 0;
+    if (count === 0) {
+        container.innerHTML = '<div class="call-row"><span class="call-detail" style="color:#6b7280">No active calls — system idle</span></div>';
+        return;
+    }
+    container.innerHTML = `<div class="call-row"><span class="call-status active">ACTIVE</span><span class="call-detail">${count} conversation(s) in progress</span></div>`;
+}
+
+// ── Master Refresh ──
+async function refreshAll() {
+    await Promise.all([
+        updateVitals(),
+        updateHealthMatrix(),
+        updateEventStream(),
+        updateDeepProbe(),
+        updateReadiness(),
+        updateCallActivity(),
+    ]);
+}
+
+// ── Force Repair ──
+async function forceRepair() {
+    try {
+        await fetch(BASE + '/repair/force', { method: 'POST' });
+        setTimeout(refreshAll, 2000);
+    } catch (e) {
+        alert('Force repair failed: ' + e.message);
+    }
+}
+
+// ── Auto-refresh every 15 seconds ──
+refreshAll();
+refreshInterval = setInterval(refreshAll, 15000);
+</script>
+</body>
+</html>

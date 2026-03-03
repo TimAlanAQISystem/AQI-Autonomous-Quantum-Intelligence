@@ -1,0 +1,21 @@
+[project]
+name = "aqi-delta"
+version = "0.1.0"
+description = "AQI Delta Engine: Compute semantic deltas from TALK packets"
+authors = [
+    { name="Timmy J. Jones", email="founder@scsdmc.com" }
+]
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.0",
+    "talk>=0.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/your-org/aqi-delta"
+Documentation = "https://your-docs-url"
+Source = "https://github.com/your-org/aqi-delta"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"

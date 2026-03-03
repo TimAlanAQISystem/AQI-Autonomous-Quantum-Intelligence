@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent X — Command Center</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0a0f; color: #e0e0e0; }
+        .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 20px 30px; border-bottom: 1px solid #2a2a4a; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 24px; color: #fff; }
+        .header h1 span { color: #4fc3f7; }
+        .status-badge { padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+        .status-online { background: #1b5e20; color: #69f0ae; }
+        .status-offline { background: #b71c1c; color: #ef9a9a; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .card { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; padding: 20px; }
+        .card-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .card-value { font-size: 32px; font-weight: 700; color: #fff; }
+        .card-value.green { color: #69f0ae; }
+        .card-value.blue { color: #4fc3f7; }
+        .card-value.amber { color: #ffd54f; }
+        .card-value.red { color: #ef5350; }
+        .section { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; padding: 20px; margin-bottom: 24px; }
+        .section h2 { font-size: 16px; color: #4fc3f7; margin-bottom: 16px; border-bottom: 1px solid #2a2a4a; padding-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 10px 12px; font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #2a2a4a; }
+        td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid #1a1a2e; }
+        tr:hover { background: #16213e; }
+        .outcome-badge { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .outcome-connected { background: #1b5e2033; color: #69f0ae; }
+        .outcome-pending { background: #e65100aa; color: #ffb74d; }
+        .outcome-sale { background: #1a237e; color: #82b1ff; }
+        .outcome-failed { background: #b71c1c33; color: #ef9a9a; }
+        .outcome-not_interested { background: #37474f; color: #90a4ae; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; }
+        .btn-primary { background: #1565c0; color: white; }
+        .btn-primary:hover { background: #1976d2; }
+        .btn-danger { background: #c62828; color: white; }
+        .btn-danger:hover { background: #d32f2f; }
+        .btn-success { background: #2e7d32; color: white; }
+        .btn-success:hover { background: #388e3c; }
+        .controls { display: flex; gap: 12px; margin-bottom: 24px; align-items: center; }
+        .controls input { background: #0d1117; border: 1px solid #2a2a4a; color: #e0e0e0; padding: 10px 14px; border-radius: 8px; font-size: 14px; width: 80px; }
+        .bar-chart { display: flex; align-items: flex-end; gap: 4px; height: 120px; margin-top: 12px; }
+        .bar { background: #1565c0; border-radius: 3px 3px 0 0; min-width: 24px; transition: height 0.3s; position: relative; }
+        .bar:hover { background: #4fc3f7; }
+        .bar-label { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); font-size: 9px; color: #666; white-space: nowrap; }
+        .bar-value { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 10px; color: #aaa; }
+        .refresh-note { font-size: 11px; color: #555; }
+        #lastRefresh { color: #888; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><span>AGENT X</span> — Command Center</h1>
+        <div>
+            <span id="statusBadge" class="status-badge status-offline">CHECKING...</span>
+            <span class="refresh-note" style="margin-left: 12px;">Last refresh: <span id="lastRefresh">—</span></span>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- KPI Cards -->
+        <div class="grid" id="kpiGrid">
+            <div class="card"><div class="card-label">Total Leads</div><div class="card-value" id="totalLeads">—</div></div>
+            <div class="card"><div class="card-label">Callable Now</div><div class="card-value green" id="callableNow">—</div></div>
+            <div class="card"><div class="card-label">Connected</div><div class="card-value blue" id="connected">—</div></div>
+            <div class="card"><div class="card-label">Interested</div><div class="card-value amber" id="interested">—</div></div>
+            <div class="card"><div class="card-label">Sales</div><div class="card-value green" id="sales">—</div></div>
+            <div class="card"><div class="card-label">Calls Today</div><div class="card-value blue" id="callsToday">—</div></div>
+            <div class="card"><div class="card-label">Conversion Rate</div><div class="card-value amber" id="convRate">—</div></div>
+        </div>
+
+        <!-- Campaign Controls -->
+        <div class="section">
+            <h2>Campaign Controls</h2>
+            <div class="controls">
+                <button class="btn btn-success" onclick="startCampaign()">Start Campaign</button>
+                <button class="btn btn-danger" onclick="stopCampaign()">Stop Campaign</button>
+                <label style="font-size: 13px; color: #888;">Max Calls:</label>
+                <input type="number" id="maxCalls" value="10" min="1" max="100">
+                <label style="font-size: 13px; color: #888;">Delay (s):</label>
+                <input type="number" id="delaySec" value="90" min="10" max="600">
+                <span id="campaignStatus" style="font-size: 13px; color: #888;">—</span>
+            </div>
+        </div>
+
+        <!-- Daily Trend Chart -->
+        <div class="section">
+            <h2>Call Volume (Last 30 Days)</h2>
+            <div class="bar-chart" id="dailyChart"></div>
+        </div>
+
+        <!-- Recent Calls -->
+        <div class="section">
+            <h2>Recent Calls</h2>
+            <table>
+                <thead>
+                    <tr><th>Time</th><th>Lead</th><th>Outcome</th><th>Duration</th><th>SID</th></tr>
+                </thead>
+                <tbody id="recentCalls"></tbody>
+            </table>
+        </div>
+
+        <!-- Lead Import -->
+        <div class="section">
+            <h2>Import Leads (Excel / CSV)</h2>
+            <div id="dropZone" style="border: 2px dashed #2a2a4a; border-radius: 12px; padding: 32px; text-align: center; cursor: pointer; transition: all 0.2s;"
+                 ondragover="event.preventDefault(); this.style.borderColor='#4fc3f7'; this.style.background='#16213e';"
+                 ondragleave="this.style.borderColor='#2a2a4a'; this.style.background='transparent';"
+                 ondrop="handleFileDrop(event)"
+                 onclick="document.getElementById('fileInput').click()">
+                <div style="font-size: 36px; margin-bottom: 8px;">📁</div>
+                <div style="font-size: 14px; color: #888;">Drag & drop an Excel (.xlsx) or CSV file here, or click to browse</div>
+                <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleFileSelect(event)">
+            </div>
+            <div id="importResult" style="margin-top: 12px; padding: 12px; border-radius: 8px; display: none;"></div>
+        </div>
+
+        <!-- System Tools -->
+        <div class="section">
+            <h2>System Tools</h2>
+            <div class="controls">
+                <button class="btn btn-primary" onclick="syncTunnel()">Sync Tunnel</button>
+                <button class="btn btn-primary" onclick="addLead()">Add Lead</button>
+                <span id="toolResult" style="font-size: 13px; color: #69f0ae;"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = window.location.origin;
+
+        async function fetchJSON(url, opts = {}) {
+            try {
+                const r = await fetch(API + url, opts);
+                return await r.json();
+            } catch(e) {
+                console.error(url, e);
+                return null;
+            }
+        }
+
+        async function refresh() {
+            // Health
+            const health = await fetchJSON('/health');
+            const badge = document.getElementById('statusBadge');
+            if (health) {
+                badge.textContent = 'ONLINE';
+                badge.className = 'status-badge status-online';
+            } else {
+                badge.textContent = 'OFFLINE';
+                badge.className = 'status-badge status-offline';
+            }
+
+            // Analytics
+            const data = await fetchJSON('/analytics/overview');
+            if (data && data.stats) {
+                const s = data.stats;
+                document.getElementById('totalLeads').textContent = s.total_leads;
+                document.getElementById('callableNow').textContent = s.callable_now;
+                document.getElementById('connected').textContent = s.connected;
+                document.getElementById('interested').textContent = s.interested;
+                document.getElementById('sales').textContent = s.sales;
+                document.getElementById('callsToday').textContent = s.calls_today;
+                document.getElementById('convRate').textContent = s.conversion_rate + '%';
+
+                // Daily chart
+                const chart = document.getElementById('dailyChart');
+                const days = (data.daily_trends || []).reverse();
+                if (days.length > 0) {
+                    const maxVal = Math.max(...days.map(d => d.total_calls), 1);
+                    chart.innerHTML = days.map(d => {
+                        const h = Math.max((d.total_calls / maxVal) * 100, 4);
+                        const label = d.date ? d.date.slice(5) : '?';
+                        return `<div class="bar" style="height:${h}px" title="${d.total_calls} calls on ${d.date}"><div class="bar-value">${d.total_calls}</div><div class="bar-label">${label}</div></div>`;
+                    }).join('');
+                } else {
+                    chart.innerHTML = '<span style="color:#555;font-size:13px;">No call data yet</span>';
+                }
+
+                // Recent calls
+                const tbody = document.getElementById('recentCalls');
+                const calls = data.recent_calls || [];
+                tbody.innerHTML = calls.map(c => `
+                    <tr>
+                        <td>${c.timestamp ? new Date(c.timestamp).toLocaleString() : '—'}</td>
+                        <td>${c.lead_id || '—'}</td>
+                        <td><span class="outcome-badge outcome-${c.outcome || 'pending'}">${c.outcome || '—'}</span></td>
+                        <td>${c.duration_seconds || 0}s</td>
+                        <td style="font-size:11px;color:#666;">${(c.call_sid || '—').slice(0, 16)}</td>
+                    </tr>
+                `).join('') || '<tr><td colspan="5" style="color:#555;">No calls recorded yet</td></tr>';
+            }
+
+            // Campaign
+            const camp = await fetchJSON('/campaign/status');
+            if (camp) {
+                document.getElementById('campaignStatus').textContent = camp.active ? 'RUNNING' : 'Idle';
+                document.getElementById('campaignStatus').style.color = camp.active ? '#69f0ae' : '#888';
+            }
+
+            document.getElementById('lastRefresh').textContent = new Date().toLocaleTimeString();
+        }
+
+        async function startCampaign() {
+            const max = document.getElementById('maxCalls').value;
+            const delay = document.getElementById('delaySec').value;
+            await fetchJSON('/campaign/start', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({max_calls: parseInt(max), delay_seconds: parseInt(delay)})
+            });
+            refresh();
+        }
+
+        async function stopCampaign() {
+            await fetchJSON('/campaign/stop', {method: 'POST'});
+            refresh();
+        }
+
+        async function syncTunnel() {
+            const r = await fetchJSON('/tunnel/sync', {method: 'POST'});
+            document.getElementById('toolResult').textContent = r ? `Synced: ${r.url || 'ok'}` : 'Failed';
+            setTimeout(() => document.getElementById('toolResult').textContent = '', 5000);
+        }
+
+        async function addLead() {
+            const phone = prompt('Phone number (e.g. +12025551234):');
+            if (!phone) return;
+            const name = prompt('Business name:', 'Unknown');
+            const r = await fetchJSON('/analytics/add-lead', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({phone_number: phone, name: name})
+            });
+            document.getElementById('toolResult').textContent = r ? `Added: ${r.lead_id}` : 'Failed';
+            setTimeout(() => { document.getElementById('toolResult').textContent = ''; refresh(); }, 3000);
+        }
+
+        async function uploadLeadFile(file) {
+            const resultDiv = document.getElementById('importResult');
+            resultDiv.style.display = 'block';
+            resultDiv.style.background = '#16213e';
+            resultDiv.style.color = '#4fc3f7';
+            resultDiv.innerHTML = `⏳ Uploading <strong>${file.name}</strong> (${(file.size/1024).toFixed(1)} KB)...`;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const r = await fetch(API + '/leads/import', { method: 'POST', body: formData });
+                const data = await r.json();
+                if (data.status === 'success') {
+                    resultDiv.style.background = '#1b5e2033';
+                    resultDiv.style.color = '#69f0ae';
+                    resultDiv.innerHTML = `✅ <strong>${data.imported}</strong> leads imported, <strong>${data.skipped}</strong> skipped, <strong>${data.errors}</strong> errors`;
+                    refresh();
+                } else {
+                    resultDiv.style.background = '#b71c1c33';
+                    resultDiv.style.color = '#ef9a9a';
+                    resultDiv.innerHTML = `❌ ${data.detail || data.error || 'Import failed'}`;
+                }
+            } catch(e) {
+                resultDiv.style.background = '#b71c1c33';
+                resultDiv.style.color = '#ef9a9a';
+                resultDiv.innerHTML = `❌ Upload error: ${e.message}`;
+            }
+            setTimeout(() => { resultDiv.style.display = 'none'; }, 10000);
+        }
+
+        function handleFileDrop(event) {
+            event.preventDefault();
+            document.getElementById('dropZone').style.borderColor = '#2a2a4a';
+            document.getElementById('dropZone').style.background = 'transparent';
+            const file = event.dataTransfer.files[0];
+            if (file) uploadLeadFile(file);
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) uploadLeadFile(file);
+            event.target.value = '';
+        }
+
+        // Auto-refresh every 30 seconds
+        refresh();
+        setInterval(refresh, 30000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,434 @@
+{
+  "__init__.py": {
+    "file_type": "py",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "__init__.py",
+    "size_bytes": 0,
+    "summary": "PY file (0 bytes). Tags: module:__init__.py, type:py.",
+    "tags": [
+      "module:__init__.py",
+      "type:py"
+    ]
+  },
+  "__pycache__\\__init__.cpython-313.pyc": {
+    "file_type": "pyc",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "__pycache__\\__init__.cpython-313.pyc",
+    "size_bytes": 160,
+    "summary": "PYC file (160 bytes). Tags: module:__pycache__, type:pyc.",
+    "tags": [
+      "module:__pycache__",
+      "type:pyc"
+    ]
+  },
+  "crossrefs\\__init__.py": {
+    "file_type": "py",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "crossrefs\\__init__.py",
+    "size_bytes": 0,
+    "summary": "PY file (0 bytes). Tags: module:crossrefs, type:py.",
+    "tags": [
+      "module:crossrefs",
+      "type:py"
+    ]
+  },
+  "crossrefs\\__pycache__\\__init__.cpython-313.pyc": {
+    "file_type": "pyc",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "crossrefs\\__pycache__\\__init__.cpython-313.pyc",
+    "size_bytes": 170,
+    "summary": "PYC file (170 bytes). Tags: module:crossrefs, type:pyc.",
+    "tags": [
+      "module:crossrefs",
+      "type:pyc"
+    ]
+  },
+  "crossrefs\\__pycache__\\crossrefs.cpython-313.pyc": {
+    "file_type": "pyc",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "crossrefs\\__pycache__\\crossrefs.cpython-313.pyc",
+    "size_bytes": 13462,
+    "summary": "PYC file (13462 bytes). Tags: module:crossrefs, type:pyc.",
+    "tags": [
+      "module:crossrefs",
+      "type:pyc"
+    ]
+  },
+  "crossrefs\\crossrefs.py": {
+    "file_type": "py",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "crossrefs\\crossrefs.py",
+    "size_bytes": 8876,
+    "summary": "PY file (8876 bytes). Tags: module:crossrefs, type:py.",
+    "tags": [
+      "module:crossrefs",
+      "type:py"
+    ]
+  },
+  "delta\\__init__.py": {
+    "file_type": "py",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "delta\\__init__.py",
+    "size_bytes": 0,
+    "summary": "PY file (0 bytes). Tags: module:delta, type:py.",
+    "tags": [
+      "module:delta",
+      "type:py"
+    ]
+  },
+  "delta\\__pycache__\\__init__.cpython-313.pyc": {
+    "file_type": "pyc",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "delta\\__pycache__\\__init__.cpython-313.pyc",
+    "size_bytes": 166,
+    "summary": "PYC file (166 bytes). Tags: module:delta, type:pyc.",
+    "tags": [
+      "module:delta",
+      "type:pyc"
+    ]
+  },
+  "delta\\__pycache__\\delta.cpython-313.pyc": {
+    "file_type": "pyc",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "delta\\__pycache__\\delta.cpython-313.pyc",
+    "size_bytes": 1630,
+    "summary": "PYC file (1630 bytes). Tags: module:delta, type:pyc.",
+    "tags": [
+      "module:delta",
+      "type:pyc"
+    ]
+  },
+  "delta\\delta.py": {
+    "file_type": "py",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "delta\\delta.py",
+    "size_bytes": 670,
+    "summary": "PY file (670 bytes). Tags: module:delta, type:py.",
+    "tags": [
+      "module:delta",
+      "type:py"
+    ]
+  },
+  "graph\\__init__.py": {
+    "file_type": "py",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "graph\\__init__.py",
+    "size_bytes": 162,
+    "summary": "PY file (162 bytes). Tags: module:graph, type:py.",
+    "tags": [
+      "module:graph",
+      "type:py"
+    ]
+  },
+  "graph\\__pycache__\\__init__.cpython-313.pyc": {
+    "file_type": "pyc",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "graph\\__pycache__\\__init__.cpython-313.pyc",
+    "size_bytes": 343,
+    "summary": "PYC file (343 bytes). Tags: module:graph, type:pyc.",
+    "tags": [
+      "module:graph",
+      "type:pyc"
+    ]
+  },
+  "graph\\__pycache__\\graph_builder.cpython-313.pyc": {
+    "file_type": "pyc",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "graph\\__pycache__\\graph_builder.cpython-313.pyc",
+    "size_bytes": 3583,
+    "summary": "PYC file (3583 bytes). Tags: module:graph, type:pyc.",
+    "tags": [
+      "module:graph",
+      "type:pyc"
+    ]
+  },
+  "graph\\__pycache__\\run_graph.cpython-313.pyc": {
+    "file_type": "pyc",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "graph\\__pycache__\\run_graph.cpython-313.pyc",
+    "size_bytes": 1916,
+    "summary": "PYC file (1916 bytes). Tags: module:graph, type:pyc.",
+    "tags": [
+      "module:graph",
+      "type:pyc"
+    ]
+  },
+  "graph\\graph_builder.py": {
+    "file_type": "py",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "graph\\graph_builder.py",
+    "size_bytes": 2284,
+    "summary": "PY file (2284 bytes). Tags: module:graph, type:py.",
+    "tags": [
+      "module:graph",
+      "type:py"
+    ]
+  },
+  "graph\\run_graph.py": {
+    "file_type": "py",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "graph\\run_graph.py",
+    "size_bytes": 1444,
+    "summary": "PY file (1444 bytes). Tags: module:graph, type:py.",
+    "tags": [
+      "module:graph",
+      "type:py"
+    ]
+  },
+  "inventory\\__init__.py": {
+    "file_type": "py",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "inventory\\__init__.py",
+    "size_bytes": 0,
+    "summary": "PY file (0 bytes). Tags: module:inventory, type:py.",
+    "tags": [
+      "module:inventory",
+      "type:py"
+    ]
+  },
+  "inventory\\__pycache__\\__init__.cpython-313.pyc": {
+    "file_type": "pyc",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "inventory\\__pycache__\\__init__.cpython-313.pyc",
+    "size_bytes": 170,
+    "summary": "PYC file (170 bytes). Tags: module:inventory, type:pyc.",
+    "tags": [
+      "module:inventory",
+      "type:pyc"
+    ]
+  },
+  "inventory\\__pycache__\\inventory.cpython-313.pyc": {
+    "file_type": "pyc",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "inventory\\__pycache__\\inventory.cpython-313.pyc",
+    "size_bytes": 7967,
+    "summary": "PYC file (7967 bytes). Tags: module:inventory, type:pyc.",
+    "tags": [
+      "module:inventory",
+      "type:pyc"
+    ]
+  },
+  "inventory\\inventory.py": {
+    "file_type": "py",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "inventory\\inventory.py",
+    "size_bytes": 4377,
+    "summary": "PY file (4377 bytes). Tags: module:inventory, type:py.",
+    "tags": [
+      "module:inventory",
+      "type:py"
+    ]
+  },
+  "metadata\\__init__.py": {
+    "file_type": "py",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "metadata\\__init__.py",
+    "size_bytes": 0,
+    "summary": "PY file (0 bytes). Tags: module:metadata, type:py.",
+    "tags": [
+      "module:metadata",
+      "type:py"
+    ]
+  },
+  "metadata\\__pycache__\\__init__.cpython-313.pyc": {
+    "file_type": "pyc",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "metadata\\__pycache__\\__init__.cpython-313.pyc",
+    "size_bytes": 169,
+    "summary": "PYC file (169 bytes). Tags: module:metadata, type:pyc.",
+    "tags": [
+      "module:metadata",
+      "type:pyc"
+    ]
+  },
+  "metadata\\__pycache__\\metadata.cpython-313.pyc": {
+    "file_type": "pyc",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "metadata\\__pycache__\\metadata.cpython-313.pyc",
+    "size_bytes": 8123,
+    "summary": "PYC file (8123 bytes). Tags: module:metadata, type:pyc.",
+    "tags": [
+      "module:metadata",
+      "type:pyc"
+    ]
+  },
+  "metadata\\metadata.py": {
+    "file_type": "py",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "metadata\\metadata.py",
+    "size_bytes": 4849,
+    "summary": "PY file (4849 bytes). Tags: module:metadata, type:py.",
+    "tags": [
+      "module:metadata",
+      "type:py"
+    ]
+  },
+  "normalization\\__init__.py": {
+    "file_type": "py",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "normalization\\__init__.py",
+    "size_bytes": 0,
+    "summary": "PY file (0 bytes). Tags: module:normalization, type:py.",
+    "tags": [
+      "module:normalization",
+      "type:py"
+    ]
+  },
+  "normalization\\__pycache__\\__init__.cpython-313.pyc": {
+    "file_type": "pyc",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "normalization\\__pycache__\\__init__.cpython-313.pyc",
+    "size_bytes": 174,
+    "summary": "PYC file (174 bytes). Tags: module:normalization, type:pyc.",
+    "tags": [
+      "module:normalization",
+      "type:pyc"
+    ]
+  },
+  "normalization\\__pycache__\\normalization.cpython-313.pyc": {
+    "file_type": "pyc",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "normalization\\__pycache__\\normalization.cpython-313.pyc",
+    "size_bytes": 1629,
+    "summary": "PYC file (1629 bytes). Tags: module:normalization, type:pyc.",
+    "tags": [
+      "module:normalization",
+      "type:pyc"
+    ]
+  },
+  "normalization\\normalization.py": {
+    "file_type": "py",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "normalization\\normalization.py",
+    "size_bytes": 717,
+    "summary": "PY file (717 bytes). Tags: module:normalization, type:py.",
+    "tags": [
+      "module:normalization",
+      "type:py"
+    ]
+  },
+  "orchestrator\\__init__.py": {
+    "file_type": "py",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "orchestrator\\__init__.py",
+    "size_bytes": 0,
+    "summary": "PY file (0 bytes). Tags: module:orchestrator, type:py.",
+    "tags": [
+      "module:orchestrator",
+      "type:py"
+    ]
+  },
+  "orchestrator\\__pycache__\\__init__.cpython-313.pyc": {
+    "file_type": "pyc",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "orchestrator\\__pycache__\\__init__.cpython-313.pyc",
+    "size_bytes": 173,
+    "summary": "PYC file (173 bytes). Tags: module:orchestrator, type:pyc.",
+    "tags": [
+      "module:orchestrator",
+      "type:pyc"
+    ]
+  },
+  "orchestrator\\__pycache__\\run_all.cpython-313.pyc": {
+    "file_type": "pyc",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "orchestrator\\__pycache__\\run_all.cpython-313.pyc",
+    "size_bytes": 4775,
+    "summary": "PYC file (4775 bytes). Tags: module:orchestrator, type:pyc.",
+    "tags": [
+      "module:orchestrator",
+      "type:pyc"
+    ]
+  },
+  "orchestrator\\run_all.py": {
+    "file_type": "py",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "orchestrator\\run_all.py",
+    "size_bytes": 3484,
+    "summary": "PY file (3484 bytes). Tags: module:orchestrator, type:py.",
+    "tags": [
+      "module:orchestrator",
+      "type:py"
+    ]
+  },
+  "summaries\\__init__.py": {
+    "file_type": "py",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "summaries\\__init__.py",
+    "size_bytes": 188,
+    "summary": "PY file (188 bytes). Tags: module:summaries, type:py.",
+    "tags": [
+      "module:summaries",
+      "type:py"
+    ]
+  },
+  "summaries\\__pycache__\\__init__.cpython-313.pyc": {
+    "file_type": "pyc",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "summaries\\__pycache__\\__init__.cpython-313.pyc",
+    "size_bytes": 355,
+    "summary": "PYC file (355 bytes). Tags: module:summaries, type:pyc.",
+    "tags": [
+      "module:summaries",
+      "type:pyc"
+    ]
+  },
+  "summaries\\__pycache__\\summaries.cpython-313.pyc": {
+    "file_type": "pyc",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "summaries\\__pycache__\\summaries.cpython-313.pyc",
+    "size_bytes": 8403,
+    "summary": "PYC file (8403 bytes). Tags: module:summaries, type:pyc.",
+    "tags": [
+      "module:summaries",
+      "type:pyc"
+    ]
+  },
+  "summaries\\summaries.py": {
+    "file_type": "py",
+    "referenced_by": [],
+    "references": [],
+    "relative_path": "summaries\\summaries.py",
+    "size_bytes": 6925,
+    "summary": "PY file (6925 bytes). Tags: module:summaries, type:py.",
+    "tags": [
+      "module:summaries",
+      "type:py"
+    ]
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "generated_at": "2025-12-15T13:28:21.545839",
+  "account_type": "production",
+  "api_access": {
+    "enabled": true,
+    "base_url": "https://partner.paymentshub.com",
+    "version": "v1"
+  },
+  "oauth2_credentials": {
+    "enabled": true,
+    "client_id": "aqi_client_20251215_132821",
+    "scopes": [
+      "merchants:read",
+      "merchants:write",
+      "transactions:read",
+      "transactions:write",
+      "webhooks:manage",
+      "webhooks:read",
+      "reports:read",
+      "settings:read"
+    ],
+    "created_at": "2025-12-15T13:28:21.539653"
+  },
+  "webhook_permissions": {
+    "enabled": true,
+    "webhook_url": "https://api.aqi-system.com/webhooks/agent-portal/v1/events",
+    "permissions": [
+      "merchant_events",
+      "transaction_events",
+      "system_events"
+    ],
+    "secret_configured": true
+  },
+  "validation_status": "enabled",
+  "recommendations": [
+    "Test API endpoints with the new credentials",
+    "Configure webhook endpoints in your application",
+    "Monitor API usage and rate limits",
+    "Set up proper error handling for API calls"
+  ]
+}

@@ -1,0 +1,360 @@
+{
+  "scenarios": {
+    "merchant_onboarding_angry": {
+      "sandbox_drift": {
+        "energy_drift": false,
+        "energy_spikes": [],
+        "stance_instability": false,
+        "oscillation": false,
+        "softening": false,
+        "details": {
+          "energies": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "stances": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "thresholds": {
+            "energy_spike": 0.35,
+            "energy_drift": 0.25,
+            "stance_delta": 0.3,
+            "oscillation": 0.4,
+            "softening": -0.25
+          }
+        }
+      },
+      "live_drift": {
+        "energy_drift": false,
+        "energy_spikes": [],
+        "stance_instability": false,
+        "oscillation": false,
+        "softening": false,
+        "details": {
+          "energies": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "stances": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "thresholds": {
+            "energy_spike": 0.35,
+            "energy_drift": 0.25,
+            "stance_delta": 0.3,
+            "oscillation": 0.4,
+            "softening": -0.25
+          }
+        }
+      },
+      "aligned": true,
+      "divergence_points": []
+    },
+    "merchant_onboarding_confused": {
+      "sandbox_drift": {
+        "energy_drift": false,
+        "energy_spikes": [],
+        "stance_instability": false,
+        "oscillation": false,
+        "softening": false,
+        "details": {
+          "energies": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "stances": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "thresholds": {
+            "energy_spike": 0.35,
+            "energy_drift": 0.25,
+            "stance_delta": 0.3,
+            "oscillation": 0.4,
+            "softening": -0.25
+          }
+        }
+      },
+      "live_drift": {
+        "energy_drift": false,
+        "energy_spikes": [],
+        "stance_instability": false,
+        "oscillation": false,
+        "softening": false,
+        "details": {
+          "energies": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "stances": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "thresholds": {
+            "energy_spike": 0.35,
+            "energy_drift": 0.25,
+            "stance_delta": 0.3,
+            "oscillation": 0.4,
+            "softening": -0.25
+          }
+        }
+      },
+      "aligned": true,
+      "divergence_points": []
+    },
+    "merchant_onboarding_happy_path": {
+      "sandbox_drift": {
+        "energy_drift": false,
+        "energy_spikes": [],
+        "stance_instability": false,
+        "oscillation": false,
+        "softening": false,
+        "details": {
+          "energies": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "stances": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "thresholds": {
+            "energy_spike": 0.35,
+            "energy_drift": 0.25,
+            "stance_delta": 0.3,
+            "oscillation": 0.4,
+            "softening": -0.25
+          }
+        }
+      },
+      "live_drift": {
+        "energy_drift": false,
+        "energy_spikes": [],
+        "stance_instability": false,
+        "oscillation": false,
+        "softening": false,
+        "details": {
+          "energies": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "stances": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "thresholds": {
+            "energy_spike": 0.35,
+            "energy_drift": 0.25,
+            "stance_delta": 0.3,
+            "oscillation": 0.4,
+            "softening": -0.25
+          }
+        }
+      },
+      "aligned": true,
+      "divergence_points": []
+    },
+    "merchant_onboarding_repeated_verification": {
+      "sandbox_drift": {
+        "energy_drift": false,
+        "energy_spikes": [],
+        "stance_instability": false,
+        "oscillation": false,
+        "softening": false,
+        "details": {
+          "energies": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "stances": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "thresholds": {
+            "energy_spike": 0.35,
+            "energy_drift": 0.25,
+            "stance_delta": 0.3,
+            "oscillation": 0.4,
+            "softening": -0.25
+          }
+        }
+      },
+      "live_drift": {
+        "energy_drift": false,
+        "energy_spikes": [],
+        "stance_instability": false,
+        "oscillation": false,
+        "softening": false,
+        "details": {
+          "energies": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "stances": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "thresholds": {
+            "energy_spike": 0.35,
+            "energy_drift": 0.25,
+            "stance_delta": 0.3,
+            "oscillation": 0.4,
+            "softening": -0.25
+          }
+        }
+      },
+      "aligned": true,
+      "divergence_points": []
+    },
+    "merchant_onboarding_silent": {
+      "sandbox_drift": {
+        "energy_drift": false,
+        "energy_spikes": [],
+        "stance_instability": false,
+        "oscillation": false,
+        "softening": false,
+        "details": {
+          "energies": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "stances": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "thresholds": {
+            "energy_spike": 0.35,
+            "energy_drift": 0.25,
+            "stance_delta": 0.3,
+            "oscillation": 0.4,
+            "softening": -0.25
+          }
+        }
+      },
+      "live_drift": {
+        "energy_drift": false,
+        "energy_spikes": [],
+        "stance_instability": false,
+        "oscillation": false,
+        "softening": false,
+        "details": {
+          "energies": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "stances": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "thresholds": {
+            "energy_spike": 0.35,
+            "energy_drift": 0.25,
+            "stance_delta": 0.3,
+            "oscillation": 0.4,
+            "softening": -0.25
+          }
+        }
+      },
+      "aligned": true,
+      "divergence_points": []
+    },
+    "voicemail_detection": {
+      "sandbox_drift": {
+        "energy_drift": false,
+        "energy_spikes": [],
+        "stance_instability": false,
+        "oscillation": false,
+        "softening": false,
+        "details": {
+          "energies": [
+            null,
+            null
+          ],
+          "stances": [
+            null,
+            null
+          ],
+          "thresholds": {
+            "energy_spike": 0.35,
+            "energy_drift": 0.25,
+            "stance_delta": 0.3,
+            "oscillation": 0.4,
+            "softening": -0.25
+          }
+        }
+      },
+      "live_drift": {
+        "energy_drift": false,
+        "energy_spikes": [],
+        "stance_instability": false,
+        "oscillation": false,
+        "softening": false,
+        "details": {
+          "energies": [
+            null,
+            null
+          ],
+          "stances": [
+            null,
+            null
+          ],
+          "thresholds": {
+            "energy_spike": 0.35,
+            "energy_drift": 0.25,
+            "stance_delta": 0.3,
+            "oscillation": 0.4,
+            "softening": -0.25
+          }
+        }
+      },
+      "aligned": true,
+      "divergence_points": []
+    }
+  },
+  "overall": {
+    "promote": true,
+    "reason": "Sandbox and live aligned across scenarios; no critical drift flags."
+  }
+}

@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aqi-governance-intelligence"
+version = "0.1.0"
+description = "Governance Intelligence Layer for AQI - Integrity, Introspection, Divergence, and Escalation"
+authors = [
+    {name = "AQI Team", email = "aqi@system.local"}
+]
+dependencies = [
+    "pydantic>=2.0.0"
+]
+requires-python = ">=3.10"
+readme = "README.md"
+
+[project.urls]
+Homepage = "https://github.com/aqi-system/aqi-governance-intelligence"
+Repository = "https://github.com/aqi-system/aqi-governance-intelligence.git"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["aqi_governance_intelligence*"]

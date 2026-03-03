@@ -1,0 +1,110 @@
+{
+  "__init__.py": [
+    "concept:stub"
+  ],
+  "__pycache__\\__init__.cpython-313.pyc": [
+    "concept:stub"
+  ],
+  "crossrefs\\__init__.py": [
+    "concept:stub"
+  ],
+  "crossrefs\\__pycache__\\__init__.cpython-313.pyc": [
+    "concept:stub"
+  ],
+  "crossrefs\\__pycache__\\crossrefs.cpython-313.pyc": [
+    "concept:stub"
+  ],
+  "crossrefs\\crossrefs.py": [
+    "concept:stub"
+  ],
+  "delta\\__init__.py": [
+    "concept:stub"
+  ],
+  "delta\\__pycache__\\__init__.cpython-313.pyc": [
+    "concept:stub"
+  ],
+  "delta\\__pycache__\\delta.cpython-313.pyc": [
+    "concept:stub"
+  ],
+  "delta\\delta.py": [
+    "concept:stub"
+  ],
+  "graph\\__init__.py": [
+    "concept:stub"
+  ],
+  "graph\\__pycache__\\__init__.cpython-313.pyc": [
+    "concept:stub"
+  ],
+  "graph\\__pycache__\\graph_builder.cpython-313.pyc": [
+    "concept:stub"
+  ],
+  "graph\\__pycache__\\run_graph.cpython-313.pyc": [
+    "concept:stub"
+  ],
+  "graph\\graph_builder.py": [
+    "concept:stub"
+  ],
+  "graph\\run_graph.py": [
+    "concept:stub"
+  ],
+  "inventory\\__init__.py": [
+    "concept:stub"
+  ],
+  "inventory\\__pycache__\\__init__.cpython-313.pyc": [
+    "concept:stub"
+  ],
+  "inventory\\__pycache__\\inventory.cpython-313.pyc": [
+    "concept:stub"
+  ],
+  "inventory\\inventory.py": [
+    "concept:stub"
+  ],
+  "metadata\\__init__.py": [
+    "concept:stub"
+  ],
+  "metadata\\__pycache__\\__init__.cpython-313.pyc": [
+    "concept:stub"
+  ],
+  "metadata\\__pycache__\\metadata.cpython-313.pyc": [
+    "concept:stub"
+  ],
+  "metadata\\metadata.py": [
+    "concept:stub"
+  ],
+  "normalization\\__init__.py": [
+    "concept:stub"
+  ],
+  "normalization\\__pycache__\\__init__.cpython-313.pyc": [
+    "concept:stub"
+  ],
+  "normalization\\__pycache__\\normalization.cpython-313.pyc": [
+    "concept:stub"
+  ],
+  "normalization\\normalization.py": [
+    "concept:stub"
+  ],
+  "orchestrator\\__init__.py": [
+    "concept:stub"
+  ],
+  "orchestrator\\__pycache__\\__init__.cpython-313.pyc": [
+    "concept:stub"
+  ],
+  "orchestrator\\__pycache__\\run_all.cpython-313.pyc": [
+    "concept:stub"
+  ],
+  "orchestrator\\run_all.py": [
+    "concept:stub"
+  ],
+  "summaries\\__init__.py": [
+    "concept:stub"
+  ],
+  "summaries\\__pycache__\\__init__.cpython-313.pyc": [
+    "concept:stub"
+  ],
+  "summaries\\__pycache__\\summaries.cpython-313.pyc": [
+    "concept:stub"
+  ],
+  "summaries\\summaries.py": [
+    "concept:stub"
+  ]
+}

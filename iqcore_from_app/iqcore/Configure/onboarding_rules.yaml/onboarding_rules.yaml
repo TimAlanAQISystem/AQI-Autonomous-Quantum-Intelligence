@@ -1,0 +1,12 @@
+score_threshold: 0.75
+preferred_states:
+  - CA
+  - NY
+  - TX
+preferred_types:
+  - retail
+  - services
+restricted_categories:
+  - crypto
+  - gambling
+  - surveillance

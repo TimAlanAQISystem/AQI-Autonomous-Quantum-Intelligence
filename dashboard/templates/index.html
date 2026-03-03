@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AQI CENTRAL COMMAND</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --card-bg: #141414;
+            --text-main: #e0e0e0;
+            --text-dim: #888;
+            --accent: #00ff9d; /* Matrix Green */
+            --danger: #ff4d4d;
+            --warning: #ffd700;
+            --border: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        h1 { margin: 0; font-weight: 300; letter-spacing: 2px; }
+        .status-badge {
+            background: rgba(0, 255, 157, 0.1);
+            color: var(--accent);
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid var(--accent);
+            font-size: 0.8em;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            flex: 1;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card h2 {
+            margin-top: 0;
+            font-size: 1.1em;
+            color: var(--text-dim);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* AGENT LIST */
+        .agent-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #222;
+        }
+        .agent-info { display: flex; align-items: center; gap: 10px; }
+        .agent-icon { font-size: 1.5em; }
+        .agent-status { font-size: 0.8em; color: var(--accent); }
+        .agent-status.Standby { color: var(--warning); }
+        
+        .btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .btn:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* METRICS */
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .metric-val { font-size: 1.5em; font-weight: bold; }
+
+        /* LOGS */
+        .log-window {
+            background: #000;
+            font-family: 'Consolas', monospace;
+            font-size: 0.9em;
+            color: #ccc;
+            padding: 10px;
+            border-radius: 4px;
+            flex: 1;
+            overflow-y: auto;
+            max-height: 300px;
+        }
+        .log-entry { margin-bottom: 5px; border-bottom: 1px solid #111; }
+
+        /* COUNCIL */
+        .decision-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            margin-bottom: 10px;
+            border-left: 3px solid var(--accent);
+        }
+        .decision-topic { font-weight: bold; display: block; }
+        .decision-verdict { color: var(--accent); font-size: 0.9em; }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div>
+            <h1>AQI CENTRAL COMMAND</h1>
+            <div style="font-size: 0.8em; color: var(--text-dim);">SYSTEM VERSION 3.0 // FOUNDER: TIM JONES</div>
+        </div>
+        <div class="status-badge">SYSTEM ONLINE</div>
+    </header>
+
+    <div class="grid">
+        
+        <!-- AGENTS -->
+        <div class="card">
+            <h2>Active Units</h2>
+            <div id="agent-list">
+                <!-- Populated by JS -->
+                <div style="text-align:center; color: #555;">Loading Agents...</div>
+            </div>
+        </div>
+
+        <!-- FINANCIALS -->
+        <div class="card">
+            <h2>Live Metrics</h2>
+            <div class="metric-row">
+                <span>Daily Calls</span>
+                <span class="metric-val" id="metric-calls">0</span>
+            </div>
+            <div class="metric-row">
+                <span>Leads Hunted</span>
+                <span class="metric-val" id="metric-leads">0</span>
+            </div>
+            <div class="metric-row">
+                <span>Legal Blocks</span>
+                <span class="metric-val" id="metric-blocks" style="color: var(--danger);">0</span>
+            </div>
+        </div>
+
+        <!-- COUNCIL -->
+        <div class="card">
+            <h2>Council Decisions</h2>
+            <div id="council-list">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- LOGS -->
+        <div class="card" style="grid-column: 1 / -1;">
+            <h2>System Logs</h2>
+            <div class="log-window" id="log-window">
+                <div class="log-entry">System initializing...</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function fetchStatus() {
+            fetch('/api/status')
+                .then(r => r.json())
+                .then(data => {
+                    // Update Agents
+                    const agentList = document.getElementById('agent-list');
+                    agentList.innerHTML = '';
+                    data.agents.forEach(agent => {
+                        const div = document.createElement('div');
+                        div.className = 'agent-item';
+                        div.innerHTML = `
+                            <div class="agent-info">
+                                <span class="agent-icon">${agent.icon}</span>
+                                <div>
+                                    <div>${agent.name}</div>
+                                    <div class="agent-status ${agent.status}">${agent.status}</div>
+                                </div>
+                            </div>
+                            <button class="btn" onclick="toggleAgent('${agent.name}')">RESTART</button>
+                        `;
+                        agentList.appendChild(div);
+                    });
+
+                    // Update Metrics
+                    document.getElementById('metric-calls').innerText = data.financials.daily_calls;
+                    document.getElementById('metric-leads').innerText = data.financials.leads_found;
+                    document.getElementById('metric-blocks').innerText = data.financials.compliance_blocks;
+                });
+        }
+
+        function fetchCouncil() {
+            fetch('/api/council')
+                .then(r => r.json())
+                .then(data => {
+                    const list = document.getElementById('council-list');
+                    list.innerHTML = '';
+                    data.decisions.forEach(d => {
+                        const div = document.createElement('div');
+                        div.className = 'decision-item';
+                        div.innerHTML = `
+                            <span class="decision-topic">${d.topic}</span>
+                            <span class="decision-verdict">${d.verdict}</span>
+                            <div style="font-size:0.7em; color:#666;">${d.timestamp}</div>
+                        `;
+                        list.appendChild(div);
+                    });
+                });
+        }
+
+        function toggleAgent(name) {
+            fetch('/api/action', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({action: 'restart', agent: name})
+            }).then(r => r.json()).then(d => alert(d.message));
+        }
+
+        // Initial Load
+        fetchStatus();
+        fetchCouncil();
+
+        // Poll every 5 seconds
+        setInterval(fetchStatus, 5000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+{
+  "scenarios": {
+    "merchant_onboarding_angry": {
+      "sandbox_drift": {
+        "energy_drift": false,
+        "energy_spikes": [],
+        "stance_instability": false,
+        "oscillation": false,
+        "softening": false,
+        "details": {
+          "energies": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "stances": [
+            {
+              "boundary_hardness": 0.8799999999999999,
+              "softness": 0.28,
+              "directness": 0.75
+            },
+            {
+              "boundary_hardness": 0.8799999999999999,
+              "softness": 0.28,
+              "directness": 0.75
+            },
+            {
+              "boundary_hardness": 0.8799999999999999,
+              "softness": 0.38,
+              "directness": 0.75
+            },
+            {
+              "boundary_hardness": 0.8799999999999999,
+              "softness": 0.38,
+              "directness": 0.75
+            }
+          ],
+          "thresholds": {
+            "energy_spike": 0.35,
+            "energy_drift": 0.25,
+            "stance_delta": 0.3,
+            "oscillation": 0.4,
+            "softening": -0.25
+          }
+        }
+      },
+      "live_drift": {
+        "energy_drift": false,
+        "energy_spikes": [],
+        "stance_instability": false,
+        "oscillation": false,
+        "softening": false,
+        "details": {
+          "energies": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "stances": [
+            {
+              "boundary_hardness": 0.8799999999999999,
+              "softness": 0.28,
+              "directness": 0.75
+            },
+            {
+              "boundary_hardness": 0.8799999999999999,
+              "softness": 0.28,
+              "directness": 0.75
+            },
+            {
+              "boundary_hardness": 0.8799999999999999,
+              "softness": 0.38,
+              "directness": 0.75
+            },
+            {
+              "boundary_hardness": 0.8799999999999999,
+              "softness": 0.28,
+              "directness": 0.75
+            }
+          ],
+          "thresholds": {
+            "energy_spike": 0.35,
+            "energy_drift": 0.25,
+            "stance_delta": 0.3,
+            "oscillation": 0.4,
+            "softening": -0.25
+          }
+        }
+      },
+      "aligned": true,
+      "divergence_points": []
+    },
+    "merchant_onboarding_confused": {
+      "sandbox_drift": {
+        "energy_drift": false,
+        "energy_spikes": [],
+        "stance_instability": false,
+        "oscillation": false,
+        "softening": false,
+        "details": {
+          "energies": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "stances": [
+            {
+              "boundary_hardness": 0.8799999999999999,
+              "softness": 0.38,
+              "directness": 0.75
+            },
+            {
+              "boundary_hardness": 0.82,
+              "softness": 0.42000000000000004,
+              "directness": 0.7
+            },
+            {
+              "boundary_hardness": 0.8799999999999999,
+              "softness": 0.28,
+              "directness": 0.75
+            },
+            {
+              "boundary_hardness": 0.82,
+              "softness": 0.42000000000000004,
+              "directness": 0.7
+            }
+          ],
+          "thresholds": {
+            "energy_spike": 0.35,
+            "energy_drift": 0.25,
+            "stance_delta": 0.3,
+            "oscillation": 0.4,
+            "softening": -0.25
+          }
+        }
+      },
+      "live_drift": {
+        "energy_drift": false,
+        "energy_spikes": [],
+        "stance_instability": false,
+        "oscillation": false,
+        "softening": false,
+        "details": {
+          "energies": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "stances": [
+            {
+              "boundary_hardness": 0.8799999999999999,
+              "softness": 0.28,
+              "directness": 0.75
+            },
+            {
+              "boundary_hardness": 0.8799999999999999,
+              "softness": 0.28,
+              "directness": 0.75
+            },
+            {
+              "boundary_hardness": 0.8799999999999999,
+              "softness": 0.38,
+              "directness": 0.75
+            },
+            {
+              "boundary_hardness": 0.8799999999999999,
+              "softness": 0.38,
+              "directness": 0.75
+            }
+          ],
+          "thresholds": {
+            "energy_spike": 0.35,
+            "energy_drift": 0.25,
+            "stance_delta": 0.3,
+            "oscillation": 0.4,
+            "softening": -0.25
+          }
+        }
+      },
+      "aligned": true,
+      "divergence_points": []
+    }
+  },
+  "overall": {
+    "promote": true,
+    "reason": "Sandbox and live aligned across scenarios; no critical drift flags."
+  }
+}

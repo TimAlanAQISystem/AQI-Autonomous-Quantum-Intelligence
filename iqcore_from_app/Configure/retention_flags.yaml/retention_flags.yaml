@@ -1,0 +1,10 @@
+risk_score_threshold: 1
+risk_factors:
+  - field: "monthly_volume"
+    threshold: 1000
+    weight: 1
+    reason: "Low transaction volume"
+  - field: "active_days"
+    threshold: 10
+    weight: 1
+    reason: "Low activity days"
