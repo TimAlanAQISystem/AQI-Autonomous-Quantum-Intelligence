@@ -1,0 +1,34 @@
+{
+  "outcome_indicators": {
+    "statement_obtained": {
+      "keywords": ["sending statement", "emailing you", "checking my bill", "statement is coming", "sent it over"],
+      "intent_match": "statement_obtained",
+      "mandatory_signals": ["ULS", "TDS"]
+    },
+    "kept_engaged": {
+      "keywords": ["tell me more", "how does that work", "interested but", "explain the fees"],
+      "intent_match": "kept_engaged",
+      "threshold_duration": 120
+    },
+    "soft_decline": {
+      "keywords": ["not right now", "maybe later", "call me back next month", "too busy today"],
+      "intent_match": "soft_decline"
+    },
+    "hard_decline": {
+      "keywords": ["not interested", "stop calling", "satisfied with my current", "i don't need this"],
+      "intent_match": "hard_decline"
+    },
+    "hangup": {
+      "keywords": [],
+      "intent_match": "hangup",
+      "signal": "abrupt_termination"
+    }
+  },
+  "engagement_score_weights": {
+    "TPS": 0.2,
+    "RLS": 0.3,
+    "ULS": 0.2,
+    "TDS": 0.2,
+    "OSS": 0.1
+  }
+}

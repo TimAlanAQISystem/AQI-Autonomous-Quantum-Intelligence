@@ -1,0 +1,170 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Regime Engine Live Configuration Schema",
+  "description": "Governed configuration emitted by the Regime Engine and consumed by Alan.",
+
+  "type": "object",
+
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Semantic version of the config emitted by the Regime Engine."
+    },
+
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when this configuration was generated."
+    },
+
+    "segments": {
+      "type": "object",
+      "description": "Segment-level operational metadata.",
+      "patternProperties": {
+        "^[A-Za-z0-9_\\-]+$": {
+          "type": "object",
+          "properties": {
+            "priority": {
+              "type": "string",
+              "enum": ["HIGH", "MEDIUM", "LOW", "OFF"],
+              "description": "Operational priority for queue building."
+            },
+            "prediction_trust": {
+              "type": "string",
+              "enum": ["HIGH", "MEDIUM", "LOW"],
+              "description": "Trust level for predictions in this segment."
+            },
+            "status": {
+              "type": "string",
+              "enum": ["STABLE", "SHIFTING", "DEGRADED", "EXPERIMENTAL"],
+              "description": "Current regime status of the segment."
+            },
+            "preferred_script": {
+              "type": "string",
+              "description": "Script variant Alan should use by default for this segment."
+            },
+            "notes": {
+              "type": "string",
+              "description": "Human-readable notes from the Regime Engine."
+            }
+          },
+          "required": ["priority", "prediction_trust", "status"]
+        }
+      }
+    },
+
+    "call_routing_overrides": {
+      "type": "object",
+      "description": "Overrides for queue priority and pacing.",
+      "patternProperties": {
+        "^[A-Za-z0-9_\\-]+$": {
+          "type": "object",
+          "properties": {
+            "queue_priority": {
+              "type": "string",
+              "enum": ["HIGH", "MEDIUM", "LOW", "OFF"],
+              "description": "Override for queue priority."
+            },
+            "pacing": {
+              "type": "string",
+              "enum": ["AGGRESSIVE", "NORMAL", "CONSERVATIVE"],
+              "description": "Override for pacing behavior."
+            }
+          }
+        }
+      }
+    },
+
+    "script_overrides": {
+      "type": "object",
+      "description": "Explicit script variant overrides for specific segments.",
+      "patternProperties": {
+        "^[A-Za-z0-9_\\-]+$": {
+          "type": "string",
+          "description": "Script variant to use for this segment."
+        }
+      }
+    },
+
+    "model_actions": {
+      "type": "array",
+      "description": "Actions the Regime Engine requests for model management.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "spawn_new_model",
+              "retire_model",
+              "split_segment",
+              "merge_segment",
+              "retrain_model"
+            ]
+          },
+          "target": {
+            "type": "string",
+            "description": "Segment or model ID affected."
+          },
+          "parameters": {
+            "type": "object",
+            "description": "Optional parameters for the action."
+          }
+        },
+        "required": ["action", "target"]
+      }
+    },
+
+    "regime_events": {
+      "type": "array",
+      "description": "Confirmed regime shifts that led to this configuration.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "event_id": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": [
+              "timing_regime",
+              "state_cultural_shift",
+              "script_performance",
+              "objection_mutation",
+              "cost_explosion"
+            ]
+          },
+          "segment": { "type": "string" },
+          "state": { "type": "string" },
+          "script": { "type": "string" },
+          "confidence": { "type": "number" },
+          "evidence": { "type": "object" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        },
+        "required": ["event_id", "type", "confidence", "timestamp"]
+      }
+    },
+
+    "governance": {
+      "type": "object",
+      "description": "Governance metadata from Agent X.",
+      "properties": {
+        "approved_proposals": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "rejected_proposals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "proposal_id": { "type": "string" },
+              "reason": { "type": "string" }
+            },
+            "required": ["proposal_id", "reason"]
+          }
+        }
+      }
+    }
+  },
+
+  "required": ["version", "generated_at", "segments"]
+}

@@ -52,6 +52,18 @@ Thumbs.db
 *.dll
 *.so
 *.dylib
+*.zip
+
+# ── Media / Large binaries ──
+*.wav
+*.mp3
+*.mp4
+*.avi
+*.mov
+*.flac
+*.ogg
+*.pdf
+*.csv
 
 # ── Build / Deploy ──
 dist/
@@ -65,8 +77,10 @@ _ARCHIVE/
 _protected_production/
 snapshots/
 
-# ── Temp diagnostic scripts (prefixed _) ──
-# (We selectively force-add important ones like _preflight_field_validation.py)
+# ── Diagnostic / one-off scripts (prefixed _) ──
+# Already-tracked files (_fire_campaign.py, _preflight_field_validation.py) are NOT affected.
+_*.py
+_*.json
 _tmp_*
 _temp_*
 distil_patch_*
@@ -85,6 +99,17 @@ src/
 outcome_attribution_log.jsonl
 pghs_events.jsonl
 training_knowledge_distilled.json
+aqi_inventory/aqi_inventory.json
+
+# ── Twilio API dumps (contain credentials) ──
+alan_twilio_check.json
+alan_twilio_incoming.json
+call_recordings.json
 
 # ── Misc ──
 twiml_conversation_relay.xml
+=
+*.pid
+health_dump.json
+guardian_heartbeat.json
+aqi_ultra_report.json

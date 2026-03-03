@@ -1,0 +1,55 @@
+name: Alan Constitutional Stability
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  alan-stability:
+    runs-on: ubuntu-latest
+
+    env:
+      ALAN_ENV: "ci"
+      ALAN_TELEPHONY_PROVIDER: "mock" # Use mock for CI
+      ALAN_LOG_DIR: "./logs"
+      ALAN_GOLDEN_LOG_PATH: "./logs/alan_golden.log"
+      ALAN_STENCIL_PATH: "./stencil/alan_stencil.json"
+      ALAN_TEST_NUMBER: "+15550000000"
+      ALAN_TEL_ACCOUNT_SID: ${{ secrets.ALAN_TEL_ACCOUNT_SID }}
+      ALAN_TEL_AUTH_TOKEN: ${{ secrets.ALAN_TEL_AUTH_TOKEN }}
+      ALAN_TEL_API_KEY: ${{ secrets.ALAN_TEL_API_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          # source .venv/bin/activate # Windows users might need adjust, but for CI (ubuntu) this is standard or just use pip directly via python -m
+          # pip install --upgrade pip
+          # pip install -r requirements.txt # If exists
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Prepare log + stencil
+        run: |
+          mkdir -p "$ALAN_LOG_DIR"
+          mkdir -p "$(dirname "$ALAN_STENCIL_PATH")"
+          touch "$ALAN_GOLDEN_LOG_PATH"
+          echo '{}' > "$ALAN_STENCIL_PATH"
+
+      - name: Constitutional stability check
+        run: |
+          # source .venv/bin/activate
+          export PYTHONPATH=$PYTHONPATH:.
+          python -m alan_stability_enforcer validate-env
+          python -m alan_stability_enforcer telephony-self-test
+          python -m alan_stability_enforcer check-golden-log
+          python -m alan_stability_enforcer full-check

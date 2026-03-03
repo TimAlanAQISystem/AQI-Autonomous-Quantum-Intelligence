@@ -1,0 +1,51 @@
+{
+  "signals": {
+    "outcomes": {
+      "positive": ["statement_obtained", "kept_engaged"],
+      "neutral": ["soft_decline"],
+      "negative": ["hard_decline", "hangup"]
+    }
+  },
+  "adjustments": {
+    "trajectory_weights": {
+      "warming": { "on_positive": 1, "on_negative": -1 },
+      "cooling": { "on_positive": 1, "on_negative": -1 },
+      "stalling": { "on_positive": 0, "on_negative": 1 },
+      "escalating": { "on_positive": -1, "on_negative": 2 }
+    },
+    "archetype_confidence": {
+      "overloaded_operator": { "on_positive": 1, "on_negative": -1 },
+      "skeptical_defender": { "on_positive": 1, "on_negative": -1 },
+      "analyst": { "on_positive": 1, "on_negative": -1 },
+      "friendly_talker": { "on_positive": 1, "on_negative": -1 },
+      "loyalist": { "on_positive": 1, "on_negative": -1 },
+      "confused_uncertain": { "on_positive": 1, "on_negative": -1 },
+      "dominant_personality": { "on_positive": 1, "on_negative": -1 },
+      "passive_soft_spoken": { "on_positive": 1, "on_negative": -1 }
+    },
+    "closing_bias_tendencies": {
+      "direct": { "on_positive": 1, "on_negative": -1 },
+      "consultative": { "on_positive": 1, "on_negative": -1 },
+      "relational": { "on_positive": 1, "on_negative": -1 },
+      "soft": { "on_positive": 1, "on_negative": -1 }
+    }
+  },
+  "bounds": {
+    "trajectory_weight_min": -5,
+    "trajectory_weight_max": 5,
+    "archetype_confidence_min": -5,
+    "archetype_confidence_max": 5,
+    "closing_bias_min": -5,
+    "closing_bias_max": 5
+  },
+  "logging": {
+    "enabled": true,
+    "file": "evolution_log.jsonl"
+  },
+  "identity_invariants": [
+    "Do not change Alan's core persona.",
+    "Do not change Alan's tone from high-status professional.",
+    "Do not change domain: merchant services, card processing, fees, statements.",
+    "Do not alter safety constraints or CRG forbidden rules."
+  ]
+}

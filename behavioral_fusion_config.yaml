@@ -1,0 +1,15 @@
+# behavioral_fusion_config.yaml
+
+stall_velocity_threshold: 0.05      # below this = stalled
+stall_turn_threshold: 8             # 8+ turns with low velocity
+
+high_viscosity_threshold: 1.4       # emotional viscosity above this = high friction
+high_objection_threshold: 3         # 3+ objections = high friction
+
+collapse_drift_threshold: -0.6      # strong negative drift in late states = collapsed
+recovery_velocity_threshold: 0.25   # velocity above this after stall = recovering
+
+high_drift_threshold: 0.7           # absolute drift above this = fragile
+low_drift_threshold: 0.2            # absolute drift below this = optimal
+
+optimal_velocity_threshold: 0.4     # strong forward motion

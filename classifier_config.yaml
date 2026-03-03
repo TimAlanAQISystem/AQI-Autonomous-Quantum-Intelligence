@@ -1,0 +1,61 @@
+# classifier_config.yaml
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# CallTypeClassifier tuning — edit between campaigns.
+# Hot-reloadable: changes take effect on the next classify() call.
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+thresholds:
+  # Human engagement overrides — if BOTH met, force human_conversation
+  human_word_threshold: 40       # merchant_word_count >=
+  human_turn_threshold: 3        # turn_count >=
+
+  # Human question override — if BOTH met, strong human signal
+  human_question_threshold: 1    # questions_count >=
+  human_semantic_reactivity_threshold: 0.4  # semantic_reactivity >=
+
+  # Machine pattern thresholds
+  ivr_menu_threshold: 0.7        # menu_pattern_score >= → IVR
+  voicemail_phrase_threshold: 0.7 # voicemail_phrase_score >= → voicemail
+
+  # Monologue pattern (voicemail/IVR leaning)
+  monologue_ratio_threshold: 0.8
+  monologue_turn_cap: 2
+  cadence_machine_threshold: 0.2
+
+  # Probability-based decision
+  probability_confidence_threshold: 0.7
+  ambiguous_confidence_floor: 0.5
+
+weights:
+  human:
+    cadence_irregularity: 1.0
+    semantic_reactivity: 1.0
+    filler_rate: 0.8
+    interruptions: 1.2
+    background_noise_bonus: 0.3
+    breathing_bonus: 0.4
+
+  ivr:
+    scripted_phrase_rate: 1.0
+    menu_pattern_score: 1.2
+    cadence_regular: 0.8
+    no_interruptions_bonus: 0.3
+
+  voicemail:
+    voicemail_phrase_score: 1.4
+    monologue_ratio: 0.8
+    short_greeting_bonus: 0.3
+
+overrides:
+  # Toggle individual override rules on/off
+  enable_human_engagement_override: true
+  enable_human_question_override: true
+  enable_human_interruption_override: true
+  enable_voicemail_phrase_override: true
+  enable_ivr_menu_override: true
+  enable_safety_rule: true         # prevents engaged calls from being classified as machine
+
+logging:
+  log_raw_scores: true
+  log_probabilities: true
+  log_overrides: true

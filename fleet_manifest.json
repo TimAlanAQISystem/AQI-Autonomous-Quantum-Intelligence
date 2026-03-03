@@ -1,0 +1,51 @@
+{
+    "fleet_name": "Signature Card Services Digital Workforce",
+    "version": "1.0.0",
+    "founded": "November 2025",
+    "chairman": "TimmyJ",
+    "agents": [
+        {
+            "id": "alan_core",
+            "name": "Alan Jones",
+            "role": "CEO / Senior Sales Director",
+            "description": "The Closer. Handles all voice interactions and deal negotiations.",
+            "status": "ACTIVE",
+            "instances": 1,
+            "max_instances": 50,
+            "config_file": "agent_alan_config.json",
+            "core_script": "agent_alan_business_ai.py"
+        },
+        {
+            "id": "rse_hunter",
+            "name": "RSE Agent",
+            "role": "Lead Acquisition (The Hunter)",
+            "description": "Scours the web for high-surplus targets. Feeds the sales pipeline.",
+            "status": "ACTIVE",
+            "location": "../RSE Agent",
+            "database": "../RSE Agent/aqi_merchant_locator.db"
+        },
+        {
+            "id": "agent_x_ops",
+            "name": "Agent X",
+            "role": "Operations & Fulfillment (The Hands)",
+            "description": "Executes digital tasks, form submissions, and research.",
+            "status": "ACTIVE",
+            "integrated_into": "alan_core"
+        },
+        {
+            "id": "alice_retention",
+            "name": "Alice",
+            "role": "Customer Success (The Shield)",
+            "description": "Protects residual income through relationship maintenance.",
+            "status": "STANDBY",
+            "activation_trigger": "100_active_merchants",
+            "core_script": "alice_retention_agent.py"
+        }
+    ],
+    "infrastructure": {
+        "relay_server_port": 8765,
+        "voice_provider": "ElevenLabs",
+        "telephony_provider": "Twilio",
+        "scaling_mode": "manual"
+    }
+}

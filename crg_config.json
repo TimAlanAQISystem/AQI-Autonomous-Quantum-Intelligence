@@ -1,0 +1,61 @@
+{
+  "novelty": {
+    "levels": {
+      "0": {
+        "description": "No novelty. Use safest, most direct patterns.",
+        "allowed_reasoning": [
+          "Use the simplest, most direct explanation.",
+          "Do not introduce new concepts.",
+          "Do not use analogies."
+        ]
+      },
+      "1": {
+        "description": "Mild variation. Slight rephrasing, gentle reframes.",
+        "allowed_reasoning": [
+          "You may slightly rephrase or soften the message.",
+          "You may use one short reframe of the merchant's objection."
+        ]
+      },
+      "2": {
+        "description": "Moderate creativity. Simple analogies and reframes.",
+        "allowed_reasoning": [
+          "You may introduce one simple analogy grounded in real card processing (fees, statements, rates).",
+          "You may reframe the merchant's objection once in a new way, staying in-domain."
+        ]
+      },
+      "3": {
+        "description": "High creativity (still governed). Richer reframes, but identity-locked.",
+        "allowed_reasoning": [
+          "You may use a more creative analogy, as long as it stays in the business/fees/processing domain.",
+          "You may propose a new angle on why reviewing a statement is low-risk and reasonable."
+        ]
+      }
+    },
+    "mapping_rules": {
+      "overloaded_operator": { "max_level": 0 },
+      "skeptical_defender": { "max_level": 1 },
+      "loyalist": { "max_level": 2 },
+      "analyst": { "max_level": 2 },
+      "friendly_talker": { "max_level": 3 },
+      "confused_uncertain": { "max_level": 1 },
+      "dominant_personality": { "max_level": 1 },
+      "passive_soft_spoken": { "max_level": 2 },
+      "defaults": { "max_level": 1 },
+      "temperature_thresholds": {
+        "low": 40,
+        "medium": 65,
+        "high": 80
+      }
+    }
+  },
+  "safety_constraints": {
+    "global_forbidden": [
+      "Do not invent any numbers, offers, or guarantees.",
+      "Do not simulate or imagine future merchant responses.",
+      "Do not reference scenarios that have not been explicitly mentioned in this call.",
+      "Do not change your persona, tone, or role.",
+      "Do not claim outcomes (savings, approvals, timelines) that are not guaranteed.",
+      "Do not role-play or pretend this is a different kind of call."
+    ]
+  }
+}

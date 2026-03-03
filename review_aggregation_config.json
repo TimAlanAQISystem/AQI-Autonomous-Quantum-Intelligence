@@ -1,0 +1,33 @@
+{
+  "layers": {
+    "short_term_window": 1,
+    "mid_term_window": 5,
+    "long_term_window": 10
+  },
+  "influence": {
+    "short_term": 0.2,
+    "mid_term": 0.5,
+    "long_term": 0.3
+  },
+  "trend_threshold": 0.05,
+  "long_term_promotion": {
+    "min_occurrences": 7,
+    "max_variance": 0.15,
+    "min_confidence": 0.7
+  },
+  "aggregation_policy": {
+    "min_reviews_for_aggregation": 5,
+    "max_hours_between_aggregations": 168
+  },
+  "dimensions": [
+    "archetype_fit",
+    "trajectory_management",
+    "objection_handling_quality",
+    "closing_bias_appropriateness",
+    "novelty_appropriateness"
+  ],
+  "logging": {
+    "enabled": true,
+    "file": "review_aggregation_log.jsonl"
+  }
+}

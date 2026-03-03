@@ -1,0 +1,13 @@
+# inbound_silence_config.yaml
+thresholds:
+  min_rms_energy: 100            # Below this RMS is considered digital silence (16-bit PCM)
+  max_packet_interval_ms: 100    # Packet gaps >100ms are suspicious (jitter/loss)
+  dead_air_timeout_ms: 5000      # 5 seconds of silence -> Trigger STT Wakeup / Check
+  connection_loss_timeout_ms: 3000 # 3 seconds of NO packets -> Hangup (Hard Disconnect)
+
+actions:
+  on_suspicious: "log_warning"   # Just log it
+  on_dead_air: "trigger_stt_restart" # Try restarting STT or send "Are you there?" prompt
+  on_connection_loss: "hangup"   # Connection is gone, save money
+
+sampling_rate: 8000               # Twilio PCMU/8000hz

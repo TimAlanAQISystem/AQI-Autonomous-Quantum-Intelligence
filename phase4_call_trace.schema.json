@@ -1,0 +1,140 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Phase 4 Call Trace",
+  "description": "Canonical schema for Phase 4 telemetry export consumed by Phase 5 Behavioral Intelligence.",
+  "type": "object",
+  "required": ["call_id", "metadata", "turns", "final"],
+
+  "properties": {
+    "call_id": { "type": "string" },
+
+    "metadata": {
+      "type": "object",
+      "required": ["timestamp_start", "timestamp_end", "merchant_profile"],
+      "properties": {
+        "timestamp_start": { "type": "string", "format": "date-time" },
+        "timestamp_end": { "type": "string", "format": "date-time" },
+        "merchant_profile": {
+          "type": "object",
+          "properties": {
+            "business_type": { "type": "string" },
+            "size": { "type": "string" },
+            "prior_processing": { "type": "string" }
+          }
+        }
+      }
+    },
+
+    "turns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "turn_index",
+          "fsm_prev_state",
+          "fsm_event",
+          "fsm_state",
+          "prompt_layers",
+          "context",
+          "health_snapshot"
+        ],
+        "properties": {
+          "turn_index": { "type": "integer", "minimum": 0 },
+          "fsm_prev_state": { "type": "string" },
+          "fsm_event": { "type": "string" },
+          "fsm_state": { "type": "string" },
+
+          "prompt_layers": {
+            "type": "object",
+            "required": ["Identity", "Ethics", "Personality", "Knowledge", "Mission", "Output"],
+            "properties": {
+              "Identity": { "type": "string" },
+              "Ethics": { "type": "string" },
+              "Personality": { "type": "string" },
+              "Knowledge": { "type": "string" },
+              "Mission": { "type": "string" },
+              "Output": { "type": "string" }
+            }
+          },
+
+          "context": {
+            "type": "object",
+            "properties": {
+              "mission_escalation": { "type": "boolean" },
+              "objection_branch": { "type": ["string", "null"] },
+              "close_attempt": { "type": "boolean" },
+              "output_complexity": { "type": "string" },
+              "supervisor_flags": { "type": "object" }
+            }
+          },
+
+          "health_snapshot": {
+            "type": "object",
+            "required": ["organism_level", "telephony_state"],
+            "properties": {
+              "organism_level": { "type": "integer", "minimum": 1, "maximum": 4 },
+              "telephony_state": {
+                "type": "string",
+                "enum": ["Excellent", "Good", "Fair", "Poor", "Unusable"]
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "final": {
+      "type": "object",
+      "required": ["fsm_state", "exit_reason", "health_trajectory", "telephony_trajectory", "outcome_vector"],
+      "properties": {
+        "fsm_state": { "type": "string" },
+        "exit_reason": {
+          "type": "string",
+          "enum": [
+            "appointment_set", "soft_decline", "hard_decline",
+            "telephony_unusable", "organism_unfit", "caller_hangup",
+            "max_duration", "ivr_detected", "voicemail_detected",
+            "no_answer", "busy"
+          ]
+        },
+
+        "health_trajectory": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["turn_index", "organism_level", "telephony_state"],
+            "properties": {
+              "turn_index": { "type": "integer" },
+              "organism_level": { "type": "integer", "minimum": 1, "maximum": 4 },
+              "telephony_state": { "type": "string" }
+            }
+          }
+        },
+
+        "telephony_trajectory": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["turn_index", "telephony_state"],
+            "properties": {
+              "turn_index": { "type": "integer" },
+              "telephony_state": { "type": "string" }
+            }
+          }
+        },
+
+        "outcome_vector": {
+          "type": "object",
+          "required": ["appointment_set", "soft_decline", "hard_decline", "telephony_unusable", "organism_unfit"],
+          "properties": {
+            "appointment_set": { "type": "boolean" },
+            "soft_decline": { "type": "boolean" },
+            "hard_decline": { "type": "boolean" },
+            "telephony_unusable": { "type": "boolean" },
+            "organism_unfit": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,162 @@
+# ============================================================================
+# AQI MODE DEFINITIONS — Constitutional Mode Registry
+# ============================================================================
+# Every operational mode Alan can enter is defined here. Modes are governed
+# mission profiles — not personalities, not free-form behaviors. Each mode
+# has preconditions, constraints, allowed transitions, and governance rules.
+#
+# Instructor Mode (added 2026-02-19) is the first non-production mode.
+# It enables governed learning with industry professionals under Tim's
+# explicit approval. No drift. No contamination. No unsupervised integration.
+# ============================================================================
+
+modes:
+  production:
+    id: PRODUCTION_MODE
+    description: "Standard operational mode — live merchant calls, campaigns, boarding"
+    default: true
+    transitions:
+      - to: INSTRUCTOR_PENDING
+        trigger: enter_instructor_mode
+        preconditions:
+          - no_active_calls
+          - no_queued_outbound
+          - governance_health_pass
+      - to: IDLE
+        trigger: sleep
+
+  instructor_pending:
+    id: INSTRUCTOR_PENDING
+    description: "Awaiting supervisor confirmation before entering Instructor Mode"
+    entry_checks:
+      - no_active_calls
+      - governance_health_pass
+    transitions:
+      - to: INSTRUCTOR_MODE
+        trigger: confirm_instructor_mode
+      - to: PRODUCTION_MODE
+        trigger: cancel_instructor_mode
+
+  instructor:
+    id: INSTRUCTOR_MODE
+    description: "Governed learning lane — role-play, corrections, training with industry pros"
+    behavior_profile: instructor_profile
+    logging_profile: instructor_logging
+    transitions:
+      - to: INSTRUCTOR_SUMMARY
+        trigger: end_instructor_session
+      - to: PRODUCTION_MODE
+        trigger: resume_production
+      - to: IDLE
+        trigger: sleep
+
+  instructor_summary:
+    id: INSTRUCTOR_SUMMARY
+    description: "Post-session debrief — summarize lessons, package signals, await approval"
+    behavior_profile: instructor_summary_profile
+    transitions:
+      - to: PRODUCTION_MODE
+        trigger: summary_complete
+      - to: IDLE
+        trigger: sleep
+
+  idle:
+    id: IDLE
+    description: "Dormant — no active calls, no campaign, awaiting command"
+    transitions:
+      - to: PRODUCTION_MODE
+        trigger: wake
+      - to: INSTRUCTOR_PENDING
+        trigger: enter_instructor_mode
+
+# ============================================================================
+# INSTRUCTOR MODE — Governance Constraints
+# ============================================================================
+instructor_mode:
+  id: INSTRUCTOR_MODE
+  enabled: true
+
+  activation:
+    allowed_from_states:
+      - PRODUCTION_MODE
+      - IDLE
+    preconditions:
+      - no_active_calls
+      - no_queued_outbound
+      - governance_health_pass
+    triggers:
+      - type: manual_command
+        source: supervisor
+        command: enter_instructor_mode
+      - type: per_call_flag
+        source: api
+        parameter: instructor_mode
+
+  deactivation:
+    allowed_to_states:
+      - PRODUCTION_MODE
+      - IDLE
+    triggers:
+      - type: manual_command
+        source: supervisor
+        command: exit_instructor_mode
+      - type: governance_event
+        reason: drift_risk_detected
+      - type: call_end
+        reason: session_complete
+
+  governance:
+    write_to_core_persona: false
+    allow_learning_signals: true
+    require_human_approval_for_integration: true
+    enforce_no_sales_language: true
+    enforce_no_data_capture: true
+    enforce_high_status_persona: true
+    max_session_duration_minutes: 60
+    max_turns_per_session: 200
+
+  logging:
+    trace_export: phase5
+    log_file: data/instructor_training_log.jsonl
+    include:
+      - instructor_feedback
+      - training_signals
+      - state_transitions
+      - governance_events
+      - session_summaries
+
+# ============================================================================
+# TRAINING SIGNAL TYPES — Enumerated Error Categories
+# ============================================================================
+training_signal_types:
+  - TONE
+  - PACING
+  - LOGIC
+  - OBJECTION_HANDLING
+  - DOMAIN_ACCURACY
+  - COMPLIANCE
+  - STRUCTURE
+  - CLOSING_BEHAVIOR
+  - GATEKEEPER_NAVIGATION
+  - COLD_OPEN_DELIVERY
+  - RECOVERY
+  - LISTENING
+
+# ============================================================================
+# FEEDBACK PROTOCOL — Instructor → Alan correction format
+# ============================================================================
+feedback_protocol:
+  instructor_turn:
+    required_fields:
+      - feedback_type    # From training_signal_types
+      - correction       # What Alan should have done
+    optional_fields:
+      - rationale        # Why this correction matters
+      - example          # Correct phrasing or behavior
+  
+  alan_response:
+    required_steps:
+      - acknowledgment   # Confirm receipt
+      - reflection       # Summarize what was corrected
+      - adjustment       # Show corrected behavior
+      - request          # Ask if correction is accurate

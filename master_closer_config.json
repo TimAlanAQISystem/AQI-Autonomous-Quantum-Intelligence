@@ -1,0 +1,86 @@
+{
+  "trajectory": {
+    "states": ["warming", "cooling", "stalling", "escalating", "neutral"],
+    "rules": {
+      "warming": {
+        "signals": ["more_questions", "longer_responses", "positive_language"],
+        "weight": 1
+      },
+      "cooling": {
+        "signals": ["short_answers", "delayed_responses", "disengaged_phrases"],
+        "weight": -1
+      },
+      "stalling": {
+        "signals": ["call_me_later", "send_info", "need_to_think"],
+        "weight": -2
+      },
+      "escalating": {
+        "signals": ["strong_objection", "frustration_spike"],
+        "weight": -3
+      }
+    }
+  },
+  "objection_weighting": {
+    "types": {
+      "rate": { "base_weight": 3 },
+      "time": { "base_weight": 2 },
+      "loyalty": { "base_weight": 2 },
+      "skepticism": { "base_weight": 3 },
+      "curiosity": { "base_weight": 1 }
+    },
+    "modifiers": {
+      "soft_resistance": -1,
+      "half_objection": 1,
+      "escalating": 2,
+      "warming": -1
+    },
+    "thresholds": {
+      "light_response": 1,
+      "normal_response": 3,
+      "strong_response": 5
+    }
+  },
+  "merchant_types": {
+    "busy_owner": {
+      "signals": ["really busy", "no time", "in the middle", "make it quick", "i'm busy"],
+      "bias": "direct"
+    },
+    "skeptic": {
+      "signals": ["what's the catch", "heard this before", "scam"],
+      "bias": "soft"
+    },
+    "loyalist": {
+      "signals": ["my guy", "they've treated us well", "we're happy"],
+      "bias": "relational"
+    },
+    "analyst": {
+      "signals": ["details", "numbers", "breakdown", "explain"],
+      "bias": "consultative"
+    },
+    "friendly_talker": {
+      "signals": ["chatty", "jokes", "long_stories"],
+      "bias": "relational"
+    },
+    "guarded": {
+      "signals": ["short_answers", "one_word", "cold_tone"],
+      "bias": "soft"
+    }
+  },
+  "modes": {
+    "compression": {
+      "max_sentences": 2,
+      "tone": "direct"
+    },
+    "expansion": {
+      "max_sentences": 5,
+      "tone": "consultative"
+    }
+  },
+  "endgame": {
+    "thresholds": {
+      "approaching": { "temp_min": 50, "conf_min": 50 },
+      "ready": { "temp_min": 65, "conf_min": 65 },
+      "too_cold": { "temp_max": 25, "conf_max": 30 }
+    }
+  }
+}

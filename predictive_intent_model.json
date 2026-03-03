@@ -1,0 +1,67 @@
+{
+  "intents": {
+    "rate_frustration": {
+      "keywords": ["fees", "rates", "expensive", "too much", "killing me", "costs", "going up", "increase"],
+      "patterns": [
+        "I feel like.*(fees|rates)",
+        "they keep.*(raising|changing|going up).*rates",
+        "too much.*(processing|fees)"
+      ],
+      "sentiment_bias": "negative",
+      "priority": 90,
+      "default_objection_type": "rate"
+    },
+    "time_objection": {
+      "keywords": ["busy", "no time", "swamped", "slammed", "in the middle"],
+      "patterns": [
+        "I (don't|do not) have time",
+        "I'm in the middle of",
+        "this isn't a good time"
+      ],
+      "sentiment_bias": "neutral",
+      "priority": 80,
+      "default_objection_type": "time"
+    },
+    "loyalty_objection": {
+      "keywords": ["happy with", "like my guy", "taken care of", "we're good"],
+      "patterns": [
+        "we're good with",
+        "I'm happy with",
+        "they've treated us well"
+      ],
+      "sentiment_bias": "positive",
+      "priority": 70,
+      "default_objection_type": "loyalty"
+    },
+    "skepticism": {
+      "keywords": ["what's the catch", "too good", "heard this before", "scam"],
+      "patterns": [
+        "what's the catch",
+        "sounds too good",
+        "I've heard this before"
+      ],
+      "sentiment_bias": "negative",
+      "priority": 85,
+      "default_objection_type": "skepticism"
+    },
+    "curiosity": {
+      "keywords": ["how does it work", "tell me more", "explain", "walk me through"],
+      "patterns": [
+        "how does this work",
+        "can you explain",
+        "walk me through"
+      ],
+      "sentiment_bias": "neutral",
+      "priority": 60,
+      "default_objection_type": "curiosity"
+    }
+  },
+  "thresholds": {
+    "min_confidence": 0.55,
+    "high_confidence": 0.8
+  },
+  "behavior": {
+    "high_confidence_prefix": "anticipatory",
+    "low_confidence_prefix": "probing"
+  }
+}

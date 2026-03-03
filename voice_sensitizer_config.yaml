@@ -1,0 +1,40 @@
+# voice_sensitizer_config.yaml
+# Voice Identity Integrity Monitor for Alan
+# Controls drift detection, prosody validation, and corrective actions
+# Hot-reloadable via ClassifierConfigLoader pattern
+
+thresholds:
+  # Drift thresholds (0-1, where 0 = identical to baseline)
+  mild_drift: 0.15
+  moderate_drift: 0.25
+  severe_drift: 0.35
+  catastrophic_drift: 0.45
+
+  # Prosody ranges (per window)
+  min_pitch_variance: 0.05
+  max_pitch_variance: 0.40
+  min_energy_variance: 0.05
+  max_energy_variance: 0.50
+  min_speaking_rate_wpm: 110
+  max_speaking_rate_wpm: 190
+
+actions:
+  on_mild_drift: log_only
+  on_moderate_drift: log_and_warn
+  on_severe_drift: adjust_tts_params
+  on_catastrophic_drift: abort_call_and_alert
+
+tts_adjustments:
+  # Applied when severe drift is detected
+  stability_delta: -0.1
+  similarity_boost_delta: 0.1
+  speaking_rate_delta: -0.05
+
+baseline:
+  # Path to canonical voiceprint and prosody profile
+  voiceprint_path: "baselines/alan_voiceprint.json"
+  prosody_profile_path: "baselines/alan_prosody_profile.json"
+
+logging:
+  enable_per_window_logging: false
+  enable_per_call_summary: true

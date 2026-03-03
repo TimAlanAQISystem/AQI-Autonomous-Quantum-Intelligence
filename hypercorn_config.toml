@@ -1,0 +1,48 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# AGENT X — HYPERCORN CONFIGURATION (Tim's 9-Point Smoothing Plan)
+# ══════════════════════════════════════════════════════════════════════════════
+#
+# This config is loaded when using Hypercorn CLI mode:
+#   .venv\Scripts\python.exe -m hypercorn control_api_fixed:app --config hypercorn_config.toml
+#
+# For direct Python mode (preferred), the __main__ block in control_api_fixed.py
+# applies these same values programmatically:
+#   .venv\Scripts\python.exe control_api_fixed.py
+#
+# ══════════════════════════════════════════════════════════════════════════════
+
+# §1 — Worker model: pure asyncio, no threads
+worker_class = "asyncio"
+
+# §2 — Workers: 2 (one serving, one draining on restart)
+workers = 2
+
+# Binding
+bind = ["0.0.0.0:8777"]
+
+# §3 — Access logging: DISABLED (removes 5-15ms log-write jitter per req)
+# Use "None" string (Hypercorn TOML convention) to disable
+# accesslog = <not set> means disabled
+
+# Error logging: keep to stderr
+errorlog = "-"
+
+# §4 — Keep-alive: 75s (long-lived telephony connections)
+keep_alive_timeout = 75
+
+# §5 — Max incomplete event size: 2048 bytes (slow-loris protection)
+h11_max_incomplete_size = 2048
+
+# §6 — Max body size: 33554432 bytes = 32MB (audio payloads from Twilio)
+h2_max_content_length = 33554432
+h11_max_content_length = 33554432
+
+# §7 — HTTP/2 disabled (Twilio doesn't negotiate h2, saves memory)
+h2_max_concurrent_streams = 0
+
+# Shutdown tuning
+shutdown_timeout = 5
+graceful_timeout = 3
+
+# WebSocket health
+websocket_ping_interval = 20

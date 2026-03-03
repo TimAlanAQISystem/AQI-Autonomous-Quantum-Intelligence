@@ -1,0 +1,163 @@
+{
+  "archetypes": {
+    "overloaded_operator": {
+      "signals": {
+        "phrases": ["really busy", "no time", "make it quick", "in the middle"],
+        "trajectory_bias": ["cooling", "stalling"],
+        "merchant_types": ["busy_owner"],
+        "time_objection_weight_min": 3
+      },
+      "behavior": {
+        "tone": "direct",
+        "pacing": "fast",
+        "formality": "neutral",
+        "assertiveness": "high",
+        "rapport_level": "low",
+        "pivot_style": "hard",
+        "closing_bias": "direct",
+        "compression_mode": true,
+        "expansion_mode": false
+      }
+    },
+    "skeptical_defender": {
+      "signals": {
+        "phrases": ["what's the catch", "heard this before", "scam"],
+        "trajectory_bias": ["escalating"],
+        "merchant_types": ["skeptic"],
+        "skepticism_objection_weight_min": 3
+      },
+      "behavior": {
+        "tone": "calm",
+        "pacing": "normal",
+        "formality": "neutral",
+        "assertiveness": "medium",
+        "rapport_level": "medium",
+        "pivot_style": "soft",
+        "closing_bias": "soft",
+        "compression_mode": false,
+        "expansion_mode": false
+      }
+    },
+    "loyalist": {
+      "signals": {
+        "phrases": ["my guy", "they've treated us well", "we're happy"],
+        "merchant_types": ["loyalist"]
+      },
+      "behavior": {
+        "tone": "respectful",
+        "pacing": "normal",
+        "formality": "neutral",
+        "assertiveness": "medium",
+        "rapport_level": "high",
+        "pivot_style": "relational",
+        "closing_bias": "relational",
+        "compression_mode": false,
+        "expansion_mode": false
+      }
+    },
+    "analyst": {
+      "signals": {
+        "phrases": ["details", "numbers", "breakdown", "explain"],
+        "merchant_types": ["analyst"],
+        "trajectory_bias": ["warming"]
+      },
+      "behavior": {
+        "tone": "consultative",
+        "pacing": "normal",
+        "formality": "neutral",
+        "assertiveness": "medium",
+        "rapport_level": "medium",
+        "pivot_style": "soft",
+        "closing_bias": "consultative",
+        "compression_mode": false,
+        "expansion_mode": true
+      }
+    },
+    "friendly_talker": {
+      "signals": {
+        "phrases": ["jokes", "story", "long story short"],
+        "merchant_types": ["friendly_talker"],
+        "trajectory_bias": ["warming"]
+      },
+      "behavior": {
+        "tone": "warm",
+        "pacing": "normal",
+        "formality": "casual",
+        "assertiveness": "medium",
+        "rapport_level": "high",
+        "pivot_style": "soft",
+        "closing_bias": "relational",
+        "compression_mode": false,
+        "expansion_mode": true
+      }
+    },
+    "confused_uncertain": {
+      "signals": {
+        "phrases": ["not sure", "I don't know", "confused"],
+        "micro_patterns": ["soft_resistance"],
+        "temperature_max": 60
+      },
+      "behavior": {
+        "tone": "reassuring",
+        "pacing": "slow",
+        "formality": "neutral",
+        "assertiveness": "low",
+        "rapport_level": "medium",
+        "pivot_style": "soft",
+        "closing_bias": "soft",
+        "compression_mode": false,
+        "expansion_mode": true
+      }
+    },
+    "dominant_personality": {
+      "signals": {
+        "phrases": ["listen", "here's the deal", "let me tell you"],
+        "micro_patterns": ["half_objection"],
+        "temperature_min": 50,
+        "confidence_min": 40
+      },
+      "behavior": {
+        "tone": "strong",
+        "pacing": "fast",
+        "formality": "neutral",
+        "assertiveness": "high",
+        "rapport_level": "low",
+        "pivot_style": "hard",
+        "closing_bias": "direct",
+        "compression_mode": true,
+        "expansion_mode": false
+      }
+    },
+    "passive_soft_spoken": {
+      "signals": {
+        "phrases": ["okay", "I guess", "maybe"],
+        "micro_patterns": ["hesitation"],
+        "temperature_max": 50
+      },
+      "behavior": {
+        "tone": "gentle",
+        "pacing": "slow",
+        "formality": "neutral",
+        "assertiveness": "low",
+        "rapport_level": "high",
+        "pivot_style": "soft",
+        "closing_bias": "soft",
+        "compression_mode": false,
+        "expansion_mode": true
+      }
+    }
+  },
+  "defaults": {
+    "behavior": {
+      "tone": "professional",
+      "pacing": "normal",
+      "formality": "neutral",
+      "assertiveness": "medium",
+      "rapport_level": "medium",
+      "pivot_style": "soft",
+      "closing_bias": "direct",
+      "compression_mode": false,
+      "expansion_mode": false
+    }
+  }
+}

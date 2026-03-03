@@ -1,0 +1,55 @@
+{
+  "styles": {
+    "direct": {
+      "triggers": {
+        "sentiment": ["busy"],
+        "personality": ["decisive", "impatient"],
+        "phrases": ["just tell me", "bottom line", "get to the point"]
+      },
+      "closing_lines": [
+        "Here’s the bottom line: let’s do a quick statement review and see if this is even worth your time.",
+        "Let’s not overcomplicate this—give me one recent statement and I’ll tell you if there’s real money on the table.",
+        "If this doesn’t make sense in five minutes, we drop it. Fair?"
+      ]
+    },
+    "consultative": {
+      "triggers": {
+        "sentiment": ["curious", "thoughtful"],
+        "personality": ["analytical", "cautious"],
+        "phrases": ["walk me through", "explain", "details"]
+      },
+      "closing_lines": [
+        "Let’s walk through one recent statement together and I’ll show you exactly where the money is going.",
+        "We can do a side‑by‑side comparison so you can see the numbers before you decide anything.",
+        "If I can’t show you something concrete, you don’t move. That’s the deal."
+      ]
+    },
+    "relational": {
+      "triggers": {
+        "sentiment": ["warm", "friendly"],
+        "personality": ["relationship", "loyal"],
+        "phrases": ["my guy", "treated us well", "we've been with them"]
+      },
+      "closing_lines": [
+        "I’m not here to blow up a relationship that’s working—I’m here to make sure you’re not overpaying for it.",
+        "If your current setup is solid, I’ll be the first to say so. If not, we tighten it up.",
+        "Think of this as a second set of eyes, not a replacement—unless it makes obvious sense."
+      ]
+    },
+    "soft": {
+      "triggers": {
+        "sentiment": ["skeptical", "guarded"],
+        "personality": ["risk_averse", "burned_before"],
+        "phrases": ["heard this before", "burned", "scam"]
+      },
+      "closing_lines": [
+        "We can keep this low‑pressure—just a quick look, and if it doesn’t feel right, we stop.",
+        "You’ve probably heard a lot of pitches. I’m fine being the one that actually shows you numbers instead of hype.",
+        "Let’s treat this as a sanity check, not a commitment."
+      ]
+    }
+  },
+  "defaults": {
+    "style": "direct"
+  }
+}

@@ -1,0 +1,13 @@
+stt_confidence_degraded_threshold: 0.75
+
+tts_drift_mild_threshold: 0.25
+tts_drift_severe_threshold: 0.60
+
+dead_air_warn_timeout_ms: 3000
+dead_air_timeout_ms: 5000
+
+connection_loss_warn_timeout_ms: 1500
+connection_loss_timeout_ms: 3000
+
+ivr_hard_threshold: 0.80
+voicemail_hard_threshold: 0.80

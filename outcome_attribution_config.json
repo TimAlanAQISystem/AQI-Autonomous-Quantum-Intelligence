@@ -1,0 +1,50 @@
+{
+  "dimensions": {
+    "archetype_fit": {
+      "weights": {
+        "stable_archetype": 1.0,
+        "archetype_flip": -0.5,
+        "engagement_high": 0.8,
+        "engagement_low": -0.4
+      }
+    },
+    "trajectory_management": {
+      "weights": {
+        "warming": 1.0,
+        "stable": 0.6,
+        "cooling": -0.5,
+        "escalating": -1.0
+      }
+    },
+    "objection_handling_quality": {
+      "weights": {
+        "soft_to_positive": 1.0,
+        "soft_to_neutral": 0.5,
+        "hard_to_negative": -1.0,
+        "ignored_objection": -0.8
+      }
+    },
+    "closing_bias_appropriateness": {
+      "weights": {
+        "bias_match": 1.0,
+        "bias_mismatch": -0.7
+      }
+    },
+    "novelty_appropriateness": {
+      "weights": {
+        "high_novelty_positive": 0.8,
+        "high_novelty_negative": -1.0,
+        "low_novelty_positive": 0.5,
+        "low_novelty_negative": -0.3
+      }
+    }
+  },
+  "review_policy": {
+    "review_interval_calls": 25,
+    "review_interval_hours": 48
+  },
+  "logging": {
+    "enabled": true,
+    "file": "outcome_attribution_log.jsonl"
+  }
+}

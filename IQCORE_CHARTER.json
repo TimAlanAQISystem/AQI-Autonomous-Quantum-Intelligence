@@ -1,0 +1,53 @@
+{
+  "version": "1.0.0",
+  "generated_at": "2026-02-21T00:00:00Z",
+
+  "iqcore_total": 100,
+
+  "actors": {
+    "Alan": {
+      "allocated_iqcores": 60,
+      "role": "operator",
+      "usage": [
+        "real_time_decisioning",
+        "lead_routing",
+        "script_selection",
+        "pacing_control",
+        "regime_config_interpretation"
+      ],
+      "constraints": [
+        "cannot_modify_constitution",
+        "cannot_approve_regime_proposals",
+        "cannot_change_iqcore_allocation"
+      ]
+    },
+    "AgentX": {
+      "allocated_iqcores": 40,
+      "role": "governor",
+      "usage": [
+        "regime_proposal_review",
+        "constitutional_enforcement",
+        "compliance_checks",
+        "model_lifecycle_governance",
+        "meta_monitoring"
+      ],
+      "constraints": [
+        "does_not_run_per_call_logic",
+        "does_not_handle_latency_critical_paths",
+        "cannot_reduce_Alan_below_50_iqcores"
+      ]
+    }
+  },
+
+  "rules": {
+    "min_alan_iqcores": 50,
+    "max_agentx_iqcores": 50,
+    "reallocation_allowed": true,
+    "reallocation_governed_by": "AgentX",
+    "reallocation_conditions": [
+      "must_be_logged_in_RRG",
+      "must_not_violate_min_alan_iqcores",
+      "must_be_justified_by_regime_engine_impact"
+    ]
+  }
+}

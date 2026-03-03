@@ -1,0 +1,9 @@
+﻿{
+    "tasks": [
+        {
+            "label": "Call Now",
+            "type": "shell",
+            "command": "python make_call.py" 
+        }
+    ]
+}

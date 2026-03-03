@@ -1,0 +1,19 @@
+{
+  "weights": {
+    "rule_match_strength": 0.35,
+    "engagement_score": 0.25,
+    "trajectory_certainty": 0.20,
+    "objection_clarity": 0.15,
+    "hangup_certainty": 0.05
+  },
+  "thresholds": {
+    "high_confidence": 0.75,
+    "medium_confidence": 0.40
+  },
+  "objection_clarity_mapping": {
+    "hard": 1.0,
+    "soft": 0.6,
+    "mixed": 0.3,
+    "none": 0.0
+  }
+}
