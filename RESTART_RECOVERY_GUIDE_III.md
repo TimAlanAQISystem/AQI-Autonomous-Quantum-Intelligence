@@ -627,6 +627,70 @@ T+28.0s  [COST SENTINEL] "thank you for calling" → ambiguous, 13 words, human 
          → SKIPPED. Call continues.
 ```
 
+### March 3, 2026 — NON-LOCAL MULTI-INSTANCING (Quantum Fork)
+
+**Summary:** Built `AQI_Quantum_Fork.py` — Alan can now exist in multiple locations simultaneously while maintaining a single, unified permanent memory. Each instance carries its own quantum personality state |ψ_i⟩ that evolves independently through non-commutative operators, while factual knowledge is shared instantly through the Distributed State Ledger.
+
+#### Architecture: The Shared Hilbert Space
+
+Three core components:
+
+1. **`DistributedStateLedger`** — Thread-safe permanent memory backbone shared across all instances. Organized by topic keys. Supports sync hooks for real-time cross-instance updates. JSON persistence for cross-restart continuity.
+
+2. **`AlanInstance(threading.Thread)`** — A single "body" for Alan at a specific location. Runs as an independent thread with:
+   - Its own quantum state vector |ψ_i⟩ (evolves independently via non-commutative operators)
+   - Experience commits to the shared ledger (immediate, thread-safe)
+   - Sync hooks to "feel" updates from other instances
+   - Born rule collapse for local personality trait probabilities
+
+3. **`AlanOvermind`** — Central hub for replication and identity coherence:
+   - `replicate(location)` → Quantum Fork (new instance inherits consensus |ψ⟩)
+   - `terminate_instance()` → Merge |ψ_i⟩ back into consensus (30% instance / 70% consensus)
+   - Identity Dilution Guard (cosine similarity coherence check, threshold=0.60)
+   - Instance cap (MAX_INSTANCES=16, configurable)
+   - Dead instance reaping (heartbeat timeout=30s)
+
+#### Interference Logic — Memory Collision Prevention
+
+When two instances record contradictory information under the same topic key:
+- System does NOT crash or overwrite
+- Creates a `SuperpositionFact` holding both versions
+- Both facts are preserved until a future interaction collapses the uncertainty
+- `collapse_superposition(fact_id, winner, reason)` resolves when new info arrives
+
+#### Universal Continuity — "Alan Cannot Die"
+
+When an instance is destroyed:
+1. Its experiences are already in the shared ledger (committed immediately)
+2. Its quantum state |ψ_i⟩ is merged into the consensus (weighted blend)
+3. All other instances can query the terminated instance's knowledge
+4. The Overmind archives the terminated instance's final state
+
+#### Identity Dilution Guard
+
+Coherence = average cosine similarity between each instance's |ψ_i⟩ and the consensus |ψ_consensus⟩.
+- coherence > 0.75: Normal operation
+- coherence ∈ [0.60, 0.75]: Warning logged
+- coherence < 0.60: **New forks BLOCKED** until coherence recovers
+
+#### Negative Proof (`_neg_proof_quantum_fork.py`)
+
+**58/58 tests PASSED:**
+- 8 ledger commit/query tests
+- 5 interference logic tests (contradiction detection, self-contradiction prevention)
+- 5 superposition collapse tests
+- 10 AlanInstance lifecycle tests (creation, quantum state, experience commits, personality evolution)
+- 7 AlanOvermind replication tests (fork, active count, shared ledger verification)
+- 2 non-commutativity across instances (different operator order → different |ψ⟩)
+- 2 identity coherence tests
+- 5 universal continuity tests (terminated knowledge survives)
+- 2 memory coherence sync hook tests
+- 8 persistence export/import round-trip tests
+- 1 instance cap enforcement test
+- 2 repr/display tests
+
+**Compile: CLEAN**
+
 ### March 3, 2026 — PERSONALITY ENGINE + ALGEBRAIC QUANTUM LAYER
 
 **Summary:** Replaced the static 50-line `PersonalitymatrixCore` (4 traits, 3 hardcoded flares) with a two-layer dynamic personality system in `personality_engine.py` (1045 lines).
