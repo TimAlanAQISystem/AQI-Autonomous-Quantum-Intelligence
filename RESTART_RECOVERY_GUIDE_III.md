@@ -691,6 +691,75 @@ Coherence = average cosine similarity between each instance's |ψ_i⟩ and the c
 
 **Compile: CLEAN**
 
+### March 3, 2026 — ENTANGLEMENT BRIDGE (Phase-Lock State Vector Synchronization)
+
+**Summary:** Built `AQI_Entanglement_Bridge.py` (~870 lines) — Active stabilizer that keeps Alan instances coherent proactively. When one instance's quantum personality state |ψ⟩ shifts significantly (gets insulted, builds rapport, etc.), the other instances "feel" the shift in their own |ψ⟩ without needing to re-read the entire ledger. Prevention > cure — the bridge prevents the Identity Dilution Guard from ever needing to fire.
+
+#### The Phase-Lock Mechanism
+
+**Core Loop** (`_phase_lock_cycle()`, runs every 0.5s in a daemon thread):
+
+1. **Detect** — For each registered instance, compute ||Δψ|| = ||ψ_current - ψ_last_known||. If > SHIFT_THRESHOLD (0.08), generate a `StateShift`.
+2. **Propagate** — For each shift, find all active `EntanglementPair`s involving the source instance. Each partner is pulled 5% (`ENTANGLEMENT_PULL`) toward the source's new state, modulated by pair `correlation_strength`. Formula: `ψ_partner = (1 - pull × correlation) × ψ_partner + (pull × correlation) × ψ_source`, re-normalized.
+3. **Cascade** — After a partner is pulled, it may trigger its own shift (if the pull magnitude > threshold), which cascades to ITS partners. Depth-limited to `MAX_PROPAGATION_DEPTH=2` to prevent infinite loops.
+4. **Decay** — Correlation strength decays over time for diverging pairs. If correlation < `MIN_CORRELATION` (0.30), pair auto-disentangles (status → DECAYED).
+5. **Reconverge** — Compute average coherence (cosine similarity of each instance vs consensus). If < `EMERGENCY_THRESHOLD` (0.55), apply emergency reconvergence: pull ALL instances 15% (`EMERGENCY_PULL`) toward consensus |ψ⟩.
+
+#### Architecture
+
+| Component | Role |
+|-----------|------|
+| `EntanglementBridge` | Main engine. Thread-safe (RLock). Daemon thread for background phase-lock. Manual `tick()` for single-threaded use. |
+| `EntanglementPair` | Tracks two entangled instances: correlation_strength (1.0→decays), sync_count, total shifts propagated. |
+| `StateShift` | Records a detected shift: old/new state, delta magnitude, SHA-3 hash, propagation depth. |
+| `ReconvergenceEvent` | Records emergency reconvergence: coherence before/after, instances affected, pull strength. |
+| `EntangledOvermind` | Wrapper for `AlanOvermind` that auto-entangles on `replicate()`, auto-disentangles on `terminate()`, manages bridge lifecycle. |
+
+#### Integrity — SHA-3 State Hashing
+
+Every `StateShift` carries a SHA-3-256 hash of the source's new |ψ⟩. Before applying the pull to a partner, the bridge verifies the hash matches. If corrupted, the propagation is rejected. This prevents cosmic-ray-grade bugs from silently corrupting personality states across instances.
+
+#### Integration with Quantum Fork (`AQI_Quantum_Fork.py`)
+
+Seven modifications auto-wire the bridge:
+1. Import with `_HAS_ENTANGLEMENT_BRIDGE` flag (graceful degradation)
+2. `AlanOvermind.__init__()` creates, configures, and starts the bridge
+3. `replicate()` registers new instances and entangles with all existing
+4. `terminate_instance()` unregisters before termination
+5. After state merge, updates bridge consensus
+6. `export_state()` includes bridge diagnostics
+7. `shutdown()` stops bridge before terminating instances
+
+#### Bug Fix: Deadlock (Lock → RLock)
+
+Original implementation used `threading.Lock()`. `export_state()` acquires the lock, then calls `get_average_correlation()` → `get_active_pairs()` which tried to acquire the same lock. On non-reentrant `Lock()`, this deadlocks the process silently. Fixed by changing to `threading.RLock()` (reentrant lock).
+
+#### Negative Proof (`_neg_proof_entanglement_bridge.py`)
+
+**138/138 tests PASSED:**
+- 6 SHA-3 integrity hashing tests (deterministic, tamper-detection, perturbation-sensitivity)
+- 5 cosine similarity math tests (identical, orthogonal, opposite, zero, commutative)
+- 3 normalization tests (unit length, zero vector recovery)
+- 7 instance registration tests (register, unregister, snapshot management)
+- 15 entanglement pair lifecycle tests (create, duplicate detection, involves/partner queries, disentangle, unregistered rejection)
+- 3 entangle-all mesh tests (4 instances → 6 pairs, 3 partners each)
+- 8 state shift detection tests (first snapshot, sub-threshold noise, large shifts, unknown instance)
+- 6 vibe propagation tests (5% pull, directionality, normalization, approximate magnitude)
+- 4 cascade + depth limit tests (A→B→C chain, MAX_PROPAGATION_DEPTH enforcement)
+- 3 correlation decay + auto-disentangle tests (below-threshold → DECAYED status)
+- 11 emergency reconvergence tests (low coherence trigger, coherence improvement, event recording, high-coherence skip, single-instance skip)
+- 6 phase-lock cycle tests (tick returns dict, shift detection/propagation across cycles, cycle counting)
+- 4 daemon thread tests (start, is_running, double-start safety, stop)
+- 3 unregister auto-disentangle tests (removing instance cleans up all pairs)
+- 12 diagnostics + export tests (all dict keys, pair counts, correlation averages, repr)
+- 11 dataclass tests (StateShift, EntanglementPair, ReconvergenceEvent to_dict round-trips)
+- 7 constants verification tests
+- 4 consensus state tests (initial None, update, independence)
+- 15 EntangledOvermind wrapper tests (full integration with AlanOvermind: replicate, terminate, export, shutdown, property delegation)
+- 5 edge case tests (empty bridge, no instances, no pairs, constant relationships)
+
+**Compile: CLEAN** (AQI_Entanglement_Bridge.py, AQI_Quantum_Fork.py)
+
 ### March 3, 2026 — PERSONALITY ENGINE + ALGEBRAIC QUANTUM LAYER
 
 **Summary:** Replaced the static 50-line `PersonalitymatrixCore` (4 traits, 3 hardcoded flares) with a two-layer dynamic personality system in `personality_engine.py` (1045 lines).

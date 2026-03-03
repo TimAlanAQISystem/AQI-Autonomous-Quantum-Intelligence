@@ -72,6 +72,13 @@ from enum import Enum
 
 import numpy as np
 
+# ─── ENTANGLEMENT BRIDGE (Phase-Lock State Sync) ─────────────────────────────
+try:
+    from AQI_Entanglement_Bridge import EntanglementBridge
+    _HAS_ENTANGLEMENT_BRIDGE = True
+except ImportError:
+    _HAS_ENTANGLEMENT_BRIDGE = False
+
 logger = logging.getLogger("QuantumFork")
 
 
@@ -735,7 +742,24 @@ class AlanOvermind:
         self.total_terminated = 0
         self.identity_coherence = 1.0  # Start perfect
 
-        logger.info("[OVERMIND] AlanOvermind initialized — Non-Local Multi-Instancing ready")
+        # ─── ENTANGLEMENT BRIDGE ─────────────────────────────────────
+        # Phase-lock state sync across instances.  When one instance's
+        # |ψ⟩ shifts significantly, others "feel" it without re-reading
+        # the ledger.  Active stabilizer → prevents dilution guard fires.
+        self.bridge: Optional['EntanglementBridge'] = None
+        if _HAS_ENTANGLEMENT_BRIDGE:
+            try:
+                self.bridge = EntanglementBridge()
+                self.bridge.update_consensus(self.consensus_state)
+                self.bridge.start()
+                logger.info(
+                    "[OVERMIND] Entanglement Bridge attached and running"
+                )
+            except Exception as e:
+                logger.warning(f"[OVERMIND] Bridge init failed (non-fatal): {e}")
+                self.bridge = None
+
+        logger.info("[OVERMIND] AlanOvermind initialized -- Non-Local Multi-Instancing ready")
 
     def replicate(self, location_name: str, task_fn: Callable = None,
                   task_args: tuple = (),
@@ -798,6 +822,17 @@ class AlanOvermind:
             # Start the instance thread
             instance.start()
 
+            # ─── ENTANGLEMENT BRIDGE WIRE-UP ─────────────────────────
+            if self.bridge is not None:
+                self.bridge.register_instance(instance)
+                # Entangle with all existing active instances
+                for other_id, other_inst in self.instances.items():
+                    if other_id != instance.instance_id:
+                        if other_id not in self.bridge._instances:
+                            self.bridge.register_instance(other_inst)
+                        self.bridge.entangle(instance.instance_id, other_id)
+                self.bridge.update_consensus(self.consensus_state)
+
             logger.info(
                 f"[OVERMIND] Quantum Fork #{self.total_forks}: "
                 f"'{location_name}' (id={instance.instance_id[:8]}..., "
@@ -819,6 +854,10 @@ class AlanOvermind:
         """
         if instance_id not in self.instances:
             return False
+
+        # ─── DISENTANGLE BEFORE TERMINATION ───────────────────────────
+        if self.bridge is not None:
+            self.bridge.unregister_instance(instance_id)
 
         instance = self.instances[instance_id]
         instance.terminate()
@@ -844,6 +883,10 @@ class AlanOvermind:
 
         del self.instances[instance_id]
         self.total_terminated += 1
+
+        # Update bridge consensus after merge
+        if self.bridge is not None:
+            self.bridge.update_consensus(self.consensus_state)
 
         logger.info(
             f"[OVERMIND] Instance '{instance.location}' terminated and merged. "
@@ -958,7 +1001,7 @@ class AlanOvermind:
         """Export full Overmind state for diagnostics/persistence."""
         with self._lock:
             self._update_coherence()
-            return {
+            result = {
                 "total_forks": self.total_forks,
                 "total_terminated": self.total_terminated,
                 "active_instances": self.get_active_count(),
@@ -975,10 +1018,17 @@ class AlanOvermind:
                 ),
                 "terminated_archive_size": len(self.terminated_instances),
             }
+            # Include bridge state if available
+            if self.bridge is not None:
+                result["entanglement_bridge"] = self.bridge.export_state()
+            return result
 
     def shutdown(self):
-        """Terminate all instances and persist state."""
+        """Terminate all instances, stop bridge, and persist state."""
         logger.info("[OVERMIND] Shutting down all instances...")
+        # Stop bridge first
+        if self.bridge is not None:
+            self.bridge.stop()
         for inst_id in list(self.instances.keys()):
             self.terminate_instance(inst_id)
         # Final persist
