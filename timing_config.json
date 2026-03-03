@@ -24,11 +24,11 @@
       "description": "Default TTS speed when no prosody intent overrides. 1.12 = 12% faster than baseline."
     },
     "max_sentences": {
-      "value": 5,
+      "value": 3,
       "min": 1,
       "max": 8,
       "unit": "count",
-      "description": "Maximum sentences per turn. Extras get dropped. Was 3 (too tight), now 5."
+      "description": "Maximum sentences per turn. Was 5 (over-response in Batch 1), now 3. Prompt says 2-3 ideal."
     },
     "question_cap_per_turn": {
       "value": 1,
@@ -58,22 +58,22 @@
   "turn_timing": {
     "_section": "How long Alan waits for the caller and how fast he responds",
     "turn_timeout": {
-      "value": 3.0,
+      "value": 2.5,
       "min": 1.5,
       "max": 8.0,
       "unit": "seconds",
-      "description": "How long to wait after caller stops speaking before Alan responds. Was 6.3 (too slow), now 3.0."
+      "description": "How long to wait after caller stops speaking before Alan responds. Was 6.3→3.0→2.5. Tighter for faster perceived response."
     }
   },
 
   "llm_parameters": {
     "_section": "LLM generation parameters — controls response length and creativity",
     "relay_max_tokens": {
-      "value": 80,
-      "min": 40,
+      "value": 100,
+      "min": 60,
       "max": 200,
       "unit": "tokens",
-      "description": "Max tokens for relay server LLM calls (short conversational turns)."
+      "description": "Max tokens for relay LLM calls. Was 80→60→45→100 (P0 Fix: 45 caused mid-sentence truncation on early turns, breaking rapport and identity). 100 = ~3 sentences, enough for any business answer without truncation."
     },
     "direct_max_tokens": {
       "value": 150,
@@ -101,11 +101,11 @@
   "call_pacing": {
     "_section": "Call-level timing — ring duration, cooldowns, machine detection",
     "ring_timeout": {
-      "value": 50,
+      "value": 35,
       "min": 20,
       "max": 90,
       "unit": "seconds",
-      "description": "How long to let the phone ring before giving up. 50 = ~10-12 rings."
+      "description": "How long to let the phone ring before giving up. 35 = ~7-8 rings. Was 50 (too long, hits voicemail)."
     },
     "post_call_cooldown": {
       "value": 30,
@@ -115,11 +115,11 @@
       "description": "Server-level cooldown between calls (reflection window)."
     },
     "campaign_cooldown": {
-      "value": 150,
+      "value": 300,
       "min": 30,
       "max": 600,
       "unit": "seconds",
-      "description": "Campaign cooldown between calls (tools/cooldown_manager). 150 = 2.5 minutes."
+      "description": "Campaign cooldown between calls (tools/cooldown_manager). 300 = 5 minutes. [2026-03-02] Was 150 (2.5 min) — doubled to preserve precious leads."
     },
     "machine_detection": {
       "value": "Enable",

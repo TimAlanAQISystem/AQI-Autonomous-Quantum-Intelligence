@@ -15,8 +15,10 @@ class CallOutcome(Enum):
     PENDING = "pending"
     ANSWERED = "answered"
     CONNECTED = "connected"
+    DIALED = "dialed"  # Call was placed but no definitive outcome yet
     CALLBACK_SCHEDULED = "callback_scheduled"  # Explicitly tracking scheduled callbacks
     VOICEMAIL = "voicemail"
+    VOICEMAIL_BLOCKED = "voicemail_blocked"  # VM detected and call terminated early
     NO_ANSWER = "no_answer"
     BUSY = "busy"
     FAILED = "failed"
@@ -126,13 +128,14 @@ class Merchant:
             
             # Normal Priority Logic
             elif self.attempts < 3:
-                # Optimized for aggressive day-calling (User Request: 2026-01-14)
-                # Attempt 1 -> Retry in 45 mins (catch them after lunch/meeting)
-                # Attempt 2 -> Retry in 90 mins
+                # [2026-03-02] Widened from 45m/90m to 2h/4h — Tim: 'cannot burn these leads'
+                # Spread attempts across the business day instead of rapid-fire
+                # Attempt 1 -> Retry in 2 hours (catch them at a different part of day)
+                # Attempt 2 -> Retry in 4 hours (or next business day)
                 if self.attempts == 1:
-                    self.next_attempt = datetime.now() + timedelta(minutes=45)
+                    self.next_attempt = datetime.now() + timedelta(hours=2)
                 elif self.attempts == 2:
-                    self.next_attempt = datetime.now() + timedelta(minutes=90)
+                    self.next_attempt = datetime.now() + timedelta(hours=4)
                 # After 3 attempts, will be marked as do_not_call by can_attempt_now check
             else:
                 # After 3 attempts, mark as do not call

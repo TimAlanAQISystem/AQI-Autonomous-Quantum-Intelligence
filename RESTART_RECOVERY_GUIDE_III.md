@@ -60,8 +60,10 @@ Start-Process -FilePath ".venv\Scripts\python.exe" -ArgumentList "-m hypercorn c
 ```
 
 ### Relay Server
-- File: `aqi_conversation_relay_server.py` (~8,800+ lines)
+- File: `aqi_conversation_relay_server.py` (~9,800 lines — was ~10,043 before chatbot extraction)
 - Contains ALL 12 v4.1 organs wired inline
+- Phase 5 Streaming Analyzer wired (reflex arc CLOSED)
+- `chatbot_immune_system.py` extracted (~360 lines — sentence cleaner, chatbot kills, repetition detector)
 - Compile check: `.venv\Scripts\python.exe -c "import aqi_conversation_relay_server; print('OK')"`
 
 ### Workspace
@@ -88,10 +90,15 @@ Every usage site: `if ORGAN_XX_WIRED:` + `try/except` for fail-open.
 
 ### Import Order (top of file, ~lines 313-400)
 ```
+Phase 4 Trace Exporter → Phase 5 Streaming Analyzer →
 Organ 24 (Retrieval) → Organ 34 (Competitive) → Organ 30 (Prosody) →
 Organ 31 (Objection) → Organ 25 (Handoff) → Organ 32 (Summarization) →
 Organ 33 (CRM) → Organ 35 (IQ Budget) → Organ 29 (Inbound) →
 Organ 28 (Calendar) → Organ 27 (Language) → Organ 26 (Outbound)
+```
+Also at top of file (line 54):
+```
+chatbot_immune_system → clean_sentence (extracted from relay)
 ```
 
 ### Session Init Order (~lines 3087-3250)
@@ -361,6 +368,18 @@ IQ_BUDGET_WIRED = True
 | `_test_crm_integration.py` | 35/35 | Organ 33 — CRM queue, connectors, retry, sync |
 | `_test_summarization.py` | 35/35 | Organ 32 — 22-field summary, deal scoring |
 | `_test_iq_budget.py` | 40/40 | Organ 35 — burn accounting, transitions, freeze/thaw |
+| `tests/test_chatbot_immune.py` | 36/36 | Chatbot immune system — kills, filler strip, repetition, exit guard |
+| `tests/test_behavioral_fusion.py` | 12/12 | BehavioralFusionEngine — mode inference, health, snapshots |
+| `tests/test_perception_fusion.py` | 13/13 | PerceptionFusionEngine — 7 modes, 3 health levels, snapshots |
+| `tests/test_deep_layer_phase5.py` | 15/15 | DeepLayer Phase 5 reflex arc — continuum physics, relay consumption |
+| `tests/test_ccnm.py` | 13/13 | CCNM — SessionSeed, behavioral vector refinement, bounds, SQL |
+| `tests/test_phase5_integration.py` | 23/23 | End-to-end reflex arc — 9 link checks, extraction, parseability |
+
+**Run all tests:**
+```powershell
+cd "C:\Users\signa\OneDrive\Desktop\Agent X"
+Get-ChildItem tests/test_*.py | ForEach-Object { .\.venv\Scripts\python.exe $_.FullName }
+```
 
 ---
 
@@ -490,6 +509,112 @@ Each phase gates the next — no promotion without meeting success criteria.
 ---
 
 ## CHANGELOG
+
+### March 3, 2026 — PHASE 5 REFLEX ARC CLOSED + RELAY DECOMPOSITION + TEST SUITE
+
+**Summary:** Implemented the top 3 priorities from the 15-point perfection roadmap.
+Three bugs/gaps identified and fixed. Relay server decomposition started. Full test suite built.
+Safety snapshot at `snapshots/agentx-snap-20260303-093653/`.
+
+#### 1. Phase 5 Reflex Arc — CLOSED (3 gaps fixed across 3 files)
+
+The Phase 5 reflex arc was OPEN-CIRCUIT. Three gaps prevented behavioral intelligence from flowing:
+
+**GAP 1 — DeepLayer velocity/drift/viscosity never exposed** (`aqi_deep_layer.py`)
+- `DeepLayer.step()` returned `deep_state` without a `continuum` key
+- Relay server's behavioral_stats update code did `deep_state.get('continuum', {}).get('velocity', 0.0)` — but the key never existed
+- Result: velocity=0.0, drift=0.0, viscosity=1.0 FOREVER regardless of actual conversation physics
+- **FIX:** Added `continuum` key to `deep_state` return dict (section "4a. EXPOSE FLUIDIC PHYSICS"):
+  - `velocity` = intent_force × blend (transition force × progress)
+  - `drift` = mode_history_length / turn_count - 0.15 (conversation instability)
+  - `viscosity` = MOOD_VISCOSITY lookup (mood-dependent resistance)
+
+**GAP 2 — Phase5StreamingAnalyzer never called** (`aqi_conversation_relay_server.py`)
+- `aqi_phase5_streaming_analyzer.py` existed (97 lines) with `on_call_complete(trace)` method
+- Phase 4 traces were written to JSONL at call-end, but Phase 5 NEVER consumed them
+- **FIX:** Guarded import at relay line ~317 (Phase5StreamingAnalyzer singleton, `PHASE5_ANALYZER_WIRED` flag)
+- **FIX:** Wired at call-end after Phase 4 trace export (~line 4815):
+  ```python
+  if PHASE5_ANALYZER_WIRED and _phase5_analyzer:
+      _p5_profile = _phase5_analyzer.on_call_complete(_p4_trace)
+      _end_payload['phase5_profile'] = _p5_profile
+  ```
+- Triple-guarded: flag + None check + try/except
+
+**GAP 3 — CCNM didn't read behavioral_vector** (`cross_call_intelligence.py`)
+- CDC's calls table has `behavioral_vector TEXT` column (written at call-end)
+- CCNM's SQL SELECT query didn't include `behavioral_vector` — data was written but never read back
+- **FIX:** Added `behavioral_vector` to CCNM SELECT query (~line 325)
+- **FIX:** Added `_refine_with_behavioral_vectors()` static method (~80 lines):
+  - Parses behavioral_vector JSON from successful/failed calls
+  - Computes velocity differential between success/failure cohorts
+  - Applies gentle inertia nudges for modes appearing in successful vectors
+  - All adjustments bounded to ±0.20 (FLUIDIC_ADJUSTMENT_MIN/MAX)
+  - Full try/except with non-fatal fallback
+
+**Reflex arc now:**
+```
+DeepLayer.step() → continuum{velocity,drift,viscosity}
+→ behavioral_stats update (relay ~line 8753)
+→ BehavioralFusionEngine → CDC.save_call() writes behavioral_vector
+→ CCNM.seed_session() reads behavioral_vector
+→ _refine_with_behavioral_vectors() → fluidic_adjustments
+→ Next call's DeepLayer gets pre-conditioned seed
+```
+
+#### 2. Relay Server Decomposition — chatbot_immune_system.py extracted
+
+- **Created:** `chatbot_immune_system.py` (~360 lines)
+  - `clean_sentence(s, context, log)` — the complete chatbot killer / sentence cleaner
+  - Contains: CHATBOT_KILLS (66 phrases), CHATBOT_CONTAINS_KILLS (48 phrases), FILLER_PREFIXES (49 patterns), GOODBYE_PATTERNS (22 patterns)
+  - 6 phases: markdown cleanup, filler prefix stripping, exact-match kills, contains-match kills, early-turn exit guard, repetition detector
+- **Modified:** Relay server `_clean_sentence()` — replaced 270-line nested function with 3-line thin wrapper
+- **Import:** `from chatbot_immune_system import clean_sentence as _chatbot_clean_sentence` (line 54)
+- **Result:** Relay server ~10,043 → ~9,800 lines (~240 lines net reduction after Phase 5 additions)
+
+#### 3. Test Suite — 112 tests across 6 files
+
+| File | Tests | Scope |
+|------|-------|-------|
+| `tests/test_chatbot_immune.py` | 36 | Markdown cleanup, filler strip, kills, exit guard, repetition |
+| `tests/test_behavioral_fusion.py` | 12 | Mode inference (5 modes), health, RECOVERING transition |
+| `tests/test_perception_fusion.py` | 13 | 7 perception modes, priority ordering, health, snapshots |
+| `tests/test_deep_layer_phase5.py` | 15 | Continuum physics exposure, relay consumption, Phase 5 wiring |
+| `tests/test_ccnm.py` | 13 | SessionSeed, behavioral vector refinement, bounds, SQL integrity |
+| `tests/test_phase5_integration.py` | 23 | End-to-end reflex arc (9 link checks), extraction, parseability |
+| **TOTAL** | **112** | **All pass — 112/112** |
+
+#### NEG-PROOF Verification (Full Chain)
+
+| Component | Guards | Status |
+|-----------|--------|--------|
+| DeepLayer continuum key | Always-defined vars, .get() defaults | ✅ |
+| Phase5 import | Guarded import, flag + None + try/except | ✅ |
+| Phase5 call-end | Triple-guarded: flag + None + try/except | ✅ |
+| CCNM SQL behavioral_vector | Outer try/except → neutral_seed on column-not-found | ✅ |
+| CCNM _refine_with_behavioral_vectors | Inner try/except, bounds enforced ±0.20 | ✅ |
+| Chatbot extraction import | Top-level import, verified at module load | ✅ |
+| Chatbot thin wrapper | Delegates to extracted module with same signature | ✅ |
+| All modified files | ast.parse verified — 7/7 pass | ✅ |
+
+#### Files Modified
+- `aqi_deep_layer.py` — Added continuum physics to deep_state (1017 → ~1017 lines)
+- `aqi_conversation_relay_server.py` — Phase 5 wiring + chatbot extraction (~10,043 → ~9,804 lines)
+- `cross_call_intelligence.py` — behavioral_vector query + refinement method (981 → ~1071 lines)
+
+#### Files Created
+- `chatbot_immune_system.py` — Extracted chatbot killer (~360 lines)
+- `tests/test_chatbot_immune.py` — 36 tests
+- `tests/test_behavioral_fusion.py` — 12 tests
+- `tests/test_perception_fusion.py` — 13 tests
+- `tests/test_deep_layer_phase5.py` — 15 tests
+- `tests/test_ccnm.py` — 13 tests
+- `tests/test_phase5_integration.py` — 23 tests
+
+#### Safety Snapshot
+- Location: `snapshots/agentx-snap-20260303-093653/`
+- Contains: All .py, .json, .md, .txt files + CONSTITUTIONAL_CORE directory
+- Created BEFORE any modifications
 
 ### February 22, 2026 — FIELD INTEGRATION INFRASTRUCTURE BUILT
 - **Built:** `_preflight_field_validation.py` — 8-gate pre-flight (47/47 checks pass)
@@ -676,7 +801,8 @@ Each phase gates the next — no promotion without meeting success criteria.
 ---
 
 > **═══ ALAN v4.1 — FULL ORGANISM ONLINE — 12/12 COMMITS LIVE ═══**
-> **═══ 803+ TESTS PASSED — 88+ NEG-PROOF GUARDS VERIFIED ═══**
+> **═══ 915+ TESTS PASSED — 88+ NEG-PROOF GUARDS VERIFIED ═══**
+> **═══ PHASE 5 REFLEX ARC: CLOSED — 3 GAPS FIXED — 112/112 NEW TESTS ═══**
 > **═══ v1.3 SIMULATION SUITE: 6/6 SCENARIOS — 536/536 PRODUCTION GRADE ═══**
 > **═══ FIELD INTEGRATION: 8/8 PRE-FLIGHT — 47/47 CHECKS — PHASE 1 READY ═══**
 > **═══ CONSTITUTIONALLY GOVERNED INTELLIGENCE ═══**

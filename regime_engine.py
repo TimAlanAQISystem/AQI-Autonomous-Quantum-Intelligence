@@ -383,10 +383,28 @@ class CDCReader:
 
     @staticmethod
     def _segment_key(call: Dict[str, Any]) -> str:
-        """Build a segment key from call data: state_vertical_hourblock."""
-        state = (call.get("state") or "UNK").upper()[:2]
-        # Check if vertical is in env_plus or call
-        vertical = (call.get("vertical") or "general").lower()
+        """Build a segment key from call data: state_vertical_hourblock.
+        
+        Uses the SAME derivation logic as regime_queue_integrator.py:
+        - State derived from merchant_phone area code (not a DB column)
+        - Vertical derived from business_name keyword matching (not a DB column)
+        This ensures the engine WRITES keys that the integrator can READ.
+        """
+        # Import the shared derivation functions from the integrator
+        # to guarantee namespace alignment
+        try:
+            from regime_queue_integrator import (
+                _phone_to_state, _business_to_vertical
+            )
+            phone = call.get("merchant_phone") or ""
+            biz_name = call.get("business_name") or ""
+            state = _phone_to_state(phone) if phone else "UN"
+            vertical = _business_to_vertical(biz_name) if biz_name else "general"
+        except ImportError:
+            # Fallback if integrator not available — use raw DB fields
+            state = (call.get("state") or "UNK").upper()[:2]
+            vertical = (call.get("vertical") or "general").lower()
+
         try:
             dt = datetime.fromisoformat(call.get("start_time", ""))
             hour_block = f"{dt.hour:02d}"

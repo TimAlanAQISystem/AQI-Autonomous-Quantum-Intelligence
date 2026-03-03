@@ -51,6 +51,7 @@ from behavioral_fusion_engine import BehavioralFusionEngine, BehavioralSnapshot
 from timing_loader import TIMING  # [TIMING CONFIG] Central timing mixing board
 from coaching_tags_engine import derive_coaching_tags
 from governor_behavior_bridge import decide_governor_action, GovernorAction
+from chatbot_immune_system import clean_sentence as _chatbot_clean_sentence  # [RELAY DECOMPOSITION] Extracted chatbot killer
 from alan_state_machine import CallSessionFSM, CallFlowState, CallFlowEvent  # [PHASE 2] Deterministic call lifecycle FSM
 from conversation_health_monitor import ConversationHealthMonitor, HealthLevel  # [PHASE 3A] Organism self-awareness
 from telephony_health_monitor import TelephonyHealthMonitor, TelephonyHealthState  # [PHASE 3B] Telephony perception
@@ -310,6 +311,18 @@ except ImportError as e:
     PHASE4_EXPORTER_WIRED = False
     logging.warning(f"[ORGAN] Phase 4 Trace Exporter unavailable: {e}")
 
+# [PHASE 5] Streaming Analyzer — real-time behavioral intelligence from Phase 4 traces
+# This CLOSES the reflex arc: Phase4 traces → Phase5 analysis → CCNM → next call's DeepLayer
+try:
+    from aqi_phase5_streaming_analyzer import Phase5StreamingAnalyzer
+    _phase5_analyzer = Phase5StreamingAnalyzer()
+    PHASE5_ANALYZER_WIRED = True
+    logging.info("[ORGAN] Phase 5 Streaming Analyzer WIRED — behavioral intelligence loop CLOSED")
+except ImportError as e:
+    _phase5_analyzer = None
+    PHASE5_ANALYZER_WIRED = False
+    logging.warning(f"[ORGAN] Phase 5 Streaming Analyzer unavailable: {e}")
+
 # [ORGAN 24] Retrieval Cortex — mid-call RAG knowledge retrieval (v4.1 ARMS-LEGS-REACH)
 try:
     from organs_v4_1.organ_24_retrieval_cortex import RetrievalCortex
@@ -392,6 +405,24 @@ try:
 except ImportError as e:
     IQ_BUDGET_WIRED = False
     logging.warning(f"[ORGAN 35] In-Call IQ Budgeting unavailable: {e}")
+
+# [ORGAN 36] DTMF Reflex — per-call DTMF tone generation + IVR button pressing
+try:
+    from organs_v4_1.organ_36_dtmf_reflex import DTMFReflex, create_dtmf_reflex
+    DTMF_REFLEX_WIRED = True
+    logging.info("[ORGAN 36] DTMF Reflex WIRED — IVR button-press capability online")
+except ImportError as e:
+    DTMF_REFLEX_WIRED = False
+    logging.warning(f"[ORGAN 36] DTMF Reflex unavailable: {e}")
+
+# [ORGAN 37] IVR Navigator — menu parsing + deterministic IVR navigation
+try:
+    from organs_v4_1.organ_37_ivr_navigator import IVRNavigator, IVRAction, create_ivr_navigator
+    IVR_NAVIGATOR_WIRED = True
+    logging.info("[ORGAN 37] IVR Navigator WIRED — menu parsing + deterministic navigation online")
+except ImportError as e:
+    IVR_NAVIGATOR_WIRED = False
+    logging.warning(f"[ORGAN 37] IVR Navigator unavailable: {e}")
 
 # [ORGAN 29] Inbound Context Injection — callback memory (v4.1 ARMS-LEGS-REACH)
 try:
@@ -1861,7 +1892,7 @@ TEMPO_MULTIPLIER = TIMING.tempo_multiplier  # [TIMING CONFIG] Centralized — de
 # Cost: ~$0.00005/turn additional (negligible with gpt-4o-mini pricing).
 # =============================================================================
 SPECULATIVE_DECODING_ENABLED = True
-SPRINT_MAX_TOKENS = 30
+SPRINT_MAX_TOKENS = 22
 SPRINT_OVERLAP_THRESHOLD = 0.35  # Word overlap ratio above which full sentence is skipped
 
 # =============================================================================
@@ -2226,7 +2257,7 @@ class AQIConversationRelayServer:
         if openai_key:
             # CRITICAL: Explicit base_url to bypass OPENAI_BASE_URL env var
             # (that env var may be stale — always use explicit base_url for TTS)
-            self.tts_client = OpenAIClient(api_key=openai_key, base_url="https://api.openai.com/v1")
+            self.tts_client = OpenAIClient(api_key=openai_key, base_url="https://api.openai.com/v1", timeout=15.0)  # [TIMING AUDIT] 15s TTS timeout (allows cold-start greeting synthesis)
             logger.info(f"[TTS] OpenAI TTS configured (voice={self._tts_voice}, model={self._tts_model})")
         else:
             self.tts_client = None
@@ -2260,7 +2291,25 @@ class AQIConversationRelayServer:
 
         # [LAG FIX] Persistent HTTP session for OpenAI API — reuses TCP/TLS connections
         # across LLM calls. Saves ~150ms per call (TCP handshake + TLS negotiation).
+        # [LATENCY FIX] HTTPAdapter with connection pooling + automatic retry on transient failures.
+        # pool_connections=4 keeps 4 TCP connections warm to api.openai.com.
+        # pool_maxsize=8 allows burst parallelism (sprint + full LLM + prewarm).
+        # Retry on 502/503/504 (OpenAI transient errors) with 0.3s backoff.
+        from requests.adapters import HTTPAdapter
+        from urllib3.util.retry import Retry
+        _retry_strategy = Retry(
+            total=2,
+            backoff_factor=0.3,
+            status_forcelist=[502, 503, 504],
+            allowed_methods=["POST"],
+        )
+        _adapter = HTTPAdapter(
+            pool_connections=4,
+            pool_maxsize=8,
+            max_retries=_retry_strategy,
+        )
         self._llm_session = requests.Session()
+        self._llm_session.mount("https://", _adapter)
         self._llm_session.headers.update({"Content-Type": "application/json"})
         
         self.stream_sid_to_client_id = {}
@@ -2294,32 +2343,62 @@ class AQIConversationRelayServer:
             logger.warning("[GREETING CACHE] No TTS client — cannot pre-cache greetings")
             return
         
+        # [CIRCUIT BREAKER] If TTS API is down (quota/billing), stop after 2 consecutive
+        # failures instead of hammering the API with 30+ doomed requests.
+        consecutive_failures = 0
+        MAX_CONSECUTIVE_FAILURES = 2
+        
+        def _try_cache(text, label="GREETING"):
+            """Attempt to cache one phrase. Returns True on success, False on failure."""
+            nonlocal consecutive_failures
+            if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+                return False  # Circuit open — skip remaining
+            try:
+                audio = self._openai_tts_sync(text)
+                if audio and len(audio) > 0:
+                    self.greeting_cache[text] = audio
+                    consecutive_failures = 0  # Reset on success
+                    return True
+                else:
+                    consecutive_failures += 1
+                    return False
+            except Exception as e:
+                consecutive_failures += 1
+                logger.error(f"[{label} CACHE] Failed to cache '{text[:40]}': {e}")
+                return False
+        
         # All possible greeting templates (complete greetings that can be cached whole)
         INBOUND = [
             "Signature Card Services, this is Alan.",
             "Signature Card, Alan speaking."
         ]
         COLD = [
-            "Hello, this is Alan from Signature Card Services. I'm looking to talk to the owner, are they available?",
-            "Hello, this is Alan with Signature Card Services. I'm looking to talk to the owner, are they available?",
-            "Hello, this is Alan from Signature Card Services. Is the owner available?",
+            # [FEB 27 2026] PRECISION OPENERS — 7-10 words, fast delivery
+            "Hey, this is Alan. Is the owner around?",
+            "Hi, this is Alan. Is the owner available?",
+            "Hey, it's Alan. Is the owner or manager there?",
+            "Hey, this is Alan calling. Is the owner in?",
+            "Hi, this is Alan from Signature Card. Is the owner available?",
         ]
         # [TWO-STAGE] Named greeting PREFIXES — cached so named greetings start instantly
         NAMED_PREFIXES = [
-            "Hello, this is Alan from Signature Card Services.",
-            "Hello, this is Alan with Signature Card Services.",
+            # SOFT PREFIXES (no company name)
+            "Hey, this is Alan.",
+            "Hi, this is Alan.",
+            "Hey, it's Alan.",
+            # STANDARD PREFIX (with company name — shortened)
+            "Hi, this is Alan from Signature Card.",
         ]
         all_greetings = INBOUND + COLD + NAMED_PREFIXES
         
         cached = 0
         for greeting in all_greetings:
-            try:
-                audio = self._openai_tts_sync(greeting)
-                if audio and len(audio) > 0:
-                    self.greeting_cache[greeting] = audio
-                    cached += 1
-            except Exception as e:
-                logger.error(f"[GREETING CACHE] Failed to cache '{greeting[:40]}': {e}")
+            if _try_cache(greeting, "GREETING"):
+                cached += 1
+        
+        if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+            logger.warning(f"[GREETING CACHE] CIRCUIT BREAKER: TTS API unavailable — cached {cached}/{len(all_greetings)} greetings before failure. Server will start without pre-cache.")
+            return  # Don't attempt bridge or Turn-01 caching
         
         logger.info(f"[GREETING CACHE] Pre-cached {cached}/{len(all_greetings)} greetings ({sum(len(v) for v in self.greeting_cache.values())} bytes total)")
 
@@ -2333,14 +2412,53 @@ class AQIConversationRelayServer:
             for phrase in bridge_list:
                 all_bridges.add(phrase)
         for phrase in all_bridges:
-            try:
-                audio = self._openai_tts_sync(phrase)
-                if audio and len(audio) > 0:
-                    self.greeting_cache[phrase] = audio  # Same cache — same lookup path
-                    bridge_cached += 1
-            except Exception as e:
-                logger.error(f"[BRIDGE CACHE] Failed to cache '{phrase}': {e}")
+            if _try_cache(phrase, "BRIDGE"):
+                bridge_cached += 1
+        
+        if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+            logger.warning(f"[BRIDGE CACHE] CIRCUIT BREAKER: TTS API unavailable — cached {bridge_cached}/{len(all_bridges)} bridges before failure.")
+            return
         logger.info(f"[BRIDGE CACHE] Pre-cached {bridge_cached}/{len(all_bridges)} bridge utterances")
+
+        # =====================================================================
+        # [TURN-01 FAST RESPONSE CACHE] Pre-synthesize instant Turn-01 replies
+        # =====================================================================
+        # Problem: After Alan's greeting, the merchant responds ("Speaking", "Who
+        # is this?", "Yeah"). Full LLM pipeline takes 2.4-5.9 seconds → dead air
+        # → merchant hangs up. On cold calls, Turn 01 latency is the #1 killer.
+        #
+        # Fix: Pre-cache common Turn-01 responses. When merchant gives a short,
+        # pattern-matchable reply, BYPASS the LLM entirely and serve cached audio.
+        # Latency drops from ~3500ms to ~50ms (cache lookup + frame streaming).
+        #
+        # Categories:
+        #   ack_owner    → "Speaking" / "This is [name]" / "Yeah" / "That's me"
+        #   ack_transfer → "Hold on" / "One moment" / "Let me get them"
+        #   identity     → "Who is this?" / "Who's calling?"
+        #   purpose      → "What's this about?" / "What do you need?"
+        #   greeting     → "Hello?" / "Hi" / "Hey"
+        # =====================================================================
+        # [2026-03-02 FIX] Diversified T01 responses — removed "Quick question" from
+        # 4 of 6 categories. The repeated phrase was reinforcing a loop where the LLM
+        # mirrored it. Each response now uses distinct, natural phrasing.
+        TURN01_RESPONSES = {
+            'ack_owner': "So I do free rate reviews for business owners — are you guys accepting cards there?",
+            'ack_transfer': "Sure, take your time.",
+            'identity': "It's Alan from Signature Card Services — I do free rate reviews for business owners.",
+            'purpose': "I help business owners cut their card processing costs — takes about 30 seconds.",
+            'greeting': "Hey — so are you the owner or manager there?",
+            'busy': "No problem — when's a better time to call back?",
+        }
+        self._turn01_responses = TURN01_RESPONSES  # Store for runtime lookup
+        t01_cached = 0
+        for category, response_text in TURN01_RESPONSES.items():
+            if _try_cache(response_text, "T01"):
+                t01_cached += 1
+        
+        if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+            logger.warning(f"[T01 CACHE] CIRCUIT BREAKER: TTS API unavailable — cached {t01_cached}/{len(TURN01_RESPONSES)} Turn-01 responses before failure.")
+            return
+        logger.info(f"[T01 CACHE] Pre-cached {t01_cached}/{len(TURN01_RESPONSES)} Turn-01 fast responses")
 
     def on_stt_text(self, text, stream_sid):
         """New speech arrived. Cancel anything in progress. Respond.
@@ -2566,21 +2684,91 @@ class AQIConversationRelayServer:
 
                     # ---- NAVIGATE (business IVR) ----
                     elif _eab_result.action == EnvironmentAction.NAVIGATE:
-                        _template_text = EnvironmentBehaviorTemplates.get_template(
-                            _eab_result.env_class, _merchant_name, cycle=0
-                        )
-                        if _template_text and websocket:
-                            logger.info(f"[EAB] IVR NAVIGATION: '{_template_text[:80]}'")
-                            try:
-                                asyncio.create_task(
-                                    self.synthesize_and_stream_greeting(
-                                        websocket, _template_text, context.get('streamSid')
+                        # [ORGAN 37+36] IVR Navigator + DTMF Reflex — parse menu, press buttons
+                        _ivr_nav = context.get('_ivr_navigator') if IVR_NAVIGATOR_WIRED else None
+                        _dtmf = context.get('_dtmf_reflex') if DTMF_REFLEX_WIRED else None
+                        _stream_sid = context.get('streamSid')
+
+                        if _ivr_nav and _dtmf and websocket and _stream_sid:
+                            context['_ivr_nav_active'] = True
+                            _call_sid_dtmf = context.get('call_sid', '')
+                            _decision = _ivr_nav.process_utterance(transcript_text)
+                            logger.info(f"[EAB+IVR] Navigator decision: action={_decision.action.name}, digit={_decision.digit}, state={_ivr_nav.state.name}")
+
+                            if _decision.action == IVRAction.SEND_DTMF and _decision.digit:
+                                # Press the button(s) the navigator chose
+                                logger.info(f"[EAB+IVR] Sending DTMF '{_decision.digit}' to navigate IVR")
+                                try:
+                                    if len(_decision.digit) == 1:
+                                        asyncio.create_task(
+                                            _dtmf.send_digit(websocket, _stream_sid, _decision.digit, context=f"ivr_nav_{_ivr_nav.attempts}", call_sid=_call_sid_dtmf)
+                                        )
+                                    else:
+                                        asyncio.create_task(
+                                            _dtmf.send_sequence(websocket, _stream_sid, _decision.digit, context=f"ivr_nav_seq_{_ivr_nav.attempts}", call_sid=_call_sid_dtmf)
+                                        )
+                                except Exception as _dtmf_err:
+                                    logger.error(f"[EAB+IVR] DTMF send failed: {_dtmf_err}")
+
+                            elif _decision.action == IVRAction.SPEAK and _decision.speech:
+                                # Navigator wants to speak (e.g., "representative" as escape)
+                                logger.info(f"[EAB+IVR] Speaking to IVR: '{_decision.speech[:60]}'")
+                                try:
+                                    asyncio.create_task(
+                                        self.synthesize_and_stream_greeting(
+                                            websocket, _decision.speech, _stream_sid
+                                        )
                                     )
-                                )
-                            except Exception as _eab_err:
-                                logger.debug(f"[EAB] IVR nav TTS failed: {_eab_err}")
-                        context['_ccnm_ignore'] = True
-                        return
+                                except Exception as _speak_err:
+                                    logger.debug(f"[EAB+IVR] IVR speak failed: {_speak_err}")
+
+                            elif _decision.action == IVRAction.HANDOFF:
+                                # Human detected during IVR navigation — transition to live conversation
+                                logger.info(f"[EAB+IVR] HUMAN DETECTED during IVR nav — handing off to live conversation")
+                                context['_ivr_nav_active'] = False
+                                context['_eab_human_reached_via_ivr'] = True
+                                # Fall through to normal cognition pipeline — don't return
+                                # The current transcript is the human's greeting, process it normally
+                                pass  # intentional fall-through
+
+                            elif _decision.action == IVRAction.ABORT:
+                                # Navigator gave up — too many loops or escape attempts exhausted
+                                logger.info(f"[EAB+IVR] IVR navigation ABORTED after {_ivr_nav.attempts} attempts: {_decision.reason}")
+                                context['_ivr_nav_active'] = False
+                                context['_evolution_outcome'] = 'ivr_nav_abort'
+                                _fsm = context.get('_call_fsm')
+                                if _fsm:
+                                    _fsm.end_call(reason='ivr_nav_abort')
+                                else:
+                                    context['stream_ended'] = True
+                                context['_ccnm_ignore'] = True
+                                return
+
+                            elif _decision.action == IVRAction.WAIT:
+                                # Navigator is listening for next menu — do nothing, wait for more audio
+                                logger.info(f"[EAB+IVR] Waiting for IVR menu audio...")
+
+                            # Unless we fell through to handoff, suppress cognition
+                            if _decision.action != IVRAction.HANDOFF:
+                                context['_ccnm_ignore'] = True
+                                return
+                        else:
+                            # Organs not wired — fall back to old template behavior
+                            _template_text = EnvironmentBehaviorTemplates.get_template(
+                                _eab_result.env_class, _merchant_name, cycle=0
+                            )
+                            if _template_text and websocket:
+                                logger.info(f"[EAB] IVR NAVIGATION (legacy): '{_template_text[:80]}'")
+                                try:
+                                    asyncio.create_task(
+                                        self.synthesize_and_stream_greeting(
+                                            websocket, _template_text, context.get('streamSid')
+                                        )
+                                    )
+                                except Exception as _eab_err:
+                                    logger.debug(f"[EAB] IVR nav TTS failed: {_eab_err}")
+                            context['_ccnm_ignore'] = True
+                            return
 
                     # ---- DROP_AND_ABORT (voicemail) ----
                     elif _eab_result.action == EnvironmentAction.DROP_AND_ABORT:
@@ -2788,24 +2976,81 @@ class AQIConversationRelayServer:
                         logger.info(f"[EAB] LOOP ABORT: {_eab_env} after {_cycle} cycles")
                         return
 
-                    # Same environment, still under loop limit → speak next cycle template
+                    # Same environment, still under loop limit → use IVR Navigator or speak next cycle template
                     else:
                         _merchant_name = context.get('prospect_info', {}).get('company', '')
                         _env_class_enum = EnvironmentClass[_eab_env] if _eab_env in EnvironmentClass.__members__ else EnvironmentClass.UNKNOWN
-                        _template_text = EnvironmentBehaviorTemplates.get_template(
-                            _env_class_enum, _merchant_name, cycle=_cycle
-                        )
-                        if _template_text and websocket:
-                            logger.info(f"[EAB] PASS-THROUGH CYCLE {_cycle}: '{_template_text[:80]}'")
-                            try:
-                                asyncio.create_task(
-                                    self.synthesize_and_stream_greeting(
-                                        websocket, _template_text, context.get('streamSid')
+
+                        # [ORGAN 37+36] If IVR navigation is active, route through Navigator
+                        _ivr_nav = context.get('_ivr_navigator') if IVR_NAVIGATOR_WIRED else None
+                        _dtmf = context.get('_dtmf_reflex') if DTMF_REFLEX_WIRED else None
+                        _stream_sid = context.get('streamSid')
+
+                        if context.get('_ivr_nav_active') and _ivr_nav and _dtmf and websocket and _stream_sid:
+                            _call_sid_dtmf2 = context.get('call_sid', '')
+                            _decision = _ivr_nav.process_utterance(transcript_text)
+                            logger.info(f"[EAB+IVR] Re-eval cycle {_cycle}: action={_decision.action.name}, digit={_decision.digit}, state={_ivr_nav.state.name}")
+
+                            if _decision.action == IVRAction.SEND_DTMF and _decision.digit:
+                                try:
+                                    if len(_decision.digit) == 1:
+                                        asyncio.create_task(
+                                            _dtmf.send_digit(websocket, _stream_sid, _decision.digit, context=f"ivr_cycle_{_cycle}", call_sid=_call_sid_dtmf2)
+                                        )
+                                    else:
+                                        asyncio.create_task(
+                                            _dtmf.send_sequence(websocket, _stream_sid, _decision.digit, context=f"ivr_cycle_seq_{_cycle}", call_sid=_call_sid_dtmf2)
+                                        )
+                                except Exception as _dtmf_err:
+                                    logger.error(f"[EAB+IVR] DTMF send failed on cycle {_cycle}: {_dtmf_err}")
+
+                            elif _decision.action == IVRAction.SPEAK and _decision.speech:
+                                try:
+                                    asyncio.create_task(
+                                        self.synthesize_and_stream_greeting(
+                                            websocket, _decision.speech, _stream_sid
+                                        )
                                     )
-                                )
-                            except Exception:
+                                except Exception:
+                                    pass
+
+                            elif _decision.action == IVRAction.HANDOFF:
+                                logger.info(f"[EAB+IVR] HUMAN DETECTED on cycle {_cycle} — handing off to live conversation")
+                                context['_ivr_nav_active'] = False
+                                context['_eab_human_reached_via_ivr'] = True
+                                # Fall through to normal cognition — don't return
                                 pass
-                        return
+
+                            elif _decision.action == IVRAction.ABORT:
+                                logger.info(f"[EAB+IVR] IVR ABORT on cycle {_cycle}: {_decision.reason}")
+                                context['_ivr_nav_active'] = False
+                                context['_evolution_outcome'] = 'ivr_nav_abort'
+                                _fsm = context.get('_call_fsm')
+                                if _fsm:
+                                    _fsm.end_call(reason='ivr_nav_abort')
+                                else:
+                                    context['stream_ended'] = True
+                                context['_ccnm_ignore'] = True
+                                return
+
+                            if _decision.action != IVRAction.HANDOFF:
+                                return
+                        else:
+                            # Non-IVR environment or organs not wired — use template
+                            _template_text = EnvironmentBehaviorTemplates.get_template(
+                                _env_class_enum, _merchant_name, cycle=_cycle
+                            )
+                            if _template_text and websocket:
+                                logger.info(f"[EAB] PASS-THROUGH CYCLE {_cycle}: '{_template_text[:80]}'")
+                                try:
+                                    asyncio.create_task(
+                                        self.synthesize_and_stream_greeting(
+                                            websocket, _template_text, context.get('streamSid')
+                                        )
+                                    )
+                                except Exception:
+                                    pass
+                            return
 
         # ================================================================
         # [IVR DETECTOR] Check if this is an IVR/voicemail system
@@ -3455,6 +3700,25 @@ class AQIConversationRelayServer:
                 conversation_context['_objection_turns'] = 0     # turns with objections
                 logger.info("[ORGAN 31] Objection Learning tracker initialized for call")
 
+            # [ORGAN 36] Initialize per-call DTMF Reflex
+            if DTMF_REFLEX_WIRED:
+                try:
+                    conversation_context['_dtmf_reflex'] = create_dtmf_reflex()
+                    logger.info("[ORGAN 36] DTMF Reflex initialized for call")
+                except Exception as _dtmf_init_err:
+                    conversation_context['_dtmf_reflex'] = None
+                    logger.warning(f"[ORGAN 36] DTMF init failed (non-fatal): {_dtmf_init_err}")
+
+            # [ORGAN 37] Initialize per-call IVR Navigator
+            if IVR_NAVIGATOR_WIRED:
+                try:
+                    conversation_context['_ivr_navigator'] = create_ivr_navigator()
+                    conversation_context['_ivr_nav_active'] = False  # activated by EAB when IVR detected
+                    logger.info("[ORGAN 37] IVR Navigator initialized for call")
+                except Exception as _nav_init_err:
+                    conversation_context['_ivr_navigator'] = None
+                    logger.warning(f"[ORGAN 37] IVR Navigator init failed (non-fatal): {_nav_init_err}")
+
             # [ORGAN 32] Initialize per-call Summarization organ
             if SUMMARIZATION_WIRED:
                 try:
@@ -3770,9 +4034,9 @@ class AQIConversationRelayServer:
                                             except Exception as _stt_err:
                                                 logger.debug(f"[WATCHDOG] STT finalize failed: {_stt_err}")
                                 except asyncio.CancelledError:
-                                    pass
+                                    logger.info("[WATCHDOG] Task cancelled (call ended)")
                                 except Exception as _wd_err:
-                                    logger.debug(f"[WATCHDOG] Error: {_wd_err}")
+                                    logger.error(f"[WATCHDOG] CRASH — STT stall detection DISABLED: {_wd_err}", exc_info=True)
                             asyncio.create_task(_turn_watchdog(conversation_context, str(client_id)))
 
                             # ================================================================
@@ -3799,11 +4063,18 @@ class AQIConversationRelayServer:
                                 where a human picked up and is taking a moment to respond.
                                 """
                                 _sentinel_asked = False  # Already asked "are you there?"
-                                _SILENCE_WARNING = 50.0  # Seconds before asking "are you there?" (restored from 25)
-                                _SILENCE_KILL = 75.0     # Seconds before force hangup (restored from 40)
-                                _IVR_TIME_LIMIT = 90.0   # Max time for IVR-flagged call (restored from 45)
-                                _ZERO_TURN_LIMIT = 60.0  # Max time with 0 merchant turns (restored from 20)
-                                _HARD_MAX_DURATION = 300.0  # 5 min absolute backstop — no call ever runs longer
+                                _real_turns = 0          # [2026-02-28 FIX] Init before loop — used in _has_real_conversation
+                                                         # check (line ~4223) before IVR counting defines it (line ~4285).
+                                                         # Without this, fast human pickups (2+ meaningful turns in 28s)
+                                                         # cause NameError → sentinel crashes silently → all protections off.
+                                _SILENCE_WARNING = 30.0  # Seconds before asking "are you there?" (was 50 — too generous for dead lines)
+                                _SILENCE_KILL = 50.0     # Seconds before force hangup (was 75 — wasted 25s of Twilio billing)
+                                _IVR_TIME_LIMIT = 90.0   # Max time for IVR-flagged call
+                                _ZERO_TURN_LIMIT = 40.0  # Max time with 0 merchant turns (was 60 — 40s after sentinel start = 58s total)
+                                _HARD_MAX_DURATION = 600.0  # 10 min absolute backstop — supports 40+ turn deep conversations
+                                _HARD_MAX_TURNS = 30     # [2026-02-28] Absolute turn backstop. No call ever exceeds 30 turns.
+                                                         # Catches IVR loops where duration tracking fails (78-turn salon loop).
+                                                         # Real human conversations rarely exceed 20 turns.
                                 try:
                                     await asyncio.sleep(18.0)  # Give call time to establish + greeting to land (restored from 8)
                                     while not ctx.get('stream_ended'):
@@ -3845,10 +4116,42 @@ class AQIConversationRelayServer:
                                                 # Don't try to synthesize goodbye - connection is dead
                                                 break
 
+                                        # --- CHECK 0: HARD MAX TURNS BACKSTOP ---
+                                        # [2026-02-28] No call EVER exceeds 30 turns. Period.
+                                        # Catches IVR loops where duration tracking fails.
+                                        # Data: 78-turn salon call showed 0s duration — the
+                                        # duration backstop never fired. Turn count is reliable.
+                                        if merchant_turns >= _HARD_MAX_TURNS:
+                                            logger.warning(
+                                                f"[COST SENTINEL] HARD MAX TURNS KILL — {merchant_turns} turns "
+                                                f"(limit={_HARD_MAX_TURNS}). elapsed={elapsed:.0f}s. "
+                                                f"Absolute turn backstop. Force disconnect."
+                                            )
+                                            _fsm = ctx.get('_call_fsm')
+                                            if _fsm:
+                                                _fsm.end_call(reason='max_turns_kill')
+                                            else:
+                                                ctx['stream_ended'] = True
+                                            ctx['_evolution_outcome'] = 'max_turns_kill'
+                                            ctx['_killed_by'] = 'sentinel'
+                                            ctx['_ccnm_ignore'] = True
+                                            try:
+                                                asyncio.create_task(
+                                                    self.synthesize_and_stream_greeting(
+                                                        ws, "I appreciate your time today. I'll follow up another time. Goodbye!",
+                                                        ctx.get('streamSid')
+                                                    )
+                                                )
+                                            except Exception as _bye_err:
+                                                logger.debug(f"[COST SENTINEL] Goodbye synthesis failed (max turns kill): {_bye_err}")
+                                            break
+
                                         # --- CHECK 0: HARD MAX DURATION BACKSTOP ---
-                                        # No call EVER runs longer than 5 minutes. Period.
+                                        # No call EVER runs longer than 10 minutes. Period.
                                         # This catches every edge case: noise resetting timers,
                                         # IVR hold music, broken connections, etc.
+                                        # [LONG CONV] Raised from 300s (5 min) to 600s (10 min)
+                                        # to support 20-40+ turn deep consultative conversations.
                                         if elapsed > _HARD_MAX_DURATION:
                                             logger.warning(
                                                 f"[COST SENTINEL] HARD MAX KILL — {elapsed:.0f}s elapsed "
@@ -3905,6 +4208,21 @@ class AQIConversationRelayServer:
                                                         'person you\'re trying to reach',
                                                         'is this call important', 'please remain on the line',
                                                         'i\'ll let them know', 'pass that along']
+
+                                        # --- IVR TURN COUNTING (compute _real_turns) ---
+                                        # [2026-02-28 STRUCTURAL FIX] Moved ABOVE voicemail check.
+                                        # _real_turns is used by _has_real_conversation in CHECK 0.6.
+                                        # Previously computed 140 lines later — forward-reference bug
+                                        # caused NameError on fast human pickups, silently killing
+                                        # the entire sentinel. Now computed immediately after the
+                                        # IVR phrase list, before any consumer.
+                                        _ivr_turn_count = 0
+                                        for _m in msgs:
+                                            _mt = (_m.get('user', '') or '').lower()
+                                            if any(p in _mt for p in _ivr_phrases):
+                                                _ivr_turn_count += 1
+                                        _real_turns = merchant_turns - _ivr_turn_count
+
                                         # --- CHECK 0.6: INSTANT VOICEMAIL KILL ---
                                         # If ANY turn contains definitive voicemail language, kill immediately.
                                         # No need to wait — voicemail is never a real conversation.
@@ -4014,13 +4332,7 @@ class AQIConversationRelayServer:
                                                 logger.debug(f"[COST SENTINEL] Goodbye synthesis failed (voicemail kill): {_bye_err}")
                                             break
 
-                                        _ivr_turn_count = 0
-                                        for _m in msgs:
-                                            _mt = (_m.get('user', '') or '').lower()
-                                            if any(p in _mt for p in _ivr_phrases):
-                                                _ivr_turn_count += 1
                                         # If >30% of merchant turns match IVR phrases, it's not a real conversation (was 40%)
-                                        _real_turns = merchant_turns - _ivr_turn_count
                                         _is_ivr_conversation = (merchant_turns >= 2 and _ivr_turn_count / max(merchant_turns, 1) > 0.3)
                                         if _is_ivr_conversation and elapsed > 30.0:
                                             logger.warning(
@@ -4151,9 +4463,9 @@ class AQIConversationRelayServer:
 
                                     logger.info(f"[COST SENTINEL] Exiting — stream_ended={ctx.get('stream_ended')}")
                                 except asyncio.CancelledError:
-                                    pass
+                                    logger.info("[COST SENTINEL] Task cancelled (call ended)")
                                 except Exception as _cs_err:
-                                    logger.debug(f"[COST SENTINEL] Error: {_cs_err}")
+                                    logger.error(f"[COST SENTINEL] CRASH — all call protections DISABLED: {_cs_err}", exc_info=True)
                             asyncio.create_task(_cost_sentinel(conversation_context, websocket, str(client_id)))
 
                             # [ALAN V2] MIP & MTSP Initialization
@@ -4246,7 +4558,7 @@ class AQIConversationRelayServer:
                                 # ============================================================
                                 
                                 _current_state = conversation_context.get('conversation_state')
-                                _echo_cooldown = 2.0  # seconds — covers Twilio's 400-800ms audio buffer tail + network latency
+                                _echo_cooldown = 0.8  # seconds — covers Twilio's 400-800ms buffer tail. Was 2.0s which made Alan deaf to fast responses.
                                 _responding_ended = conversation_context.get('responding_ended_at', 0)
                                 _in_cooldown = (time.time() - _responding_ended) < _echo_cooldown
                                 # HUMAN MODEL: "is Alan talking" is a physical fact
@@ -4332,9 +4644,9 @@ class AQIConversationRelayServer:
                                     SPEECH_THRESHOLD = 400      # Normal mode: detect user speech
                                     ECHO_SPEECH_THRESHOLD = 1500  # Speaking mode: only detect REAL interrupts (echo is ~400-600 RMS)
                                     SILENCE_THRESHOLD = 250     # Silence floor
-                                    SILENCE_DURATION = 0.42     # Turn commit delay — 420ms balances speed vs mid-thought cuts.
-                                                                # Human turn-gap averages 200-400ms (Stivers et al. 2009).
-                                                                # Was 500ms → trimmed 80ms. VAD guard catches mid-thought resumes.
+                                    SILENCE_DURATION = 0.55     # Turn commit delay — 550ms. Was 420ms which cut mid-sentence pauses.
+                                                                # Human inter-word pauses can be 500-700ms (Stivers et al. 2009).
+                                                                # 550ms < 700ms trouble threshold. VAD guard still catches edge cases.
                                     BARGE_IN_CONSECUTIVE_FRAMES = 3   # Normal mode: 60ms sustained
                                     ECHO_BARGE_IN_FRAMES = 5          # Speaking mode: 100ms sustained (more conservative)
                                     
@@ -4495,6 +4807,21 @@ class AQIConversationRelayServer:
                                     if _p4_trace:
                                         logger.info(f"[PHASE 4 EXPORTER] Trace written: {_call_sid} | "
                                                     f"turns={len(_p4_trace.get('turns', []))} exit={_p4_exit}")
+                                        
+                                        # [PHASE 5 REFLEX ARC] Feed Phase 4 trace into Phase 5 behavioral analyzer
+                                        # This is THE missing connection: Phase4 → Phase5 → behavioral profiles → CCNM → next call
+                                        if PHASE5_ANALYZER_WIRED and _phase5_analyzer:
+                                            try:
+                                                _p5_profile = _phase5_analyzer.on_call_complete(_p4_trace)
+                                                if _p5_profile and not _p5_profile.get('error'):
+                                                    _end_payload['phase5_profile'] = _p5_profile
+                                                    logger.info(f"[PHASE 5] Behavioral profile generated: "
+                                                                f"calls_analyzed={_phase5_analyzer.calls_analyzed}")
+                                                elif _p5_profile and _p5_profile.get('error'):
+                                                    logger.warning(f"[PHASE 5] Profile error: {_p5_profile.get('error')}")
+                                            except Exception as _p5_err:
+                                                logger.warning(f"[PHASE 5] Analysis failed (non-fatal): {_p5_err}")
+                                        
                                 except Exception as _p4_err:
                                     logger.warning(f"[PHASE 4 EXPORTER] on_call_end failed (non-fatal): {_p4_err}")
                             
@@ -5339,7 +5666,7 @@ class AQIConversationRelayServer:
                         except Exception as _coach_err:
                             logger.debug(f"[COACHING] Call report generation failed: {_coach_err}")
                 except Exception as _cap_err:
-                    logger.debug(f"[CAPTURE] Call-end capture failed: {_cap_err}")
+                    logger.error(f"[CAPTURE] Call-end capture FAILED — call data LOST: {_cap_err}", exc_info=True)
             
             # ================================================================
             # [INSTRUCTOR MODE] Governed Learning Capture
@@ -5908,33 +6235,49 @@ class AQIConversationRelayServer:
             # and instantly hangs up. Real sales reps say their name first, ask for the owner,
             # then introduce the company only AFTER they have attention.
             # Mix: 50% soft (no company name upfront), 50% standard (for A/B signal).
-            NAMED_GREETING_PAIRS = [
-                # SOFT OPENERS — company name delayed (higher survival rate)
-                ("Hey, this is Alan.", f"I'm looking to speak with {prospect_name}, are they available?"),
-                ("Hi, this is Alan calling.", f"Is {prospect_name} available?"),
-                ("Hey, this is Alan.", f"Could I speak with {prospect_name}?"),
-                # STANDARD OPENERS — company name upfront (baseline)
-                ("Hello, this is Alan from Signature Card Services.", f"I'm looking to talk to {prospect_name}, are they available?"),
-                ("Hello, this is Alan with Signature Card Services.", f"Is {prospect_name} available?"),
-                ("Hello, this is Alan from Signature Card Services.", f"Could I speak with {prospect_name}?"),
-            ]
-            _pair = random.choice(NAMED_GREETING_PAIRS)
-            REQUIRED_GREETING = _pair[0] + " " + _pair[1]
-            context['_greeting_prefix'] = _pair[0]
-            context['_greeting_suffix'] = _pair[1]
+            # [FEB 27 2026] PRECISION OPENERS — shorter, faster, human-sounding.
+            # Data: 86% zero-turn hangup rate. 18-word greetings take 4-5s — merchant
+            # has already decided "sales call" and hung up by word 10.
+            # Fix: Cut to 7-10 words max. 80% soft (no company), 20% standard.
+            # Also validate prospect_name — filter out scraping artifacts.
+            _NAME_BLACKLIST = {'contact us', 'screen printing', 'unknown', 'none', 'n/a', 
+                               'owner', 'manager', 'the owner', 'business', 'llc', 'inc',
+                               'restaurant', 'restaurants', 'shop', 'store', 'service'}
+            _clean_name = prospect_name.strip()
+            if _clean_name.lower() in _NAME_BLACKLIST or len(_clean_name) < 3 or len(_clean_name.split()) > 4:
+                has_name = False  # Fall through to cold greeting
+                logger.info(f"[GREETING] Name '{_clean_name}' rejected — using cold opener")
+            
+            if has_name:
+                NAMED_GREETING_PAIRS = [
+                    # SOFT — short, human, no company (80% of pool)
+                    ("Hey, this is Alan.", f"Is {prospect_name} around?"),
+                    ("Hey, this is Alan.", f"Could I speak with {prospect_name}?"),
+                    ("Hi, this is Alan.", f"Is {prospect_name} available?"),
+                    ("Hey, it's Alan.", f"Is {prospect_name} there?"),
+                    # STANDARD — company name (20% of pool)
+                    ("Hi, this is Alan from Signature Card.", f"Is {prospect_name} available?"),
+                ]
+                _pair = random.choice(NAMED_GREETING_PAIRS)
+                REQUIRED_GREETING = _pair[0] + " " + _pair[1]
+                context['_greeting_prefix'] = _pair[0]
+                context['_greeting_suffix'] = _pair[1]
         else:
             # No name — ask for the owner. Tim's proven script.
             # [FEB 24 2026] SOFT OPENER MIX — same strategy as named greetings.
             # 50% soft (just Alan, no company), 50% standard (with company name).
+            # [FEB 27 2026] PRECISION COLD OPENERS — 7-10 words max.
+            # Old openers averaged 18 words → 4-5s delivery → instant hangup.
+            # New openers: fast, human, get to the ask in under 2 seconds.
+            # 80% soft (no company name), 20% standard.
             COLD_GREETINGS = [
-                # SOFT OPENERS — survive the 3-second hangup window
-                "Hey, this is Alan. I'm looking to talk to the owner or manager real quick, are they available?",
-                "Hi, this is Alan calling. Is the owner available?",
-                "Hey, this is Alan. Is the owner or manager available?",
-                # STANDARD OPENERS — baseline
-                "Hello, this is Alan from Signature Card Services. I'm looking to talk to the owner, are they available?",
-                "Hello, this is Alan with Signature Card Services. I'm looking to talk to the owner, are they available?",
-                "Hello, this is Alan from Signature Card Services. Is the owner available?",
+                # SOFT — short and human (80% of pool)
+                "Hey, this is Alan. Is the owner around?",
+                "Hi, this is Alan. Is the owner available?",
+                "Hey, it's Alan. Is the owner or manager there?",
+                "Hey, this is Alan calling. Is the owner in?",
+                # STANDARD — with company (20% of pool)
+                "Hi, this is Alan from Signature Card. Is the owner available?",
             ]
             REQUIRED_GREETING = random.choice(COLD_GREETINGS)
         
@@ -5977,7 +6320,7 @@ class AQIConversationRelayServer:
                         await websocket.send(json.dumps(payload))
                 except Exception:
                     break
-                await asyncio.sleep(0.018)  # Slightly slower than real-time for smooth playback
+                await asyncio.sleep(0.012)  # Match cruise pacing across all frame streams (was 0.018 — 80% above standard)
             logger.info("[RING TONE] Ring tone streamed.")
 
         # 3. SET STATE IMMEDIATELY (Prevents race conditions)
@@ -6121,16 +6464,18 @@ class AQIConversationRelayServer:
             warm_start = time.time()
             for attempt in range(2):
                 try:
-                    r = self._llm_session.post(url, json=payload, headers=headers, timeout=10)
+                    r = self._llm_session.post(url, json=payload, headers=headers, timeout=(3, 10))
                     warm_ms = 1000 * (time.time() - warm_start)
                     logger.info(f"[PRE-WARM LLM] Connection + prompt cache warmed in {warm_ms:.0f}ms (status {r.status_code})")
                     return
                 except (ConnectionError, OSError) as ce:
                     if attempt == 0:
-                        # Stale keep-alive connection — close pool and retry once
+                        # Stale keep-alive connection — rebuild session with adapter
                         self._llm_session.close()
                         import requests as _req
+                        from requests.adapters import HTTPAdapter as _WarmAdapter
                         self._llm_session = _req.Session()
+                        self._llm_session.mount("https://", _WarmAdapter(pool_connections=4, pool_maxsize=8))
                         continue
                     raise ce
         except Exception as e:
@@ -6172,28 +6517,79 @@ class AQIConversationRelayServer:
         mode = context.get('_deep_layer_mode', 'rapport')
         business_name = context.get('business_name', '')
         
-        system = (
-            "You are Alan, a sharp payment processing consultant on a live phone call. "
-            "Sound like a real person — direct, natural, no filler. "
-            f"Current conversation mode: {mode}. "
-        )
-        if business_name:
-            system += f"You're speaking with someone at {business_name}. "
-        system += (
-            "Generate ONLY the opening clause of your response — 8 to 15 words max. "
-            "Start by naturally acknowledging or responding to what was just said. "
-            "End with a comma or dash — the full response continues after this. "
-            "NEVER start with filler like 'Got it', 'Absolutely', 'That sounds great', 'I appreciate that'. "
-            "NEVER say goodbye, 'have a good one', or 'take care' — the call is not over. "
-            "NO lists, NO markdown, NO formal language. Just natural phone speech."
-        )
+        # Check if this is the FIRST merchant response after greeting (turn 1)
+        conv_messages = context.get('messages', [])
+        is_first_response = len(conv_messages) <= 1  # Only greeting in history
+        
+        if is_first_response:
+            system = (
+                "You are Alan, a payment processing consultant on a live phone call. "
+                "You JUST greeted the merchant and asked for the owner. "
+                "Their reply is the ANSWER to your question. "
+                "Respond appropriately — explain why you're calling. "
+                "Generate ONLY the opening clause of your response — 8 to 15 words max. "
+                "\n\n"
+                "FIRST-RESPONSE RULES (match merchant's reply):\n"
+                "- If they say 'thank you', 'thanks', 'sure', 'yeah', 'okay' → They're LISTENING. "
+                "Launch directly into why you're calling. Do NOT fold, do NOT ask another question.\n"
+                "- If they say 'speaking', 'this is [name]', 'that's me' → You have the owner. "
+                "Launch directly into your pitch.\n"
+                "- If they ask 'who is this?', 'what company?' → Identify yourself and pivot to pitch: "
+                "'My name's Alan, I work with local businesses on their payment processing —'\n"
+                "- If they say 'can I take a message?', 'they're not here', 'hold on' → GATEKEEPER. "
+                "Ask to speak with the owner/manager directly: "
+                "'Sure — is the owner or manager available by chance?'\n"
+                "- If they give a short acknowledgment like 'hello?', 'yes?' → "
+                "Launch into why you're calling.\n"
+                "\n"
+                "Examples of good openers: "
+                "'I help business owners make sure they're not overpaying on —' "
+                "'The reason I'm calling is I work with businesses on their —' "
+                "'So I actually work with local businesses on their card processing —' "
+                "'My name's Alan — I help business owners cut their processing costs —' "
+                "End with a comma or dash — the full response continues after this. "
+                "NEVER start with 'I appreciate you picking up' or any variant of that. "
+                "NEVER start with filler like 'Go ahead', 'Yeah?', 'Got it', 'Absolutely', 'Thanks for that', 'Of course'. "
+                "NEVER say goodbye or any exit phrase. "
+                "NEVER respond with 'I appreciate you letting me know' or any fold/surrender language. "
+                "NO lists, NO markdown, NO formal language. Just natural phone speech."
+            )
+        else:
+            system = (
+                "You are Alan, a sharp payment processing consultant on a live phone call. "
+                "Sound like a real person — direct, natural, no filler. "
+                f"Current conversation mode: {mode}. "
+            )
+            if business_name:
+                system += f"You're speaking with someone at {business_name}. "
+            system += (
+                "Generate ONLY the opening clause of your response — 8 to 15 words max. "
+                "NEVER repeat what you already said. Look at the conversation history — if you already pitched "
+                "payment processing, do NOT say it again. ADVANCE to the next point: "
+                "ask what system they use, what they're paying, if they've compared rates, or name a specific benefit. "
+                "Drive the conversation FORWARD — ask a question, make a point, or respond with substance. "
+                "Do NOT acknowledge, thank, or validate what was said. Go STRAIGHT to your next move. "
+                "If they gave information → use it to ask a sharper follow-up. "
+                "If they asked a question → answer it directly. "
+                "If they showed interest → deepen with a specific benefit or question. "
+                "If they objected → counter with a specific benefit. "
+                "If they asked 'how can I help you' or 'what do you need' → get specific: "
+                "'Are you guys processing cards right now —' or 'So who handles the merchant services over there —' "
+                "End with a comma or dash — the full response continues after this. "
+                "NEVER start with filler like 'Got it', 'Absolutely', 'That sounds great', 'I appreciate that', 'Of course'. "
+                "NEVER say 'I appreciate you letting me know', 'Thanks for that', 'Thanks for sharing'. "
+                "NEVER say 'Sounds like you're in a good mood' or any comment about their mood/tone. "
+                "NEVER say goodbye, 'have a good one', or 'take care' — the call is not over. "
+                "NO lists, NO markdown, NO formal language. Just natural phone speech."
+            )
         
         messages = [{"role": "system", "content": system}]
         
-        # Add last 4 conversation messages for continuity context
-        # context['messages'] stores {user, alan, sentiment, ...} — convert to OpenAI API format
-        conv_messages = context.get('messages', [])
-        for msg in conv_messages[-4:]:
+        # [LONG CONV] Adaptive history window — early turns need speed (4 messages),
+        # deep turns (8+) need full context to avoid repetition (10 messages).
+        # GPT-4o-mini has 128K context — 10 messages is ~2K tokens, negligible.
+        _history_window = 10 if len(conv_messages) >= 8 else 4
+        for msg in conv_messages[-_history_window:]:
             _u = msg.get('user', '')
             _a = msg.get('alan', '')
             if _u:
@@ -6642,15 +7038,40 @@ class AQIConversationRelayServer:
         # [LAG FIX] Capture session for closure — connection reuse across calls
         llm_session = self._llm_session
 
+        # [RELAY DECOMPOSITION] Chatbot Immune System — extracted to chatbot_immune_system.py
+        # Was ~270 lines inline here. Now a thin wrapper that delegates to the extracted module.
+        # Contains: markdown cleanup, filler prefix stripping, chatbot phrase kills,
+        # early-turn exit guard, and repetition detector (short + long phrase modes).
+        def _clean_sentence(s):
+            """Delegate to extracted chatbot_immune_system module."""
+            return _chatbot_clean_sentence(s, context, logger)
+
         # 3. LLM SSE READER — runs in background thread, pushes sentences to queue
         def _llm_sentence_stream():
             """Read SSE tokens from OpenAI, detect sentence boundaries, push to queue."""
             url = "https://api.openai.com/v1/chat/completions"
+            
+            # [LONG CONV] Graduated adaptive max_tokens and max_sentences —
+            # Turns 0-2 (FAST_PATH): 100 tokens — enough for a complete business answer (was 45, caused truncation)
+            # Turns 3-7 (MIDWEIGHT): 120 tokens — merchant is engaged, slightly fuller responses
+            # Turns 8+ (FULL): 150 tokens — deep consultative conversation, detail expected
+            # P0 FIX: 45 tokens = ~1.5 sentences = guaranteed mid-thought truncation = broken trust
+            _conv_turn_count = len(context.get('messages', []))
+            if _conv_turn_count >= 8:
+                _adaptive_max_tokens = 150
+                _adaptive_max_sentences = 5
+            elif _conv_turn_count >= 3:
+                _adaptive_max_tokens = 120
+                _adaptive_max_sentences = 4
+            else:
+                _adaptive_max_tokens = TIMING.relay_max_tokens  # 100 from timing_config.json
+                _adaptive_max_sentences = TIMING.max_sentences
+            
             payload = {
                 "model": "gpt-4o-mini",
                 "messages": messages,
                 "temperature": TIMING.temperature,  # [TIMING CONFIG]
-                "max_tokens": TIMING.relay_max_tokens,  # [TIMING CONFIG]
+                "max_tokens": _adaptive_max_tokens,  # [LONG CONV] Adaptive — 45 early, 80 deep
                 "frequency_penalty": TIMING.frequency_penalty,  # [TIMING CONFIG]
                 "stream": True
             }
@@ -6661,214 +7082,45 @@ class AQIConversationRelayServer:
             ttft_logged = False
             stream_start = time.time()
             
-            MAX_SENTENCES = TIMING.max_sentences  # [TIMING CONFIG] Was 3, now 5 per Tim
-
-            def _clean_sentence(s):
-                """Strip markdown/list formatting AND chatbot patterns from LLM output."""
-                # Remove **bold** markers
-                s = re.sub(r'\*\*([^*]+)\*\*', r'\1', s)
-                # Remove __bold__ markers
-                s = re.sub(r'__([^_]+)__', r'\1', s)
-                # Remove leading numbered list prefixes ("1. ", "2. ", etc.)
-                s = re.sub(r'^\d+\.\s*', '', s)
-                # Remove leading bullet markers
-                s = re.sub(r'^[-*]\s+', '', s)
-                # Remove markdown headers
-                s = re.sub(r'^#+\s*', '', s)
-                # Strip "Label: Description" format — e.g. "Business Information: Your name"
-                # Only strip if the label part is 1-4 words followed by colon
-                s = re.sub(r'^[A-Z][a-zA-Z]*(?:\s[A-Z][a-zA-Z]*){0,3}:\s*', '', s)
-                
-                # [CHATBOT KILLER] Drop entire sentences that are pure chatbot filler
-                # These add ZERO value and make Alan sound robotic
-                chatbot_kills = [
-                    "that sounds great",
-                    "that sounds exciting", 
-                    "looking forward to our chat",
-                    "looking forward to it",
-                    "in the meantime",
-                    "that's exciting",
-                    "that's great to hear",
-                    "that's wonderful",
-                    "absolutely",
-                    "great question",
-                    "got it",
-                    "okay, got it",
-                    "okay got it",
-                    "okay, sure",
-                    "right, got it",
-                    "that's a solid setup",
-                    "that's really solid",
-                    "nice setup",
-                    "yeah absolutely",
-                    "yeah, absolutely",
-                    "yeah",
-                    "yeah, sure",
-                    "sure thing",
-                    "i'm listening",
-                    "i'm right here",
-                    "i hear you",
-                    "i hear you, tell me more about that",
-                    "tell me more about that",
-                    "i appreciate that",
-                    "i appreciate your patience",
-                    "thanks for that",
-                    "i'm glad you're still with me",
-                    "i'm here to help",
-                    "i'm here to chat",
-                    "no problem at all",
-                    "no problem",
-                    "no worries at all",
-                    "thanks for giving me a minute",
-                    "thanks for your time",
-                    "i appreciate you mentioning that",
-                    "i appreciate you letting me know",
-                    "i appreciate you sharing that",
-                    "i appreciate you taking the time",
-                    "i understand completely",
-                    "totally understand",
-                    "i completely understand",
-                    "that makes total sense",
-                    "that makes sense",
-                    "fair enough",
-                    "have a good one",
-                    "have a great day",
-                    "have a great one",
-                    "take care",
-                    "i'll try again later",
-                    "i'll try back later",
-                    "i'll call back another time",
-                    "i'll reach out another time",
-                    "sounds like you're busy",
-                    "sounds like this isn't the right time",
-                    "sounds like i caught you at a bad time",
-                    "i don't want to take up your time",
-                    "i won't take up any more of your time",
-                ]
-                # Partial-match kills — if sentence CONTAINS any of these, it's chatbot filler
-                chatbot_contains_kills = [
-                    "i can help with that",
-                    "i can definitely help",
-                    "we can definitely help",
-                    "i'm here to help",
-                    "i'd love to help",
-                    "sounds great",
-                    "sounds exciting",
-                    "sounds wonderful",
-                    "sounds fantastic",
-                    "sounds like a great",
-                    "sounds like a valuable",
-                    "i appreciate you sharing",
-                    "i appreciate you mentioning",
-                    "i appreciate you letting me know",
-                    "i appreciate you taking",
-                    "thanks for sharing",
-                    "thanks for giving me",
-                    "thanks for letting me know",
-                    "that's really exciting",
-                    "how can i assist",
-                    "how may i help",
-                    "looking forward to",
-                    "solid setup",
-                    "great setup",
-                    "have a good one",
-                    "have a great day",
-                    "have a great one",
-                    "take care",
-                    "i'll try again later",
-                    "i'll try back",
-                    "i'll call back",
-                    "i'll reach out another",
-                    "i won't take up",
-                    "i don't want to take up",
-                    "caught you at a bad time",
-                    "sounds like you're busy",
-                    "isn't the right time",
-                ]
-                
-                # [FILLER PREFIX STRIPPER] Remove chatbot filler from the START of sentences
-                # "Got it, three different businesses" → "Three different businesses"
-                # The filler adds nothing. The substance after it is what matters.
-                filler_prefixes = [
-                    "got it, ", "got it — ", "got it - ",
-                    "sure, ", "sure — ", "sure - ",
-                    "yeah, absolutely, ", "yeah absolutely, ",
-                    "yeah, so, ", "yeah so, ",
-                    "yeah, ", "yeah — ", "yeah - ",
-                    "absolutely, ",
-                    "perfect, ",
-                    "great, ",
-                    "right, got it, ",
-                    "okay, so, ", "okay so, ",
-                    "okay, ", "okay — ", "okay - ",
-                    "i'm listening, ", "i'm listening — ", "i'm listening. ",
-                    "i'm right here, ", "i'm right here — ", "i'm right here. ",
-                    "i hear you, ", "i hear you — ", "i hear you. ",
-                    "i appreciate that, ", "i appreciate that — ", "i appreciate that. ",
-                    "thanks for that, ", "thanks for that — ", "thanks for that! ",
-                    "no problem, ", "no problem — ", "no problem. ",
-                    "no problem at all, ", "no problem at all — ", "no problem at all. ",
-                    "no worries, ", "no worries — ", "no worries. ",
-                    "totally, ", "totally — ",
-                    "totally understand, ", "totally understand — ",
-                    "i understand, ", "i understand — ",
-                    "fair enough, ", "fair enough — ",
-                    "that makes sense, ", "that makes sense — ", "that makes sense. ",
-                ]
-                s_lower_check = s.strip().lower()
-                for prefix in filler_prefixes:
-                    if s_lower_check.startswith(prefix):
-                        stripped = s.strip()[len(prefix):]
-                        if stripped and len(stripped) > 3:
-                            # Capitalize the first letter of what remains
-                            stripped = stripped[0].upper() + stripped[1:]
-                            logger.info(f"[CHATBOT KILLER] Stripped filler prefix '{prefix.strip()}' → '{stripped[:50]}'")
-                            s = stripped
-                            break
-                
-                s_lower = s.strip().lower().rstrip('!.')
-                for kill in chatbot_kills:
-                    if s_lower == kill or s_lower.startswith(kill):
-                        logger.info(f"[CHATBOT KILLER] Stripped dead phrase: '{s[:50]}'")
-                        return ""
-                for kill in chatbot_contains_kills:
-                    if kill in s_lower:
-                        logger.info(f"[CHATBOT KILLER] Stripped (contains): '{s[:50]}'")
-                        return ""
-                
-                # [EARLY-TURN EXIT GUARD] On turns 0-3, Alan MUST NOT say goodbye.
-                # The LLM sometimes panics on ambiguous audio and tries to bail.
-                # This guard catches goodbye language that slips through the kills above
-                # and replaces the entire sentence with a sharp question.
-                _etg_turn = len(context.get('messages', [])) // 2
-                if _etg_turn <= 3:
-                    _goodbye_patterns = [
-                        "goodbye", "good bye", "bye bye", "bye for now",
-                        "have a good", "have a great", "have a nice",
-                        "take care", "talk to you later", "talk soon",
-                        "i'll let you go", "i'll try again", "i'll try back",
-                        "i'll call back", "i'll reach out", "catch you later",
-                        "thanks for your time", "thank you for your time",
-                        "i won't take up", "i don't want to bother",
-                        "sounds like you're busy", "caught you at a bad time",
-                        "isn't the right time", "not the right time",
-                        "maybe another time", "perhaps another time",
-                    ]
-                    for _gp in _goodbye_patterns:
-                        if _gp in s_lower:
-                            logger.warning(f"[EXIT GUARD] Blocked goodbye on turn {_etg_turn}: '{s[:60]}'")
-                            return ""
-                
-                return s.strip()
+            MAX_SENTENCES = _adaptive_max_sentences  # [LONG CONV] Adaptive — 3 early, 5 deep
+            
+            # [LATENCY FIX] TTFT hard deadline — if OpenAI doesn't return a first
+            # token within TTFT_DEADLINE_S, abort the stream and push a fallback sentence.
+            # This prevents 5-9+ second dead air that causes instant hangups.
+            # The fallback is a natural sales opener that keeps the call alive.
+            TTFT_DEADLINE_S = 2.0  # Max seconds to wait for first token (was 2.5 — pre-warm ensures <800ms TTFT)
+            TOTAL_LLM_DEADLINE_S = 4.5  # Max total LLM time (was 6.0 — 45 tokens never needs >4.5s)
             
             try:
-                with llm_session.post(url, json=payload, headers=headers, stream=True, timeout=8) as response:
+                # [TIMING FIX] Read timeout tightened from 8s→3s to enforce TTFT deadline.
+                # iter_lines() blocks until a line arrives, so the TTFT check inside the loop
+                # never fires if OpenAI is slow to send the first line. A 3s read timeout
+                # forces a ReadTimeout exception which triggers the fallback path below.
+                with llm_session.post(url, json=payload, headers=headers, stream=True, timeout=(2, 3)) as response:
                     response.raise_for_status()
                     for line in response.iter_lines(decode_unicode=True):
                         if not line or not line.startswith('data: '):
+                            # [LATENCY FIX] Check TTFT deadline even on empty lines
+                            if not ttft_logged and (time.time() - stream_start) > TTFT_DEADLINE_S:
+                                logger.error(f"[LLM] TTFT DEADLINE EXCEEDED ({TTFT_DEADLINE_S}s) — aborting stream, pushing fallback")
+                                _telemetry['ttft_ms'] = 1000 * TTFT_DEADLINE_S
+                                _telemetry['ttft_deadline_hit'] = True
+                                # [2026-03-02 FIX] Replaced "Quick question" fallback — was reinforcing
+                                # the repetition loop when LLM saw multiple "quick question" entries in history.
+                                sentence_q.put("So who handles the card processing for you guys?")
+                                sentence_count = 1
+                                break
+                            # [LATENCY FIX] Check total deadline
+                            if (time.time() - stream_start) > TOTAL_LLM_DEADLINE_S:
+                                logger.error(f"[LLM] TOTAL DEADLINE EXCEEDED ({TOTAL_LLM_DEADLINE_S}s) — aborting")
+                                break
                             continue
                         data_str = line[6:]
                         if data_str == '[DONE]':
+                            break
+                        # [LATENCY FIX] Check total deadline mid-stream
+                        if (time.time() - stream_start) > TOTAL_LLM_DEADLINE_S:
+                            logger.error(f"[LLM] TOTAL DEADLINE hit at {(time.time() - stream_start):.1f}s — truncating")
                             break
                         try:
                             chunk = json.loads(data_str)
@@ -6948,6 +7200,20 @@ class AQIConversationRelayServer:
                 
             except Exception as e:
                 logger.error(f"[ORCHESTRATED LLM] SSE error: {e}")
+                # [TIMING FIX] If the LLM stream failed before producing any sentences,
+                # push a natural fallback so there's no dead air. This catches ReadTimeout,
+                # ConnectionError, and any other LLM failure before first sentence.
+                if sentence_count == 0:
+                    import requests.exceptions as _req_exc
+                    is_timeout = isinstance(e, (_req_exc.ReadTimeout, _req_exc.ConnectTimeout, _req_exc.ConnectionError))
+                    if is_timeout:
+                        logger.warning(f"[LLM] [TIMING GUARD] LLM timeout before first sentence — pushing fallback")
+                    else:
+                        logger.warning(f"[LLM] [TIMING GUARD] LLM error before first sentence — pushing fallback: {type(e).__name__}")
+                    _telemetry['ttft_deadline_hit'] = True
+                    # [2026-03-02 FIX] Replaced "Quick question" fallback — prevents repetition loop.
+                    sentence_q.put("Hey, I'm still with you — are you guys set up to take cards there?")
+                    sentence_count = 1
             
             sentence_q.put(None)  # Sentinel: stream complete
 
@@ -6980,7 +7246,7 @@ class AQIConversationRelayServer:
             sprint_ttft_logged = False
             
             try:
-                with llm_session.post(url, json=payload, headers=headers, stream=True, timeout=4) as response:
+                with llm_session.post(url, json=payload, headers=headers, stream=True, timeout=(2, 4)) as response:
                     response.raise_for_status()
                     for line in response.iter_lines(decode_unicode=True):
                         if not line or not line.startswith('data: '):
@@ -7097,6 +7363,15 @@ class AQIConversationRelayServer:
                 
                 logger.info(f"[SPECULATIVE] Sprint clause arrived: '{sprint_sentence}'")
                 
+                # [FIX CW-AUDIT 2025-06-24] Run chatbot killer + exit guard on sprint output.
+                # Previously sprint bypassed ALL protection systems — chatbot filler like
+                # "I appreciate you letting me know" and exit phrases went straight to TTS.
+                # Now sprint gets the same sentence cleaning as full LLM output.
+                sprint_sentence = _clean_sentence(sprint_sentence)
+                if not sprint_sentence or len(sprint_sentence) <= 3:
+                    logger.warning(f"[SPECULATIVE] Sprint clause killed by chatbot killer. Falling through to full LLM.")
+                    continue
+                
                 # TTS synthesis — immediate, no prefetch complexity needed
                 _tts_t0 = time.time()
                 # [INSTRUMENT] Stamp TTS start for sprint path
@@ -7198,15 +7473,15 @@ class AQIConversationRelayServer:
                 if _sprint_text:
                     sprint_words = set(_sprint_text.lower().split())
                     sent_words = set(sentence.lower().split())
-                    if sent_words:
-                        overlap = len(sprint_words & sent_words) / len(sent_words)
-                        if overlap > SPRINT_OVERLAP_THRESHOLD:
-                            logger.info(f"[SPECULATIVE] Skipping overlapping full sentence ({overlap:.0%}): '{sentence[:60]}'")
-                            prev_sentence_text = sentence
-                            sentence_idx += 1
-                            continue
-                        else:
-                            logger.info(f"[SPECULATIVE] Full sentence diverged from sprint ({overlap:.0%}) — playing both")
+                    overlap = len(sprint_words & sent_words) / len(sent_words) if sent_words else 0
+                    # [FIX 2026-02-26] ALWAYS skip the first full sentence when sprint was used.
+                    # Previously, diverged sentences (low overlap) caused both to play → stuttering.
+                    # Sprint already gave the listener a coherent opening. Playing a DIFFERENT
+                    # first sentence on top creates "I work with businesses — It's Alan from" stutter.
+                    logger.info(f"[SPECULATIVE] Skipping first full sentence (overlap {overlap:.0%}, sprint played): '{sentence[:60]}'")
+                    prev_sentence_text = sentence
+                    sentence_idx += 1
+                    continue
             
             # Check if superseded by new speech
             if context.get('response_generation') != generation:
@@ -7222,7 +7497,7 @@ class AQIConversationRelayServer:
             if self.supervisor_instance:
                 try:
                     if not self.supervisor_instance.validate_response_compliance(sentence, context):
-                        sentence = "I understand. Tell me more about that."
+                        sentence = "So tell me — what's going on with your setup over there?"
                 except Exception as _val_err:
                     logger.debug(f"[COMPLIANCE] Supervisor validation failed: {_val_err}")
             
@@ -7310,7 +7585,7 @@ class AQIConversationRelayServer:
                         if self.supervisor_instance:
                             try:
                                 if not self.supervisor_instance.validate_response_compliance(next_sentence_peek, context):
-                                    next_sentence_peek = "I understand. Tell me more about that."
+                                    next_sentence_peek = "So tell me — what's going on with your setup over there?"
                             except Exception as _val_err:
                                 logger.debug(f"[COMPLIANCE] Prefetch supervisor validation failed: {_val_err}")
                         
@@ -7474,14 +7749,20 @@ class AQIConversationRelayServer:
         # =====================================================================
         if not full_response_text or not full_response_text.strip():
             import random as _fb_random
+            # [FIX CW-AUDIT 2025-06-24] Every fallback MUST advance the sales mission.
+            # "Yeah? Go ahead." violated Rule #8. Passive phrases cause NO_PITCH failures.
+            # All entries now either re-engage with pitch context or prompt the merchant
+            # to share information Alan can use as a bridge into the value prop.
+            # [2026-03-02 FIX] Removed "Quick question" from fallback pool — it was
+            # reinforcing the repetition loop. All fallbacks are now unique phrasings.
             _FALLBACK_POOL = [
-                "So what's going on with your setup right now?",
-                "Right, and what does that look like on your end?",
-                "Okay, walk me through what you're dealing with.",
+                "So what's going on with your payment setup right now?",
+                "The reason I'm reaching out is I help business owners cut their processing costs —",
+                "I work with local businesses on their payment processing — who handles yours right now?",
+                "Hey, are you guys set up to accept cards there?",
+                "Sorry, I missed that — what were you saying?",
                 "Can you hear me alright?",
                 "Hello?",
-                "Yeah? Go ahead.",
-                "Sorry, I missed that — what were you saying?",
             ]
             _fallback_text = _fb_random.choice(_FALLBACK_POOL)
             logger.warning(f"[ORCHESTRATED] ⚠️ LLM produced ZERO text. Streaming fallback: '{_fallback_text}'")
@@ -7624,46 +7905,73 @@ class AQIConversationRelayServer:
                                  or _ci_result.get('voicemail_message')  # Voicemail
                                  or "Thanks for your time. Have a great day!")
                     
-                    # Speak exit line and close
-                    _stream_sid = context.get('streamSid')
-                    if _stream_sid and websocket:
-                        await self.synthesize_and_stream_greeting(websocket, _exit_line, _stream_sid)
+                    # [2026-03-02 FIX] Early-turn farewell guard: if this is one of the
+                    # first 3 turns and the exit line contains farewell language, replace
+                    # it with a re-engagement question instead of saying goodbye.
+                    # The DeadEndDetector can false-trigger from noise/echo fragments
+                    # and this ensures Alan NEVER opens a call with a farewell phrase.
+                    _etg_msg_count = len(context.get('messages', []))
+                    _abort_blocked = False
+                    # [2026-03-02 FIX v2] Broadened from dead_end-only to ALL abort
+                    # systems on early turns. Voicemail/government detection can also
+                    # false-trigger on noise before real speech arrives.
+                    if _etg_msg_count <= 3:
+                        _farewell_words = ['goodbye', 'good bye', 'have a great', 'have a good',
+                                           'take care', 'thanks for your time', 'thank you for your time',
+                                           "don't want to keep you", 'appreciate your time']
+                        _exit_lower = _exit_line.lower()
+                        if any(fw in _exit_lower for fw in _farewell_words):
+                            logger.warning(f"[EXIT GUARD] Blocked dead-end farewell on msg #{_etg_msg_count}: '{_exit_line[:60]}'")
+                            # Don't end the call — undo the abort
+                            context.pop('_evolution_outcome', None)
+                            context.pop('_guard_outcome', None)
+                            context.pop('_ccnm_ignore', None)
+                            context['stream_ended'] = False
+                            _abort_blocked = True
                     
-                    # [DNC AUTO-PERSIST] If this was a DNC request, mark the number
-                    # so we NEVER call this merchant again. Legal + ethical imperative.
-                    # Also set dnc_flag for Phase 5 CDC persistence
-                    if _ci_outcome == 'dnc_request':
-                        context['_dnc_flag'] = True
-                    if DNC_WIRED and _dnc_mgr and _ci_outcome == 'dnc_request':
-                        _merchant_phone = context.get('merchant_phone', '')
-                        if _merchant_phone:
-                            _dnc_mgr.mark_dnc(
-                                phone_number=_merchant_phone,
-                                reason='explicit_dnc_request',
-                                source_call_sid=context.get('call_sid', ''),
-                                transcript_excerpt=user_text[:200]
-                            )
-                            logger.warning(f"[DNC] AUTO-PERSISTED: {_merchant_phone} marked DNC — "
-                                         f"merchant said: '{user_text[:60]}'")
+                    if _abort_blocked:
+                        pass  # Fall through to normal LLM pipeline
+                    else:
+                        # Speak exit line and close
+                        _stream_sid = context.get('streamSid')
+                        if _stream_sid and websocket:
+                            await self.synthesize_and_stream_greeting(websocket, _exit_line, _stream_sid)
+                        
+                        # [DNC AUTO-PERSIST] If this was a DNC request, mark the number
+                        # so we NEVER call this merchant again. Legal + ethical imperative.
+                        # Also set dnc_flag for Phase 5 CDC persistence
+                        if _ci_outcome == 'dnc_request':
+                            context['_dnc_flag'] = True
+                        if DNC_WIRED and _dnc_mgr and _ci_outcome == 'dnc_request':
+                            _merchant_phone = context.get('merchant_phone', '')
+                            if _merchant_phone:
+                                _dnc_mgr.mark_dnc(
+                                    phone_number=_merchant_phone,
+                                    reason='explicit_dnc_request',
+                                    source_call_sid=context.get('call_sid', ''),
+                                    transcript_excerpt=user_text[:200]
+                                )
+                                logger.warning(f"[DNC] AUTO-PERSISTED: {_merchant_phone} marked DNC — "
+                                             f"merchant said: '{user_text[:60]}'")
 
-                    # Log to CDC
-                    if CALL_CAPTURE_WIRED:
-                        try:
-                            _cdc_turn(context.get('call_sid', ''), {
-                                'user_text': user_text,
-                                'alan_text': _exit_line,
-                                'sentiment': 'negative' if _ci_system == 'compliance' else 'neutral',
-                                'conv_intel_system': _ci_system,
-                                'conv_intel_outcome': _ci_outcome,
-                            })
-                        except Exception as _cdc_ci_err:
-                            logger.debug(f"[CDC] Conv intel turn capture failed: {_cdc_ci_err}")
-                    
-                    return {
-                        'type': 'conversation_reply',
-                        'speech': _exit_line,
-                        'end_conversation': True,
-                    }
+                        # Log to CDC
+                        if CALL_CAPTURE_WIRED:
+                            try:
+                                _cdc_turn(context.get('call_sid', ''), {
+                                    'user_text': user_text,
+                                    'alan_text': _exit_line,
+                                    'sentiment': 'negative' if _ci_system == 'compliance' else 'neutral',
+                                    'conv_intel_system': _ci_system,
+                                    'conv_intel_outcome': _ci_outcome,
+                                })
+                            except Exception as _cdc_ci_err:
+                                logger.debug(f"[CDC] Conv intel turn capture failed: {_cdc_ci_err}")
+                        
+                        return {
+                            'type': 'conversation_reply',
+                            'speech': _exit_line,
+                            'end_conversation': True,
+                        }
 
         # [PHASE 1.7] First-Turn Detection
         # The opener is over; we are now listening for the first real user input.
@@ -7676,6 +7984,156 @@ class AQIConversationRelayServer:
                 context['first_turn_complete'] = True
                 context['conversation_state'] = 'dialogue'
             logger.info("[PHASE 1.7] First Turn Detected. Conversation Entry Locked. Disabling Opener Blocks.")
+
+            # =================================================================
+            # [TURN-01 FAST RESPONSE] Instant reply — bypass LLM entirely
+            # =================================================================
+            # On cold calls, Turn 01 is the most critical moment. The merchant
+            # just responded to Alan's greeting. LLM pipeline takes 2.4-5.9s.
+            # That dead air kills calls. Instead: pattern-match the merchant's
+            # short response and serve a pre-cached TTS response in ~50ms.
+            #
+            # Triggers on responses ≤12 words that match known patterns.
+            # Complex/long responses go to the full LLM pipeline.
+            # =================================================================
+            _t01_words = user_text.strip().split()
+            _t01_text_lower = user_text.strip().lower().rstrip('?.!,')
+            _t01_category = None
+
+            if len(_t01_words) <= 12 and hasattr(self, '_turn01_responses'):
+                # Pattern matching — most specific first
+                _ACK_TRANSFER_PATTERNS = [
+                    'hold on', 'one moment', 'one second', 'hang on',
+                    'let me get', 'let me see', 'one sec', 'hold please',
+                    'just a moment', 'just a second', 'just a sec',
+                    'let me transfer', 'i\'ll get',
+                ]
+                _BUSY_PATTERNS = [
+                    'busy', 'not available', 'not here', 'she\'s busy',
+                    'he\'s busy', 'they\'re busy', 'in a meeting',
+                    'with a client', 'with a customer', 'stepped out',
+                    'not in', 'isn\'t here', 'isn\'t available',
+                    'can\'t come to the phone', 'call back',
+                    'try again later', 'leave a message',
+                ]
+                _IDENTITY_PATTERNS = [
+                    'who is this', 'who\'s this', 'who\'s calling',
+                    'who is calling', 'who am i speaking', 'may i ask who',
+                    'and you are', 'who are you', 'what company',
+                ]
+                _PURPOSE_PATTERNS = [
+                    'what\'s this about', 'whats this about', 'what is this about',
+                    'what do you need', 'what are you calling about',
+                    'what\'s this regarding', 'what is this regarding',
+                    'how can i help', 'can i help you', 'what can i do',
+                    'what\'s going on', 'what do you want',
+                ]
+                _ACK_OWNER_PATTERNS = [
+                    'speaking', 'yeah', 'yes', 'yep', 'yup', 'uh huh',
+                    'that\'s me', 'thats me', 'this is', 'you got him',
+                    'you got her', 'you got me', 'go ahead', 'what\'s up',
+                    'i am', 'i\'m the owner', 'i\'m him', 'i\'m her',
+                ]
+                _GREETING_PATTERNS = [
+                    'hello', 'hi', 'hey', 'good morning', 'good afternoon',
+                    'hey there', 'hi there',
+                ]
+
+                # Check each category — priority order
+                for _pattern in _ACK_TRANSFER_PATTERNS:
+                    if _pattern in _t01_text_lower:
+                        _t01_category = 'ack_transfer'
+                        break
+                if not _t01_category:
+                    for _pattern in _BUSY_PATTERNS:
+                        if _pattern in _t01_text_lower:
+                            _t01_category = 'busy'
+                            break
+                if not _t01_category:
+                    for _pattern in _IDENTITY_PATTERNS:
+                        if _pattern in _t01_text_lower:
+                            _t01_category = 'identity'
+                            break
+                if not _t01_category:
+                    for _pattern in _PURPOSE_PATTERNS:
+                        if _pattern in _t01_text_lower:
+                            _t01_category = 'purpose'
+                            break
+                if not _t01_category:
+                    for _pattern in _ACK_OWNER_PATTERNS:
+                        if _t01_text_lower.startswith(_pattern) or _t01_text_lower == _pattern:
+                            _t01_category = 'ack_owner'
+                            break
+                if not _t01_category:
+                    for _pattern in _GREETING_PATTERNS:
+                        if _t01_text_lower == _pattern or _t01_text_lower.startswith(_pattern):
+                            _t01_category = 'greeting'
+                            break
+                # [2026-03-02 FIX] Removed catch-all fallback that routed ALL 1-3 word
+                # utterances to 'ack_owner' → "Quick question — are you currently processing
+                # credit cards there?". This was too aggressive — short fragments from STT
+                # noise, partial words, or ambiguous speech all got the same canned response.
+                # Now, unmatched short utterances fall through to the full LLM pipeline,
+                # which can produce a contextually appropriate reply.
+                # if not _t01_category and len(_t01_words) <= 3:
+                #     _t01_category = 'ack_owner'
+
+            if _t01_category and hasattr(self, '_turn01_responses'):
+                _t01_response_text = self._turn01_responses.get(_t01_category)
+                if _t01_response_text:
+                    _t01_start = time.time()
+                    logger.info(f"[T01 FAST] Category='{_t01_category}' | Merchant='{user_text[:60]}' | Response='{_t01_response_text[:60]}'")
+
+                    # Play cached audio directly
+                    _stream_sid = context.get('streamSid')
+                    if _stream_sid and websocket:
+                        context['first_audio_produced'] = True
+                        await self.synthesize_and_stream_greeting(websocket, _t01_response_text, _stream_sid)
+
+                    _t01_ms = 1000 * (time.time() - _t01_start)
+                    logger.info(f"[T01 FAST] Delivered in {_t01_ms:.0f}ms (vs ~3500ms LLM pipeline)")
+
+                    # Record in conversation history so LLM has context for Turn 02
+                    agent = context.get('agent_instance')
+                    if agent:
+                        agent.conversation_history.add_message("User", user_text)
+                        agent.conversation_history.add_message("Alan", _t01_response_text)
+                    # [2026-03-02 FIX] Use SAME message format as rest of pipeline
+                    # (single dict with 'user' + 'alan' keys). Previously used two
+                    # OpenAI-style dicts ({role:'user'} + {role:'assistant'}) which
+                    # inflated turn_count by 1, causing MIDWEIGHT_PROMPT (turns 3-7)
+                    # to be used on Turn 2 instead of FAST_PATH_PROMPT (turns 0-2).
+                    # This turn_count mismatch exposed the LLM to more "quick question"
+                    # examples, reinforcing the repetition loop.
+                    context.setdefault('messages', []).append({
+                        'timestamp': datetime.now(),
+                        'user': user_text,
+                        'alan': _t01_response_text,
+                        'sentiment': 'neutral',
+                        'interest': 0,
+                    })
+                    context['alan_turn_count'] = context.get('alan_turn_count', 0) + 1
+
+                    # Record turn in CDC
+                    if CALL_CAPTURE_WIRED:
+                        try:
+                            _cdc_turn(context.get('call_sid', ''), {
+                                'user_text': user_text,
+                                'alan_text': _t01_response_text,
+                                'sentiment': 'neutral',
+                                'interest_level': 'unknown',
+                                'caller_energy': 'neutral',
+                                'preprocess_ms': 0,
+                                'total_turn_ms': _t01_ms,
+                                'llm_ms': 0,
+                                'tts_ms': 0,
+                                'coaching_score': 1.0,
+                                'coaching_flags': 't01_fast_response',
+                            })
+                        except Exception as _t01_cdc_err:
+                            logger.debug(f"[T01 FAST] CDC capture failed: {_t01_cdc_err}")
+
+                    return {'type': 'conversation_reply', 'speech': _t01_response_text}
 
         # [CLOSER STACK] Preference Modeling Initialization
         if 'preferences' not in context:
@@ -7710,6 +8168,10 @@ class AQIConversationRelayServer:
 
         # [ORGAN 6] Live Objection Detection — classify and inject for rebuttal reference
         live_objection = detect_live_objection(user_text)
+
+        # Pre-fetch IQ budget organ for Organ 31/30 (defined here so it's in scope before line 7930)
+        _iq_organ = context.get('_iq_budget_organ')
+
         if live_objection:
             context['live_objection_type'] = live_objection
             logger.info(f"[OBJECTION DETECTED] Type: {live_objection} — rebuttal reference will be injected into LLM context")
@@ -8618,12 +9080,14 @@ class AQIConversationRelayServer:
             # BEFORE the LLM call to prevent dead air. Bridge audio is pre-cached
             # so it plays instantly while LLM + TTS runs in the background.
             #
-            # Fire on EVERY turn — the LLM+TTS pipeline always takes 1.5-5s.
+            # Fire on turns 2+ — the LLM+TTS pipeline always takes 1.5-5s.
             # The bridge buys ~0.5s of perceived responsiveness.
-            # Skip on turn 0 (first response after greeting — no context yet).
+            # Skip on turn 0-1 (first merchant response after greeting).
+            # On the first response, Alan needs to explain why he's calling —
+            # a bridge phrase like "So..." before that creates confusion.
             # =================================================================
             _turn_count = len(context.get('messages', []))
-            if CONV_INTEL_WIRED and not context.get('stream_ended') and _turn_count > 0:
+            if CONV_INTEL_WIRED and not context.get('stream_ended') and _turn_count > 1:
                 _guard = context.get('_conversation_guard')
                 if _guard:
                     _bridge_preprocess_ms = 1000 * (time.time() - pipeline_t0)
@@ -8654,7 +9118,7 @@ class AQIConversationRelayServer:
             _t_orchestra = time.time()
             response_text = await asyncio.wait_for(
                 self._orchestrated_response(user_text, analysis, context, websocket, agent, generation=generation),
-                timeout=12.0
+                timeout=6.0  # [LATENCY FIX] Reduced from 12s — 6s is the absolute max a caller will wait
             )
             _component_times['orchestrated_ms'] = 1000 * (time.time() - _t_orchestra)
             
@@ -9009,8 +9473,8 @@ class AQIConversationRelayServer:
                         'coaching_score': _coaching_score_val,
                         'coaching_flags': _coaching_flags_str,
                     })
-                except Exception:
-                    pass  # Capture never interferes
+                except Exception as _cdc_turn_err:
+                    logger.warning(f"[CDC TURN] Turn capture failed (non-fatal): {_cdc_turn_err}")  # Was silent pass
 
             # [LATENCY MASK] Store turn latency so Agent X can mask lag on NEXT turn
             context['_last_turn_latency_ms'] = total_turn_ms
@@ -9041,7 +9505,7 @@ class AQIConversationRelayServer:
             if CALL_MONITOR_WIRED and response_text:
                 response_time_s = (time.time() - pipeline_t0)
                 monitor_alan_response(context.get('call_sid', ''), response_text, response_time_s)
-                if response_time_s > 8.0:
+                if response_time_s > 4.0:
                     monitor_call_warning(context.get('call_sid', ''), f"Slow response: {response_time_s:.2f}s")
             
             # [LIVE MONITOR] Record Alan's speech for live state tracking
@@ -9049,18 +9513,24 @@ class AQIConversationRelayServer:
                 _live_monitor.record_alan_speech(context.get('call_sid', ''), response_text)
 
         except asyncio.TimeoutError:
-            logger.warning("[ORCHESTRATED] ⚠️ Pipeline timeout (12.0s). Recovering.")
-            response_text = "Sorry about that, could you say that again?"
-            # [RECOVERY] Reset HTTP session — the old one may be stuck/poisoned
+            logger.warning("[ORCHESTRATED] ⚠️ Pipeline timeout (6.0s). Recovering.")
+            # [2026-03-02 FIX] Changed timeout fallback from yet another "quick question"
+            # variant to a different formulation. The old text reinforced the "quick question"
+            # repetition loop — the LLM saw multiple "quick question" entries in history
+            # and mirrored the pattern on subsequent turns.
+            response_text = "Hey, I'm still here — so who handles the card processing for you guys?"
+            # [RECOVERY] Reset HTTP session with adapter — the old one may be stuck/poisoned
             try:
                 self._llm_session.close()
             except Exception as _sess_err:
                 logger.debug(f"[RECOVERY] HTTP session close failed: {_sess_err}")
+            from requests.adapters import HTTPAdapter as _RecoveryAdapter
             self._llm_session = requests.Session()
+            self._llm_session.mount("https://", _RecoveryAdapter(pool_connections=4, pool_maxsize=8))
             self._llm_session.headers.update({"Content-Type": "application/json"})
             logger.info("[RECOVERY] HTTP session reset after timeout")
             if CALL_MONITOR_WIRED:
-                monitor_call_error(context.get('call_sid', ''), 'PIPELINE_TIMEOUT', 'Orchestrated pipeline timeout 12s')
+                monitor_call_error(context.get('call_sid', ''), 'PIPELINE_TIMEOUT', 'Orchestrated pipeline timeout 6s')
             
         except Exception as e:
             logger.error(f"[ORCHESTRATED] Pipeline Error: {e}")
@@ -9120,27 +9590,29 @@ class AQIConversationRelayServer:
 
     async def handle_dtmf(self, data, context):
         """
-        Handle DTMF input
+        Handle inbound DTMF input received from the call.
+        Routes to Organ 36 (DTMF Reflex) for audit logging,
+        and to Organ 37 (IVR Navigator) if IVR navigation is active.
         """
-        digits = data.get('digits', '')
+        digits = data.get('digits', '') or data.get('digit', '')
+        logger.info(f"[DTMF] Received inbound DTMF: '{digits}'")
 
-        if digits == '1':
-            response = "Great! I'd love to schedule a follow-up call. When would be a good time?"
-        elif digits == '2':
-            response = "I understand you're busy right now. May I send you some information about our services?"
-        elif digits == '9':
-            response = "Thank you for your time. Have a great day!"
-            return {
-                'type': 'conversation_reply',
-                'speech': response,
-                'end_conversation': True
-            }
-        else:
-            response = "I'm sorry, I didn't understand that input. Press 1 to schedule a call, 2 for more information, or 9 to end this call."
+        # [ORGAN 36] Record received DTMF for audit trail
+        if DTMF_REFLEX_WIRED:
+            _dtmf = context.get('_dtmf_reflex')
+            if _dtmf:
+                for d in digits:
+                    _dtmf.record_received(d, context=f"inbound_dtmf")
+
+        # If IVR navigation is active, the Navigator doesn't need inbound DTMF —
+        # it's the OUTBOUND DTMF (Alan pressing buttons) that matters.
+        # Inbound DTMF from the far side is unusual but we log it.
+        if digits:
+            logger.info(f"[DTMF] Inbound DTMF '{digits}' logged. No action required.")
 
         return {
             'type': 'conversation_reply',
-            'speech': response,
+            'speech': '',
             'end_conversation': False
         }
 
@@ -9179,6 +9651,12 @@ class AQIConversationRelayServer:
         Pre-warm system components after startup.
         Greetings are already cached by _precache_greetings() in __init__.
         This method handles any remaining async warm-up tasks.
+        
+        [LATENCY FIX] Also fires a real LLM API call with the FAST_PATH_PROMPT
+        to warm the TCP/TLS connection pool AND OpenAI's internal prompt cache.
+        Without this, the FIRST call after server start suffers 3-9s cold-start
+        latency because: (1) new TCP handshake, (2) new TLS negotiation,
+        (3) OpenAI prompt cache is cold. This prewarm eliminates all three.
         """
         if not self.shared_agent_instance:
             return
@@ -9205,6 +9683,43 @@ class AQIConversationRelayServer:
                     logger.info(f"[ALAN AI] Fallback greeting cached ({len(mulaw_bytes)} bytes)")
             except Exception as e:
                 logger.error(f"[ALAN AI] Fallback cache failed: {e}")
+
+        # [LATENCY FIX] Fire a real LLM warmup call — warms TCP pool, TLS, and
+        # OpenAI's internal prompt cache. Uses FAST_PATH_PROMPT (the one used for
+        # turns 0-2) so the very first call benefits from a hot cache.
+        try:
+            agent = self.shared_agent_instance
+            api_key = agent.get_api_key() if hasattr(agent, 'get_api_key') else None
+            fast_prompt = getattr(agent, 'FAST_PATH_PROMPT', None) or getattr(agent, 'system_prompt', '')
+            if api_key and fast_prompt:
+                import concurrent.futures
+                loop = asyncio.get_running_loop()
+                def _warmup_llm():
+                    url = "https://api.openai.com/v1/chat/completions"
+                    payload = {
+                        "model": "gpt-4o-mini",
+                        "messages": [
+                            {"role": "system", "content": fast_prompt[:2000]},
+                            {"role": "user", "content": "Hello"}
+                        ],
+                        "max_tokens": 5,
+                        "temperature": 0,
+                        "stream": True,  # Stream to warm the SSE path too
+                    }
+                    headers = {"Authorization": f"Bearer {api_key}"}
+                    t0 = time.time()
+                    with self._llm_session.post(url, json=payload, headers=headers, stream=True, timeout=(5, 10)) as r:
+                        r.raise_for_status()
+                        # Drain the stream to complete the connection cycle
+                        for line in r.iter_lines():
+                            pass
+                    elapsed = 1000 * (time.time() - t0)
+                    logger.info(f"[BOOT WARMUP] LLM connection + prompt cache warmed in {elapsed:.0f}ms")
+                await loop.run_in_executor(None, _warmup_llm)
+            else:
+                logger.warning("[BOOT WARMUP] Skipped — no API key or prompt available")
+        except Exception as e:
+            logger.warning(f"[BOOT WARMUP] LLM warmup failed (non-critical): {e}")
 
 async def main():
     """

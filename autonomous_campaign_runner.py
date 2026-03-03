@@ -3,7 +3,6 @@ Autonomous Outbound Campaign Runner for Agent X (SOLID V3)
 Runs continuously during business hours.
 Handles all errors gracefully. Never crashes to desktop.
 """
-print("DEBUG: Starting Runner...")
 import os
 import sys
 import time
@@ -48,15 +47,24 @@ LOCK_FILE = "logs/ALAN_SYSTEM_LOCK.lock"
 # Ensure logs directory exists
 os.makedirs("logs", exist_ok=True)
 
-# Configure rigid file logging (no console output to avoid popping)
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - [CAMPAIGN] - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(LOG_FILE, encoding='utf-8'),
-        logging.StreamHandler(sys.stdout) # [DEBUG] Added Console Output
-    ]
-)
+# Configure rigid file logging
+# NOTE: logging.basicConfig is a NO-OP if the root logger already has handlers.
+# agent_sql_tracker adds a StreamHandler(stderr) at import time, so we must
+# force-configure the root logger by clearing existing handlers first.
+root_logger = logging.getLogger()
+root_logger.handlers.clear()
+root_logger.setLevel(logging.INFO)
+_fmt = logging.Formatter('%(asctime)s - [CAMPAIGN] - %(levelname)s - %(message)s')
+_fh = logging.FileHandler(LOG_FILE, encoding='utf-8')
+_fh.setFormatter(_fmt)
+# Wrap stdout in a UTF-8 writer to prevent UnicodeEncodeError on Windows
+# when Start-Process redirects stdout to a file with cp1252 encoding.
+import io
+_utf8_stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
+_sh = logging.StreamHandler(_utf8_stdout)
+_sh.setFormatter(_fmt)
+root_logger.addHandler(_fh)
+root_logger.addHandler(_sh)
 
 # Load context
 env_path = os.path.join(os.path.dirname(__file__), 'Alan_Deployment', 'config', '.env')
@@ -91,18 +99,20 @@ class SafeCampaignRunner:
         Pre-load the heavy Agent class to reduce Cold Start latency.
         """
         try:
-            logging.info("🔥 Warming up AgentAlanBusinessAI...")
+            logging.info("[WARMUP] Warming up AgentAlanBusinessAI...")
             import agent_alan_business_ai
             # Just importing might be enough if it initializes models at module level,
             # but usually we want to instantiate once to fill caches.
             # We won't instantiate fully as that might consume a Twilio connection, 
             # but we ensure the module is in memory.
-            logging.info("🔥 Agent Warm-up Complete.")
+            logging.info("[WARMUP] Agent Warm-up Complete.")
         except Exception as e:
             logging.error(f"Warm-up failed: {e}")
 
     def is_business_hours(self):
-        """Check if 8am - 5pm Local Time."""
+        """Check if 9:30am - 4pm Local Time.
+        [2026-03-02] Start pushed to 9:30 AM, end pulled to 4 PM — Tim: 'reduce the hours'
+        """
         now = datetime.now()
         
         # WEEKEND GUARD: If user is off, Alan sleeps.
@@ -112,9 +122,14 @@ class SafeCampaignRunner:
             return False
             
         hour = now.hour
-        # Standard Business Hours
-        is_time = 8 <= hour < 17 
-        return is_time
+        minute = now.minute
+        # Business Hours: 9:30 AM - 4:00 PM
+        # [2026-03-02] Was 8am-5pm — narrowed to 9:30am-4pm for quality pacing
+        if hour < 9 or (hour == 9 and minute < 30):
+            return False
+        if hour >= 16:
+            return False
+        return True
 
     def update_heartbeat(self):
         with open(HEARTBEAT_FILE, "w") as f:
@@ -306,43 +321,12 @@ class SafeCampaignRunner:
             self.refresh_tunnel_url()
             
             # --- START VERITAS PROTOCOL (The Self-Diagnostic) ---
-            # "If he sees a discrepancy, he is instructed to Self-Correct or Emergency Shutdown"
-            self.cycles_since_verification += 1
-            if self.cycles_since_verification >= 20: # Approx every 5-10 mins in Overdrive
-                logging.info(f"⚖️ VERITAS: Initiating internal 'Truth Audit'...")
-                import subprocess
-                try:
-                    # Run the auditor in a separate process
-                    audit_result = subprocess.run(
-                        [sys.executable, "verify_truth_billing.py"],
-                        capture_output=True, text=True
-                    )
-                    
-                    if audit_result.returncode != 0:
-                        logging.critical(f"🛑 VERITAS FAILED (Code {audit_result.returncode}):\n{audit_result.stdout}")
-                        
-                        if audit_result.returncode == 1:
-                            logging.critical("👻 GHOST DATA DETECTED. EMERGENCY SHUTDOWN.")
-                            # Create lockfile to create persistent stop
-                            with open(LOCK_FILE, "w") as f:
-                                # f.write("LOCKED: Veritas Failure - Ghost Data Detected.") # Commented out to avoid immediate lock during test for now 
-                                # But per user request: "Emergency Shutdown"
-                                f.write("LOCKED: Veritas Failure - Ghost Data Detected. (Auto-Lock)")
-
-                            self.running = False
-                            return
-                            
-                        elif audit_result.returncode == 3:
-                            logging.critical("☠️ SIMULATION POISON DETECTED. EMERGENCY SHUTDOWN.")
-                            with open(LOCK_FILE, "w") as f:
-                                f.write("LOCKED: Veritas Failure - Simulation Poison Found.")
-                            self.running = False
-                            return
-                    else:
-                         logging.info(f"✅ VERITAS: Integrity Confirmed. {audit_result.stdout.strip().splitlines()[-1] if audit_result.stdout else ''}")
-                         self.cycles_since_verification = 0
-                except Exception as ve:
-                    logging.error(f"Veritas execution error: {ve}")
+            # [2026-03-02] DISABLED: verify_truth_billing.py does not exist.
+            # VERITAS was firing every cycle with exit code 2 (file not found) 
+            # and spamming CRITICAL logs. Disabled until audit script is created.
+            # self.cycles_since_verification += 1
+            # if self.cycles_since_verification >= 20:
+            #     ...
             # --- END VERITAS PROTOCOL ---
 
             queue = merchant_queue.MerchantQueue()
@@ -369,14 +353,14 @@ class SafeCampaignRunner:
 
             # --- SYSTEM LOCK CHECK (New Fail-Safe) ---
             if os.path.exists(LOCK_FILE):
-                logging.warning("⛔ CAMPAIGN LOCKED by Alan Zombie Hunter. Skipping cycle.")
+                logging.warning("[LOCKED] CAMPAIGN LOCKED by Alan Zombie Hunter. Skipping cycle.")
                 self.update_heartbeat()
                 return
 
             # --- BETA MODE OVERRIDE ---
             if self.beta_mode and self.beta_targets:
                 target = self.beta_targets.pop(0) # Take the first one
-                logging.info(f"🎯 BETA MODE: Targeting {target['name']} ({target['phone']})")
+                logging.info(f"[BETA] BETA MODE: Targeting {target['name']} ({target['phone']})")
                 
                 # Create a temporary lead object compatible with the queue
                 class BetaLead:
@@ -388,7 +372,7 @@ class SafeCampaignRunner:
                 self.make_call(BetaLead(target), queue)
                 
                 if not self.beta_targets:
-                    logging.info("✅ All Beta Targets processed. Switching to Auto-Pilot safely.")
+                    logging.info("[BETA] All Beta Targets processed. Switching to Auto-Pilot safely.")
                     self.beta_mode = False # Disable beta mode after list exhaustion
                     
                 self.update_heartbeat()
@@ -400,7 +384,7 @@ class SafeCampaignRunner:
             if len(self.recent_area_codes) >= 2:
                 if self.recent_area_codes[-1] == self.recent_area_codes[-2]:
                     exclude_acs = [self.recent_area_codes[-1]]
-                    logging.info(f"🎲 ENTROPY: Avoiding Area Code {exclude_acs[0]} to prevent localization loops.")
+                    logging.info(f"[ENTROPY] Avoiding Area Code {exclude_acs[0]} to prevent localization loops.")
 
             next_lead = queue.get_next_merchant(exclude_area_codes=exclude_acs)
             
@@ -412,7 +396,7 @@ class SafeCampaignRunner:
                         getattr(next_lead, 'business_type', '') or ''
                     )
                     if skip:
-                        logging.info(f"🧠 [REGIME SKIP] {next_lead.name} — {skip_reason}")
+                        logging.info(f"[REGIME SKIP] {next_lead.name} - {skip_reason}")
                         queue.update_merchant_outcome(
                             next_lead.id, self.mq.CallOutcome.FAILED,
                             details=f"Regime skip: {skip_reason}"
@@ -425,7 +409,7 @@ class SafeCampaignRunner:
                         next_lead.phone_number,
                         getattr(next_lead, 'business_type', '') or ''
                     )
-                    logging.info(f"🧠 [REGIME] {next_lead.name} → seg={seg_key} status={seg_info.get('status','?')} score={score}")
+                    logging.info(f"[REGIME] {next_lead.name} -> seg={seg_key} status={seg_info.get('status','?')} score={score}")
 
                 logging.info(f"Found eligible lead: {next_lead.name}")
                 
@@ -441,7 +425,7 @@ class SafeCampaignRunner:
                 # --- VULTURE STRATEGY: AGGRESSIVE RE-DIAL ---
                 # "Tries the top leads twice in a row if they don't pick up the first time"
                 if hasattr(next_lead, 'priority') and next_lead.priority == "URGENT":
-                    logging.info(f"🦅 VULTURE PROTOCOL: Monitoring {next_lead.name} for rapid re-engagement...")
+                    logging.info(f"[VULTURE] Monitoring {next_lead.name} for rapid re-engagement...")
                     # Short pause to allow Twilio callback to process (Avg ring time ~30s)
                     time.sleep(45) 
                     
@@ -457,7 +441,7 @@ class SafeCampaignRunner:
                             # If it's still 'connected', they are talking (Good).
                             # If it's 'failed', we might want to retry too, but 'no_answer' is the target.
                             if updated_lead.outcome in [self.mq.CallOutcome.NO_ANSWER, self.mq.CallOutcome.BUSY, self.mq.CallOutcome.FAILED]:
-                                logging.info(f"🦅 VULTURE STRIKE: {next_lead.name} outcome was '{updated_lead.outcome.value}'. RE-DIALING IMMEDIATELY.")
+                                logging.info(f"[VULTURE] STRIKE: {next_lead.name} outcome was '{updated_lead.outcome.value}'. RE-DIALING IMMEDIATELY.")
                                 # Force a second call packet
                                 self.make_call(next_lead, queue)
                     except Exception as ve:
@@ -465,7 +449,7 @@ class SafeCampaignRunner:
                 
                 # [MECHANICS] POWER BOOST: REDUCING INTER-CALL LATENCY
                 # "The crew is on the floor. The engine is screaming."
-                logging.info("⚡ POWER BOOST: High-Velocity Mode Active. Latency buffers minimized to 1.5s.")
+                logging.info("[POWER] High-Velocity Mode Active. Latency buffers minimized to 1.5s.")
                 time.sleep(1.5) 
             else:
                 logging.info("No eligible leads found (or all filtered by Entropy/Cooldown). Sleeping...")

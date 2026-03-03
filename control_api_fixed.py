@@ -92,6 +92,17 @@ except ImportError:
     REPLICATION_AVAILABLE = False
     logging.warning("[REPLICATION] alan_replication.py not available — fleet management disabled")
 
+# [CRO] Contact Rate Optimizer — local presence dialing + number reputation
+try:
+    from contact_rate_optimizer import LocalPresenceManager, NumberReputationTracker
+    _cro_lpm = LocalPresenceManager()
+    _cro_nrt = NumberReputationTracker()
+    CRO_DIALER_AVAILABLE = True
+except ImportError:
+    CRO_DIALER_AVAILABLE = False
+    _cro_lpm = None
+    _cro_nrt = None
+
 # Configure enhanced logging with rotation
 from logging.handlers import RotatingFileHandler
 
@@ -1301,6 +1312,16 @@ async def trigger_call(request: Request):
                     
                 from_number = os.environ.get('TWILIO_PHONE_NUMBER')
                 
+                # [CRO] Local Presence: match caller ID to destination area code
+                if CRO_DIALER_AVAILABLE and _cro_lpm and target_number:
+                    try:
+                        _local_num = _cro_lpm.get_best_caller_id(target_number)
+                        if _local_num and _local_num != from_number:
+                            logger.info(f"[CRO] Local presence: {from_number} → {_local_num} for {target_number}")
+                            from_number = _local_num
+                    except Exception as _lp_err:
+                        logger.debug(f"[CRO] Local presence fallback: {_lp_err}")
+                
                 # 4. Get base tunnel URL (for Twilio to fetch TwiML)
                 base_url = ""
                 if os.path.exists("active_tunnel_url.txt"):
@@ -1335,7 +1356,8 @@ async def trigger_call(request: Request):
                 instructor_mode = str(data.get('instructor_mode', 'false')).lower()
                 demo_mode = str(data.get('demo_mode', '')).strip()
                 _is_instructor_call = instructor_mode == 'true'
-                twiml_url = f"{base_url}/twilio/outbound?prospect_name={quote(str(prospect_name))}&business_name={quote(str(business_name))}&instructor_mode={instructor_mode}&demo_mode={quote(str(demo_mode))}"
+                prospect_phone = quote(str(target_number))
+                twiml_url = f"{base_url}/twilio/outbound?prospect_name={quote(str(prospect_name))}&business_name={quote(str(business_name))}&prospect_phone={prospect_phone}&instructor_mode={instructor_mode}&demo_mode={quote(str(demo_mode))}"
                 status_callback_url = f"{base_url}/twilio/events"
                 
                 # 5. Lock Governor & Fire (Isolated Task Simulation)
@@ -1447,8 +1469,8 @@ async def start_campaign(request: Request):
     except Exception:
         data = {}
     
-    max_calls = data.get("max_calls", 10)
-    delay_between = max(data.get("delay_seconds", 300), 240)  # [COST GUARD] Minimum 240s (4 min) between calls — Phase 4 testing
+    max_calls = data.get("max_calls", 80)
+    delay_between = max(data.get("delay_seconds", 30), 30)  # [COST GUARD] Minimum 30s between calls — tightened for 80-call/day throughput
     
     CAMPAIGN_ACTIVE = True
     CAMPAIGN_TASK = asyncio.create_task(_run_campaign(max_calls, delay_between))
@@ -1475,6 +1497,66 @@ async def campaign_status():
     if LEAD_DB_AVAILABLE and lead_db:
         status["stats"] = lead_db.get_stats()
     return status
+
+
+# ── Verified Caller ID Status Callback ──────────────────────────────────
+
+@app.post("/verify-callback")
+async def verify_callback(request: Request):
+    """
+    Twilio POSTs here after a caller ID verification attempt completes.
+    
+    Updates the local verification tracker with success/failure.
+    Twilio sends: AccountSid, PhoneNumber, VerificationStatus, OutgoingCallerIdSid
+    """
+    try:
+        form = await request.form()
+        data = dict(form)
+        
+        phone = data.get("PhoneNumber", "")
+        status_val = data.get("VerificationStatus", "")
+        cid_sid = data.get("OutgoingCallerIdSid", "")
+        
+        logger.info(f"[VERIFY-CALLBACK] Phone={phone} Status={status_val} SID={cid_sid}")
+        
+        # Update tracker
+        tracker_file = os.path.join(os.path.dirname(__file__), "data", "verification_tracker.json")
+        tracker = {"pending": {}, "verified": {}, "failed": {}}
+        if os.path.exists(tracker_file):
+            try:
+                with open(tracker_file, "r") as f:
+                    tracker = json.load(f)
+            except Exception:
+                pass
+        
+        if status_val == "success" and phone:
+            pending_info = tracker["pending"].pop(phone, {})
+            tracker["verified"][phone] = {
+                "sid": cid_sid,
+                "friendly_name": pending_info.get("friendly_name", ""),
+                "verified_at": datetime.now().isoformat(),
+                "initiated_at": pending_info.get("initiated_at", ""),
+                "callback": True,
+            }
+            logger.info(f"[VERIFY-CALLBACK] ✓ {phone} verified successfully")
+        elif phone:
+            pending_info = tracker["pending"].pop(phone, {})
+            tracker["failed"][phone] = {
+                "reason": f"Twilio callback: {status_val}",
+                "failed_at": datetime.now().isoformat(),
+                "initiated_at": pending_info.get("initiated_at", ""),
+            }
+            logger.warning(f"[VERIFY-CALLBACK] ✗ {phone} verification failed: {status_val}")
+        
+        os.makedirs(os.path.dirname(tracker_file), exist_ok=True)
+        with open(tracker_file, "w") as f:
+            json.dump(tracker, f, indent=2)
+        
+        return {"status": "received"}
+    except Exception as e:
+        logger.error(f"[VERIFY-CALLBACK] Error: {e}")
+        return JSONResponse(status_code=200, content={"status": "error", "detail": str(e)})
+
 
 # ── CW23 Regime Engine Endpoints ────────────────────────────────────────
 
@@ -1581,8 +1663,15 @@ async def _run_campaign(max_calls: int, delay_between: float):
     
     try:
         calls_made = 0
+        consecutive_failures = 0
+        MAX_CONSECUTIVE_FAILURES = 5  # [WATCHDOG] Auto-stop after 5 consecutive failures
         
         while CAMPAIGN_ACTIVE and calls_made < max_calls:
+            # [WATCHDOG] Stop campaign if too many consecutive failures
+            if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+                logger.error(f"[CAMPAIGN] [WATCHDOG] {MAX_CONSECUTIVE_FAILURES} consecutive failures — auto-stopping campaign to prevent waste")
+                break
+            
             # Get next callable lead from DB
             lead = lead_db.get_next_lead()
             if not lead:
@@ -1593,6 +1682,20 @@ async def _run_campaign(max_calls: int, delay_between: float):
             lead_id = lead["id"]
             attempts = lead["attempts"]
             max_attempts = lead["max_attempts"]
+            
+            # [PHONE GUARD] Skip leads with empty/invalid phone numbers
+            if not phone or not phone.strip():
+                logger.warning(f"[CAMPAIGN] [PHONE GUARD] Skipping {lead.get('name', 'Unknown')} — no phone number")
+                lead_db.record_attempt(lead_id, "invalid_number", "No phone number on file")
+                continue
+            
+            # [PHONE GUARD] Basic E.164 validation — must have digits
+            import re as _re
+            digits_only = _re.sub(r'[^\d]', '', phone)
+            if len(digits_only) < 10:
+                logger.warning(f"[CAMPAIGN] [PHONE GUARD] Skipping {lead.get('name', 'Unknown')} — phone too short: {phone}")
+                lead_db.record_attempt(lead_id, "invalid_number", f"Phone number too short: {phone}")
+                continue
             
             # CW23 Regime Engine: skip check
             if REGIME_AVAILABLE:
@@ -1617,6 +1720,16 @@ async def _run_campaign(max_calls: int, delay_between: float):
                 client = ensure_dialer_ready()
                 from_number = os.environ.get('TWILIO_PHONE_NUMBER')
                 
+                # [CRO] Local Presence: match caller ID to destination area code
+                if CRO_DIALER_AVAILABLE and _cro_lpm and phone:
+                    try:
+                        _local_num = _cro_lpm.get_best_caller_id(phone)
+                        if _local_num and _local_num != from_number:
+                            logger.info(f"[CRO] Local presence: {from_number} → {_local_num} for {phone}")
+                            from_number = _local_num
+                    except Exception as _lp_err:
+                        logger.debug(f"[CRO] Local presence fallback: {_lp_err}")
+                
                 # Get tunnel URL
                 base_url = ""
                 if os.path.exists("active_tunnel_url.txt"):
@@ -1637,7 +1750,8 @@ async def _run_campaign(max_calls: int, delay_between: float):
                 from urllib.parse import quote
                 lead_name = quote(str(lead.get('name', 'there')))
                 lead_biz = quote(str(lead.get('business_type', '')))
-                twiml_url = f"{base_url}/twilio/outbound?prospect_name={lead_name}&business_name={lead_biz}"
+                lead_phone = quote(str(phone))
+                twiml_url = f"{base_url}/twilio/outbound?prospect_name={lead_name}&business_name={lead_biz}&prospect_phone={lead_phone}"
                 status_callback_url = f"{base_url}/twilio/events"
                 
                 mark_call_start()
@@ -1681,22 +1795,27 @@ async def _run_campaign(max_calls: int, delay_between: float):
                 if call:
                     logger.info(f"[CAMPAIGN] Call fired: SID {call.sid} to {phone}")
                     calls_made += 1
+                    consecutive_failures = 0  # [WATCHDOG] Reset on success
                     lead_db.record_attempt(lead_id, "connected", f"Campaign call SID: {call.sid}", call_sid=call.sid)
                 else:
                     logger.warning(f"[CAMPAIGN] Call failed for {phone}")
+                    consecutive_failures += 1  # [WATCHDOG] Track consecutive failures
                     lead_db.record_attempt(lead_id, "failed", "Twilio call creation failed")
+                    logger.warning(f"[CAMPAIGN] [WATCHDOG] Consecutive failures: {consecutive_failures}/{MAX_CONSECUTIVE_FAILURES}")
                     
             except Exception as e:
                 logger.error(f"[CAMPAIGN] Error calling {phone}: {e}")
+                consecutive_failures += 1  # [WATCHDOG] Errors count as failures too
                 lead_db.record_attempt(lead_id, "error", str(e))
                 mark_call_end()
+                logger.warning(f"[CAMPAIGN] [WATCHDOG] Consecutive failures: {consecutive_failures}/{MAX_CONSECUTIVE_FAILURES}")
             
             # Wait between calls — CW23 regime-aware pacing
             actual_delay = delay_between
             if REGIME_AVAILABLE:
                 regime_delay = get_pacing_delay(phone, lead.get("business_type", ""), default_delay=int(delay_between))
                 if regime_delay != int(delay_between):
-                    actual_delay = max(regime_delay, 240)  # [COST GUARD] Never below 240s
+                    actual_delay = max(regime_delay, 30)  # [COST GUARD] Minimum 30s — tightened for throughput, other safety layers still active
                     logger.info(f"[CAMPAIGN] [REGIME] Pacing adjusted: {delay_between}s → {actual_delay}s for segment")
 
             logger.info(f"[CAMPAIGN] Waiting {actual_delay}s before next call...")
@@ -1705,7 +1824,10 @@ async def _run_campaign(max_calls: int, delay_between: float):
                     break
                 await asyncio.sleep(1)
         
-        logger.info(f"[CAMPAIGN] Complete. {calls_made} calls made.")
+        if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+            logger.error(f"[CAMPAIGN] HALTED by watchdog — {consecutive_failures} consecutive failures. {calls_made} successful calls made.")
+        else:
+            logger.info(f"[CAMPAIGN] Complete. {calls_made} calls made.")
         
     except Exception as e:
         logger.error(f"[CAMPAIGN] Fatal error: {e}")
@@ -1791,6 +1913,17 @@ async def _fire_batch_calls(leads: List[Dict], stagger_seconds: float):
             client = ensure_dialer_ready()
             from_number = os.environ.get('TWILIO_PHONE_NUMBER')
             
+            # [CRO] Local Presence: match caller ID to destination area code
+            phone = lead.get('phone_number', '')
+            if CRO_DIALER_AVAILABLE and _cro_lpm and phone:
+                try:
+                    _local_num = _cro_lpm.get_best_caller_id(phone)
+                    if _local_num and _local_num != from_number:
+                        logger.info(f"[CRO] Local presence: {from_number} → {_local_num} for {phone}")
+                        from_number = _local_num
+                except Exception as _lp_err:
+                    logger.debug(f"[CRO] Local presence fallback: {_lp_err}")
+            
             # Get tunnel URL
             base_url = ""
             if os.path.exists("active_tunnel_url.txt"):
@@ -1811,8 +1944,9 @@ async def _fire_batch_calls(leads: List[Dict], stagger_seconds: float):
             prospect_name = quote(str(lead.get("name", lead.get("prospect_name", "there"))))
             business_name = quote(str(lead.get("business", lead.get("business_name", ""))))
             target = lead["to"]
+            prospect_phone = quote(str(target))
             
-            twiml_url = f"{base_url}/twilio/outbound?prospect_name={prospect_name}&business_name={business_name}"
+            twiml_url = f"{base_url}/twilio/outbound?prospect_name={prospect_name}&business_name={business_name}&prospect_phone={prospect_phone}"
             status_callback_url = f"{base_url}/twilio/events"
             
             mark_call_start()
@@ -2371,7 +2505,7 @@ async def twilio_events(request: Request):
                 logger.info(f"[CALL-OUTCOME] SID {call_sid}: BRIEF CONNECT ({duration_int}s) — Short interaction.")
                 _outcome_label = "CONVERSATION"
         elif status_str in ("no-answer", "call.no-answer"):
-            logger.info(f"[CALL-OUTCOME] SID {call_sid}: NO ANSWER — Rang full duration (timeout=50s, ~10-12 rings). Moving to next lead.")
+            logger.info(f"[CALL-OUTCOME] SID {call_sid}: NO ANSWER — Rang full duration (timeout={TIMING.ring_timeout}s). Moving to next lead.")
             _outcome_label = "NO_ANSWER"
         elif status_str in ("busy", "call.busy"):
             logger.info(f"[CALL-OUTCOME] SID {call_sid}: BUSY — Line occupied. Will retry later.")
@@ -2437,6 +2571,35 @@ async def twilio_events(request: Request):
                             )
             except Exception as _strike_err:
                 logger.warning(f"[2-STRIKE] Failed to record strike: {_strike_err}")
+
+        # [CRO] Record call event for contact rate analytics
+        if CRO_DIALER_AVAILABLE and _outcome_label:
+            try:
+                from contact_rate_optimizer import ContactRateAnalytics
+                _cro_ana = ContactRateAnalytics()
+                _phone = form_data.get("To", "")
+                _from_phone = form_data.get("From", "")
+                _dest_clean = _phone.replace("+1", "").replace("+", "")
+                _area = _dest_clean[:3] if len(_dest_clean) >= 10 else "000"
+                _connected = _outcome_label in ("CONVERSATION",)
+                from datetime import datetime as _cro_dt
+                _cro_now = _cro_dt.now()
+                _cro_ana.record_call_event(
+                    phone=_phone, area_code=_area,
+                    timezone="US", local_hour=_cro_now.hour,
+                    business_type="merchant_services",
+                    lead_source="campaign",
+                    connected=_connected, human_contact=_connected,
+                    duration=int(call_duration) if call_duration else 0,
+                    outcome=_outcome_label or "",
+                    call_sid=call_sid or "",
+                    from_number=_from_phone
+                )
+                if _cro_nrt and _from_phone:
+                    _cro_nrt.record_call(_from_phone, _connected)
+                    logger.debug(f"[CRO] Analytics recorded: area={_area}, connected={_connected}, from={_from_phone}")
+            except Exception as _cro_err:
+                logger.debug(f"[CRO] Analytics recording failed: {_cro_err}")
 
         return {"status": "ok"}
     except Exception as e:
@@ -2566,6 +2729,7 @@ async def handle_twilio_voice(request: Request):
     # Extract prospect info from query params (passed from /call or campaign)
     prospect_name = request.query_params.get('prospect_name', 'there')
     business_name = request.query_params.get('business_name', '')
+    prospect_phone = request.query_params.get('prospect_phone', '')
     instructor_mode = request.query_params.get('instructor_mode', 'false')
     demo_mode = request.query_params.get('demo_mode', '')
     
@@ -2578,6 +2742,7 @@ async def handle_twilio_voice(request: Request):
     import html
     prospect_name_safe = html.escape(prospect_name)
     business_name_safe = html.escape(business_name)
+    prospect_phone_safe = html.escape(prospect_phone)
     instructor_mode_safe = html.escape(instructor_mode)
     demo_mode_safe = html.escape(demo_mode)
     
@@ -2588,6 +2753,7 @@ async def handle_twilio_voice(request: Request):
                 <Parameter name="call_direction" value="{call_direction}" />
                 <Parameter name="prospect_name" value="{prospect_name_safe}" />
                 <Parameter name="business_name" value="{business_name_safe}" />
+                <Parameter name="prospect_phone" value="{prospect_phone_safe}" />
                 <Parameter name="instructor_mode" value="{instructor_mode_safe}" />
                 <Parameter name="demo_mode" value="{demo_mode_safe}" />
             </Stream>

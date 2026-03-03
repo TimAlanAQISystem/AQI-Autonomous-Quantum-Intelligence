@@ -75,7 +75,7 @@ class TimingConfig:
         vp = "voice_pacing"
         self.tempo_multiplier     = _extract(self._raw, vp, "tempo_multiplier", 1.06)
         self.tts_default_speed    = _extract(self._raw, vp, "tts_default_speed", 1.12)
-        self.max_sentences        = int(_extract(self._raw, vp, "max_sentences", 5))
+        self.max_sentences        = int(_extract(self._raw, vp, "max_sentences", 3))
         self.question_cap_per_turn = int(_extract(self._raw, vp, "question_cap_per_turn", 1))
         
         # === PROSODY SPEED MAP ===
@@ -107,14 +107,14 @@ class TimingConfig:
         
         # === LLM PARAMETERS ===
         llm = "llm_parameters"
-        self.relay_max_tokens   = int(_extract(self._raw, llm, "relay_max_tokens", 80))
+        self.relay_max_tokens   = int(_extract(self._raw, llm, "relay_max_tokens", 45))
         self.direct_max_tokens  = int(_extract(self._raw, llm, "direct_max_tokens", 150))
         self.temperature        = _extract(self._raw, llm, "temperature", 0.5)
         self.frequency_penalty  = _extract(self._raw, llm, "frequency_penalty", 0.5)
         
         # === CALL PACING ===
         cp = "call_pacing"
-        self.ring_timeout       = int(_extract(self._raw, cp, "ring_timeout", 50))
+        self.ring_timeout       = int(_extract(self._raw, cp, "ring_timeout", 35))
         self.post_call_cooldown = int(_extract(self._raw, cp, "post_call_cooldown", 30))
         self.campaign_cooldown  = int(_extract(self._raw, cp, "campaign_cooldown", 150))
         self.machine_detection  = _extract(self._raw, cp, "machine_detection", "Enable")
