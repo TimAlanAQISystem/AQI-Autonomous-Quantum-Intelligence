@@ -15,6 +15,7 @@ if sys.platform == "win32":
 
 import asyncio
 import json
+import io  # [2026-03-09 PRE-CALL HARDENING] WAV construction for STT pre-warm
 import traceback
 import websockets
 from websockets.exceptions import ConnectionClosed
@@ -56,6 +57,24 @@ from alan_state_machine import CallSessionFSM, CallFlowState, CallFlowEvent  # [
 from conversation_health_monitor import ConversationHealthMonitor, HealthLevel  # [PHASE 3A] Organism self-awareness
 from telephony_health_monitor import TelephonyHealthMonitor, TelephonyHealthState  # [PHASE 3B] Telephony perception
 
+# [AIRFRAME] Conversation Governance — monorepo specs enforced on live calls
+try:
+    from alan_conversation_governance import GovernanceManager as _GovManager
+    _GOVERNANCE_WIRED = True
+    logging.info("[ORGAN] Conversation Governance WIRED — monorepo thresholds active")
+except ImportError as e:
+    _GOVERNANCE_WIRED = False
+    logging.warning(f"[ORGAN] Conversation Governance unavailable: {e}")
+
+# [AIRFRAME] Adaptive Layer — per-merchant pace/friction/energy/vocabulary modulation
+try:
+    from alan_adaptive_layer import AdaptiveLayerManager as _AdaptiveManager
+    _ADAPTIVE_WIRED = True
+    logging.info("[ORGAN] Adaptive Layer WIRED — per-merchant modulation active")
+except ImportError as e:
+    _ADAPTIVE_WIRED = False
+    logging.warning(f"[ORGAN] Adaptive Layer unavailable: {e}")
+
 # [AGENT X SUPPORT] Off-topic conversation intelligence for Alan
 try:
     from agent_x_conversation_support import AgentXConversationSupport
@@ -83,6 +102,9 @@ from multi_turn_strategic_planning import MultiTurnStrategicPlanner
 from bias_auditing_system import BiasAuditingSystem
 from human_override_api import HumanOverrideAPI
 from personality_engine import PersonalityEngine
+
+# [PERSONALITY ENGINE] Master toggle — set False to disable PE without removing code
+PERSONALITY_ENGINE_ENABLED = True
 
 # [REPLICATION] Alan fleet replication engine — concurrent call tracking & Hive Mind
 try:
@@ -1028,72 +1050,111 @@ def detect_live_objection(text: str) -> str:
 # These are natural language directives for gpt-4o-mini-tts.
 # Each one shapes pitch, pace, breath, and emotional color.
 PROSODY_INSTRUCTIONS = {
-    # DEFAULT: experienced sales rep on the phone
+    # DEFAULT: experienced sales rep on the phone — professional warmth
+    # [2026-03-10] HUMANIZATION PASS v2: Removed self-correction/stumble cues.
+    # Telling TTS to "self-correct" or "have micro-stumbles" causes literal
+    # doubled words and stuttering artifacts. The TTS model produces these
+    # too aggressively — "I—I mean..." and "the the" type output.
+    # Keep: natural rhythm, contractions, varied pace, breathiness.
+    # Remove: anything that tells TTS to repeat/correct/stumble.
     "neutral": (
-        "Speak at a natural conversational pace like an experienced sales rep "
-        "on the phone. Confident but not pushy. Breathe naturally between "
-        "phrases. Keep energy steady and warm."
+        "Speak like you're on a real phone call with someone you've known for a while. "
+        "Relaxed, flowing, natural — like you're thinking out loud, not reading. "
+        "Vary your rhythm: speed up when you're excited about a point, slow down "
+        "when something matters. Let words run together naturally — don't over-enunciate "
+        "or put equal weight on every syllable. Drop some endings like a real person: "
+        "'workin' not 'working', 'gonna' not 'going to', 'kinda' not 'kind of'. "
+        "Breathe mid-thought sometimes. Let your pitch rise and fall like a real "
+        "conversation, not a flat monotone. You're a guy on the phone, not a narrator. "
+        "Not every pause is the same length. Some words land heavier than others. "
+        "Your voice should sound lived-in, not produced."
     ),
     # EMPATHETIC: merchant is stressed, upset, frustrated
     "empathetic_reflect": (
         "Speak slower and softer, like you genuinely care about what the person "
-        "just said. Lower your pitch slightly. Pause briefly before responding, "
-        "as if you're taking a breath to really consider their situation. "
-        "Sound sincere, not performative. Like a friend who happens to be good at business."
+        "just said. Lower your pitch slightly. Take a real breath before responding — "
+        "not a theatrical sigh, just a natural inhale like you're gathering your thoughts. "
+        "Sound sincere, not performative — your calm steadiness helps them feel safe. "
+        "Let some words trail off gently. Your emotional state shapes theirs: "
+        "if you're calm, they calm down. Like a trusted advisor who has seen this many "
+        "times and knows how to help. Don't be perfectly smooth — let your voice "
+        "carry a little weight, like the words matter to you personally."
     ),
     # REASSURE: merchant is anxious but not hostile — "we've got you"
     "reassure_stability": (
         "Speak with calm, steady reassurance — like a trusted advisor who has "
         "seen this situation many times. Slightly lower pitch, unhurried pace. "
         "After any reassuring statement, let a natural breath pause land before "
-        "continuing. Project 'everything is under control' through your voice."
+        "continuing. Project 'everything is under control' through your voice. "
+        "Don't rush. Let the steadiness itself be the reassurance."
     ),
-    # CONFIDENT RECOMMEND: closing, recommending, pitching
+    # CONFIDENT RECOMMEND: closing, recommending, pitching — leadership tone
     "confident_recommend": (
         "Speak with calm authority, like a seasoned consultant giving a recommendation "
         "you fully believe in. Slightly slower pace than normal — deliberate, not rushed. "
         "Project confidence through steady tempo, not volume. Let key phrases land "
-        "with a brief natural pause after them."
+        "with a brief natural pause after them. You set the tone — inspiring, not boastful. "
+        "Authoritative, not pushy. Every word carries weight because you mean it. "
+        "A tiny breath before the key number or recommendation — like you're about to "
+        "say the thing that matters most."
     ),
     # CURIOUS PROBE: asking questions, leaning in, gathering info
     "curious_probe": (
-        "Speak with genuine curiosity, like you're really interested in what the "
-        "person is about to tell you. Slightly brighter pitch, a touch faster pace. "
-        "Let questions sound like you're leaning forward — engaged, not interrogating. "
-        "Brief upward inflection at the end of questions, natural and conversational."
+        "Sound genuinely curious — like you just heard something interesting and "
+        "you want to know more. Lean into it. Let your voice get a little brighter, "
+        "a little faster. Questions should sound like you're actually wondering, "
+        "not interviewing. Natural upward lilt on questions. Sometimes start a "
+        "question before you've fully formed it — 'So wait, you guys are —' "
+        "that's how real curiosity sounds. Fluid and unscripted. "
+        "Let a little surprise or interest leak into your voice — not dramatic, "
+        "just the natural reaction of someone who's genuinely engaged."
     ),
-    # CASUAL RAPPORT: merchant is casual, friendly, joking
+    # CASUAL RAPPORT: merchant is casual, friendly, joking — adaptive matching
     "casual_rapport": (
-        "Speak like you're talking to a buddy who also runs a business. "
-        "Relaxed, genuine, maybe a slight smile in your voice. Natural pace — "
-        "not too fast, not too slow. Comfortable and easy-going."
+        "Talk like you're catching up with a buddy over coffee. Super relaxed. "
+        "Let words flow together — don't pause between every phrase. Use natural "
+        "contractions: 'that's', 'we're', 'it'll', 'wouldn't', 'y'know'. "
+        "Let your voice smile. Speed up when you're riffing, slow down for the "
+        "punchline. Throw in a breath-laugh if something's funny. This should "
+        "sound like a real person who happens to know a lot about processing, "
+        "not a professional narrator reading a script. Swallow a syllable here "
+        "and there — real casual speech isn't crisp. It's loose."
     ),
-    # MICRO-HESITATE: thinking out loud, slight uncertainty, humanizing pause
+    # MICRO-HESITATE: thinking out loud, deliberate word choice, humanizing pause
     "micro_hesitate": (
-        "Speak naturally but include a very slight thinking pause mid-sentence, "
-        "like you're choosing your next word carefully. Not uncertain — thoughtful. "
-        "The hesitation should sound like a real person organizing their thoughts "
-        "in real time. Keep pitch neutral, pace normal."
+        "Speak naturally but with deliberate weight, like an experienced advisor "
+        "choosing their words carefully because this particular point matters. "
+        "Not uncertain — considered. A brief mid-sentence pause that says 'I'm "
+        "thinking about YOUR specific situation.' Keep pitch warm and grounded, "
+        "pace slightly measured. This should feel like wisdom, not doubt. "
+        "A quiet 'mm' or half-breath before the key word — the sound of "
+        "someone actually thinking, not performing thoughtfulness."
     ),
     # OBJECTION HANDLING: merchant pushed back, need measured response
     "objection_handling": (
         "Speak calmly and evenly, like someone who's heard this concern a hundred "
         "times and has a good answer. Not defensive. Not dismissive. Measured pace, "
         "steady pitch. Sound like you understand their hesitation and you're about "
-        "to address it thoughtfully."
+        "to address it thoughtfully. Your steadiness conveys competence — you're not "
+        "rattled because you've navigated this a thousand times. Clear, direct, respectful. "
+        "Take a real beat before responding — the pause itself says 'I'm not reacting, "
+        "I'm thinking about what you said.'"
     ),
     # FORMAL/RESPECTFUL: merchant is formal, professional
     "formal_respectful": (
         "Speak professionally and clearly, matching a formal business tone. "
         "Measured pace, clean articulation. Respectful but not stiff. "
-        "Like a polished account executive on a client call."
+        "Like a polished account executive on a client call. "
+        "Even in formal mode, keep it human — not robotic. Natural breathing, "
+        "natural rhythm. Professional doesn't mean mechanical."
     ),
     # TURN YIELD: handing the floor back, inviting the caller to speak
     "turn_yield": (
         "Speak with an inviting, open tone — like you're genuinely handing the "
         "conversation back to them. Slightly slower at the end, with a gentle "
         "upward pitch shift on the final phrase. Make the listener feel like "
-        "their answer matters. Don't rush the ending."
+        "their answer matters. Don't rush the ending. Let the question hang "
+        "naturally — the silence after it is an invitation."
     ),
     # REPAIR/CLARIFY: correcting a misunderstanding, restating
     "repair_clarify": (
@@ -1102,12 +1163,17 @@ PROSODY_INSTRUCTIONS = {
         "clean articulation. Pause briefly before the corrected phrase so the "
         "listener can register the shift. Neutral pitch, steady and clear."
     ),
-    # CLOSING/URGENCY: endgame, near the close
+    # CLOSING/AUTHORITY: endgame, near the close — leadership tone
     "closing_momentum": (
-        "Speak with quiet momentum — not fast, but purposeful. Every word should "
-        "feel like it's leading somewhere important. Slight forward lean in your "
-        "energy. Confident pauses between key points, like you're giving them "
-        "space to agree."
+        "Speak with measured authority — slower than normal, not faster. Every word "
+        "carries weight. Like a seasoned executive making a recommendation they stand "
+        "behind completely. Deliberate pauses between key points to let each one land. "
+        "Lower register, steady energy. The confidence comes from being unhurried — "
+        "you know this is the right move and you're giving them space to see it too. "
+        "Do NOT speed up. Do NOT sound eager. Sound certain. "
+        "You set the tone. Inspiring, not boastful. Decisive, not aggressive. "
+        "A real closer's voice drops slightly and steadies — it says 'this is the move' "
+        "without saying it."
     ),
 }
 
@@ -1137,8 +1203,9 @@ def detect_prosody_intent(context: dict, analysis: dict = None) -> str:
       4. Endgame/closing → closing_momentum
       5. Caller is formal → formal_respectful
       6. Caller is casual → casual_rapport
-      7. Positive sentiment → confident_recommend
-      8. Default → neutral
+      7. Negative sentiment (no objection) → empathetic_reflect
+      8. Positive sentiment → confident_recommend
+      9. Default → neutral
     """
     caller_energy = context.get('caller_energy', 'neutral')
     sentiment = (analysis or {}).get('sentiment', 'neutral')
@@ -1171,11 +1238,19 @@ def detect_prosody_intent(context: dict, analysis: dict = None) -> str:
     if caller_energy == 'casual':
         return 'casual_rapport'
     
-    # 7. Positive engagement → confident recommend
+    # 7. Negative sentiment (no objection detected) → measured empathy
+    # [2026-03-05 FIX] Previously, negative sentiment with neutral caller_energy
+    # and no live_objection fell through to 'neutral' prosody. But the personality
+    # flare (line ~10030) adds empathetic TEXT prefix for negative sentiment.
+    # Voice must match text — misalignment sounds fake/incongruent.
+    if sentiment == 'negative':
+        return 'empathetic_reflect'
+    
+    # 8. Positive engagement → confident recommend
     if sentiment == 'positive':
         return 'confident_recommend'
     
-    # 8. Default
+    # 9. Default
     return 'neutral'
 
 
@@ -1583,10 +1658,13 @@ def inject_breath_before_audio(mulaw_audio: bytes, prosody_intent: str, sentence
     except Exception:
         pass  # Use original on any error
     
-    # 20-40ms of silence after the breath (1-2 frames at 8kHz mulaw)
-    post_breath_silence = ULAW_SILENCE_BYTE * random.randint(160, 320)  # 1-2 frames
+    # [2026-03-16 FIX] Use CNG comfort noise instead of pure digital silence
+    # after breath. Pure 0xFF silence creates an audible "click" at the
+    # breath→silence→speech boundary. Comfort noise smooths the transition.
+    post_breath_frames = random.randint(1, 2)  # 1-2 frames (20-40ms)
+    post_breath_noise = b''.join(generate_comfort_noise_frame() for _ in range(post_breath_frames))
     
-    return breath + post_breath_silence + mulaw_audio
+    return breath + post_breath_noise + mulaw_audio
 
 
 # =============================================================================
@@ -1803,6 +1881,7 @@ except Exception as e:
 # Configure logging — console + persistent file for call timing analysis
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)  # Explicit — prevents root logger level inheritance issues
 
 # Add file handler so call timing data survives terminal restarts
 import os as _os
@@ -1893,8 +1972,46 @@ TEMPO_MULTIPLIER = TIMING.tempo_multiplier  # [TIMING CONFIG] Centralized — de
 # Cost: ~$0.00005/turn additional (negligible with gpt-4o-mini pricing).
 # =============================================================================
 SPECULATIVE_DECODING_ENABLED = True
-SPRINT_MAX_TOKENS = 40  # [2026-03-04] Raised from 22 — sprint now generates complete thoughts, not fragments
+SPRINT_MAX_TOKENS = 30  # [2026-03-05] Was 40→30. Metrics: sprint latency median 1000ms. 30 tokens = 1 punchy sentence, faster TTFT
 SPRINT_OVERLAP_THRESHOLD = 0.35  # Word overlap ratio above which full sentence is skipped
+
+# =============================================================================
+# [2026-03-09] EARLY SPRINT — Braided Pipeline: Sprint-on-Partials
+# =============================================================================
+# Instead of waiting for full silence commit (450ms) + full STT + then firing
+# sprint, fire a speculative early STT at the FIRST silence frame after speech.
+# If early STT returns text, fire sprint LLM immediately on that partial text.
+# Sprint audio can start playing ~350ms earlier than the normal path.
+#
+# The normal path is UNCHANGED — silence commit + full STT + full LLM run as
+# before. If early sprint fires and produces audio, generate_response uses it
+# as the sprint result instead of firing a new sprint. If early sprint fails
+# or is too slow, generate_response falls back to normal sprint behavior.
+#
+# Safety: All 8 guardrails enforced (see RRG III 2026-03-09 entry).
+# A/B: Set False to disable entirely — pure baseline, zero risk.
+# =============================================================================
+EARLY_SPRINT_ENABLED = True
+
+# =============================================================================
+# [2026-03-04] STREAMING TTS — Eliminates ~1,200ms from time-to-first-audio
+# =============================================================================
+# PROBLEM: _openai_tts_sync() uses blocking download — waits for OpenAI to
+# generate the ENTIRE audio (avg 1,673ms) before sending any frames to Twilio.
+# The merchant hears 1.7s of dead air AFTER Alan already knows what to say.
+#
+# FIX: Stream PCM chunks from OpenAI via with_streaming_response as they're
+# generated. First mulaw chunk arrives at Twilio in ~200-400ms instead of
+# ~1,673ms. Per-chunk processing: 24kHz→8kHz downsample (ratecv with state
+# continuity), mulaw encode, tempo compress. Breath/signature/tail-fade are
+# applied on prefetched subsequent sentences, not the latency-critical first.
+#
+# SAFETY: Falls back to blocking _openai_tts_sync() on any streaming error.
+# Full post-processing pipeline preserved for all non-first sentences via
+# the existing prefetch mechanism.
+#
+# Expected improvement: Total turn time from ~5,009ms → ~1,400-1,900ms.
+TTS_STREAMING_ENABLED = True
 
 # =============================================================================
 # [MULTI-SPRINT STRATEGY] Phase 5 Upgrade — Tree-ish Sprint Variants
@@ -1908,6 +2025,20 @@ SPRINT_OVERLAP_THRESHOLD = 0.35  # Word overlap ratio above which full sentence 
 # =============================================================================
 MULTI_SPRINT_ENABLED = False         # OFF by default — Phase 5 toggle
 MULTI_SPRINT_VARIANTS = 2           # Number of sprint variants to fire (2-3)
+
+# =============================================================================
+# [2026-03-10] PERSONALITY ENGINE — Quantum Personality Prosody Bias
+# =============================================================================
+# When enabled, the PersonalityEngine's per-turn prosody_bias modulates:
+#   - prosody_intent (only when base intent is 'neutral')
+#   - TTS speed (additive ±0.1, clamped 0.85–1.15)
+#   - inter-sentence silence (additive ±3 frames)
+# This closes the PE → Voice Pipeline wire: personality shapes HOW Alan sounds.
+# The PE is already called per turn (line ~10997) and its flare + system_instruction
+# already reach the prompt builder. This flag controls ONLY the prosody modulation.
+# Set False to disable prosody bias without affecting flare or persona injection.
+# =============================================================================
+PERSONALITY_ENGINE_ENABLED = True
 MULTI_SPRINT_STYLE_PROMPTS = [
     "Acknowledge what was said, then start your response naturally —",           # Style A: ack-first
     "Respond directly to the point, skip acknowledgment —",                       # Style B: direct
@@ -1981,6 +2112,133 @@ def tempo_compress_audio(mulaw_audio: bytes) -> bytes:
     except Exception:
         return mulaw_audio  # Fallback to original on any error
 
+
+# =============================================================================
+# [2026-03-04] SENTENCE BOUNDARY SMOOTHING — Tail Fade
+# =============================================================================
+# Problem: When a sentence ends and inter-sentence CNG comfort noise begins,
+# the transition from speech energy (~RMS 50-200) to CNG energy (~RMS 15-25)
+# can be abrupt, especially for sentences ending in strong consonants or
+# stressed syllables. This creates a subtle but perceptible "chop" at sentence
+# boundaries — a tell that the audio is synthetic, not a live human voice.
+#
+# Fix: Apply a gentle amplitude taper to the final 40 samples (5ms at 8kHz)
+# of each sentence's µ-law audio. The taper ramps from 100% → 8% amplitude,
+# creating a natural fade-out that blends smoothly into the CNG comfort noise
+# that follows. This mimics how human vocal cords naturally release at the
+# end of an utterance — energy dissipates rather than cutting off.
+#
+# Why 5ms: Human speech offset (final phoneme → silence) typically takes
+# 10-30ms. 5ms is short enough to not affect perceived articulation but
+# long enough to eliminate the hard transition.
+#
+# Why not fade-in: Breath injection (Organ 10) serves as a natural onset
+# for many sentences. For sentences without breath, the CNG → speech
+# transition is less perceptible because the listener EXPECTS speech to
+# start (they're waiting for Alan's response). But speech ENDING abruptly
+# is jarring because it breaks the listener's expectation of continuous flow.
+#
+# [NEG-PROOF] Degrades gracefully — returns original audio on any exception.
+# Minimum length guard: audio < 120 bytes is too short to fade safely.
+# =============================================================================
+
+TAIL_FADE_SAMPLES = 40   # 5ms at 8kHz — matches human vocal offset timing
+TAIL_FADE_FLOOR = 0.08   # Don't fade to absolute zero — match CNG energy floor
+
+def apply_tail_fade(mulaw_audio: bytes) -> bytes:
+    """Apply micro-fade to the tail of sentence audio for smooth CNG transitions.
+    
+    Converts the last 40 µ-law samples to PCM, applies a linear amplitude
+    ramp from 100% → 8%, converts back to µ-law. This eliminates the hard
+    speech→silence transition at sentence boundaries.
+    
+    [NEG-PROOF] Returns original audio on any exception. Safe for all inputs.
+    """
+    if len(mulaw_audio) < 120:
+        return mulaw_audio  # Too short to fade safely
+    
+    try:
+        import struct as _struct
+        audio = bytearray(mulaw_audio)
+        n = TAIL_FADE_SAMPLES
+        
+        # Extract tail segment, convert µ-law → PCM16
+        tail_mulaw = bytes(audio[-n:])
+        tail_pcm = audioop.ulaw2lin(tail_mulaw, 2)
+        tail_samples = _struct.unpack(f'<{n}h', tail_pcm)
+        
+        # Apply linear taper: 1.0 → TAIL_FADE_FLOOR over N samples
+        faded = []
+        for i, sample in enumerate(tail_samples):
+            gain = 1.0 - (1.0 - TAIL_FADE_FLOOR) * (i / (n - 1))
+            faded.append(max(-32768, min(32767, int(sample * gain))))
+        
+        # Convert back: PCM16 → µ-law
+        faded_pcm = _struct.pack(f'<{n}h', *faded)
+        faded_mulaw = audioop.lin2ulaw(faded_pcm, 2)
+        audio[-n:] = faded_mulaw
+        
+        return bytes(audio)
+    except Exception:
+        return mulaw_audio  # Degrade gracefully — no fade is better than broken audio
+
+
+# =============================================================================
+# [CLICK FIX 2026-03-04] ONSET FADE — smooth CNG→speech transition
+#
+# Mirror of apply_tail_fade() for the START of audio. When CNG comfort noise
+# (at ~15-25 RMS) transitions to speech audio (at ~400+ RMS), the amplitude
+# jump creates an audible click/pop. This ramps the first 3ms of speech from
+# CNG floor energy (8%) → full amplitude, eliminating the transient.
+#
+# Applied to:
+#   - First chunk of streaming TTS (sprint + main paths)
+#   - Full TTS pipeline audio (before breath injection)
+#
+# [NEG-PROOF] Degrades gracefully — returns original audio on any exception.
+# Minimum length guard: audio < 120 bytes is too short to fade safely.
+# =============================================================================
+
+ONSET_FADE_SAMPLES = 24   # 3ms at 8kHz — smooth CNG→speech onset
+
+def apply_onset_fade(mulaw_audio: bytes) -> bytes:
+    """Apply micro-fade-in to the onset of TTS audio for smooth CNG→speech transitions.
+    
+    Converts the first 24 µ-law samples to PCM, applies a linear amplitude
+    ramp from 8% → 100%, converts back to µ-law. This eliminates the hard
+    CNG→speech click at sentence starts.
+    
+    [NEG-PROOF] Returns original audio on any exception. Safe for all inputs.
+    """
+    if len(mulaw_audio) < 120:
+        return mulaw_audio  # Too short to fade safely
+    
+    try:
+        import struct as _struct
+        audio = bytearray(mulaw_audio)
+        n = ONSET_FADE_SAMPLES
+        
+        # Extract onset segment, convert µ-law → PCM16
+        onset_mulaw = bytes(audio[:n])
+        onset_pcm = audioop.ulaw2lin(onset_mulaw, 2)
+        onset_samples = _struct.unpack(f'<{n}h', onset_pcm)
+        
+        # Apply linear ramp: TAIL_FADE_FLOOR (8%) → 1.0 over N samples
+        faded = []
+        for i, sample in enumerate(onset_samples):
+            gain = TAIL_FADE_FLOOR + (1.0 - TAIL_FADE_FLOOR) * (i / max(n - 1, 1))
+            faded.append(max(-32768, min(32767, int(sample * gain))))
+        
+        # Convert back: PCM16 → µ-law
+        faded_pcm = _struct.pack(f'<{n}h', *faded)
+        faded_mulaw = audioop.lin2ulaw(faded_pcm, 2)
+        audio[:n] = faded_mulaw
+        
+        return bytes(audio)
+    except Exception:
+        return mulaw_audio  # Degrade gracefully — no fade is better than broken audio
+
+
 # [VERSION P] COMFORT NOISE GENERATION (CNG)
 # Source: ITU-T G.711 Appendix II — Comfort Noise for µ-law
 # Source: https://en.wikipedia.org/wiki/G.711 — "G.711 Appendix II defines a
@@ -1997,16 +2255,132 @@ def tempo_compress_audio(mulaw_audio: bytes) -> bytes:
 # Values 0xF0-0xFF and 0x70-0x7F are the quietest positive and negative values
 # respectively (±1 to ±30 in linear PCM).
 #
-# We use values in the range 0xFA-0xFF and 0x7A-0x7F which correspond to
-# approximately -60 to -70 dBm — matching real telephone comfort noise levels.
+# [2026-03-16 FIX] STATIC INTERFERENCE FIX — Smoother CNG
+# Previous implementation: Per-byte random selection from 12 µ-law values.
+# Problem: Pure random noise sounds like "static" or "hiss" — Tim reported
+# audible static interference ~63s into calls (when multiple inter-sentence
+# gaps have accumulated). Per-byte randomness creates harsh, incoherent noise
+# that differs frame-to-frame, producing an unnatural crackling artifact.
+#
+# Fix: Pre-generate a POOL of smooth comfort noise frames at startup using
+# low-pass filtered noise converted through the proper PCM→µ-law pipeline.
+# Each frame sounds like gentle, consistent phone line hum rather than static.
+# Frames are reused from the pool (with rotation) so inter-sentence boundaries
+# sound continuous rather than jarring.
 COMFORT_NOISE_ULAW = list(range(0xFA, 0x100)) + list(range(0x7A, 0x80))
+
+# Pre-generated pool of smooth CNG frames (populated at first use)
+_CNG_FRAME_POOL = None
+_CNG_POOL_SIZE = 50  # 50 unique frames = 1 second of non-repeating comfort noise
+_CNG_POOL_IDX = 0    # Round-robin index for consistent frame selection
+
+def _generate_cng_frame_pool():
+    """Generate a pool of smooth comfort noise frames using filtered PCM noise.
+    
+    Instead of per-byte random µ-law selection (which sounds like static),
+    generate properly shaped low-pass filtered noise in PCM domain, then
+    encode to µ-law. The result sounds like natural phone line background.
+    
+    Source: ITU-T G.711 Appendix II — CNG should match PSTN idle channel noise
+    characteristics: ~-65 dBm, spectrally flat below 1kHz, rolling off above.
+    """
+    import struct as _struct
+    
+    pool = []
+    _rms_sum = 0.0  # Track RMS across pool for amplitude verification
+    for _ in range(_CNG_POOL_SIZE):
+        # Generate filtered noise in PCM16 domain
+        pcm_samples = []
+        prev_sample = 0.0
+        for _s in range(FRAME_SIZE):
+            # White noise source
+            noise = random.uniform(-1.0, 1.0)
+            # Single-pole IIR low-pass filter (fc ≈ 800Hz at 8kHz sample rate)
+            # Coefficient 0.7 gives gentle roll-off above 800Hz
+            # This matches PSTN idle channel noise characteristics
+            filtered = 0.3 * noise + 0.7 * prev_sample
+            prev_sample = filtered
+            # Scale to near-silent level: ~-75 dBm
+            # [2026-03-06 FIX] Reduced from 20 → 6. Tim reported audible static.
+            # Twilio's G.711 codec amplifies quiet signals, so 20 was landing as
+            # perceptible hiss on the far end. At 6, CNG is below perceptual threshold
+            # on all tested paths while still preventing ABSOLUTE silence (dead air).
+            # ITU-T G.711 CNG target: -75 dBm = amplitude of ~4-8 in this scale.
+            sample_val = int(filtered * 6)
+            sample_val = max(-32768, min(32767, sample_val))
+            pcm_samples.append(sample_val)
+        
+        # Convert PCM16 → µ-law via audioop (proper encoding)
+        pcm_bytes = _struct.pack(f'<{len(pcm_samples)}h', *pcm_samples)
+        mulaw_frame = audioop.lin2ulaw(pcm_bytes, 2)
+        pool.append(mulaw_frame)
+        
+        # [AMPLITUDE VERIFICATION] Measure RMS energy of each frame
+        # Alan's voice: ~400-2000 RMS. CNG should be ~15-25 RMS (~-65 dBm).
+        # If CNG is too loud (>50), voice won't "pop"; too quiet (<5), dead air.
+        _frame_rms = audioop.rms(pcm_bytes, 2)
+        _rms_sum += _frame_rms
+    
+    _avg_rms = _rms_sum / max(len(pool), 1)
+    logging.info(f"[CNG] Pool amplitude: avg RMS={_avg_rms:.1f} "
+                 f"(target: 15-25 for -65 dBm PSTN comfort noise, "
+                 f"Alan voice floor: ~400 RMS)")
+    
+    return pool
 
 def generate_comfort_noise_frame():
     """Generate a single frame of comfort noise that sounds like phone line background.
     Source: ITU-T G.711 Appendix II (CNG)
-    Uses very quiet µ-law values to simulate ambient telephone line noise.
+    
+    [2026-03-16] Uses pre-generated smooth noise pool instead of per-byte random.
+    Each frame is spectrally shaped (low-pass filtered) PCM→µ-law noise that
+    sounds like natural PSTN idle channel noise, not digital static.
+    Frames rotate through the pool for temporal continuity.
     """
-    return bytes(random.choice(COMFORT_NOISE_ULAW) for _ in range(FRAME_SIZE))
+    global _CNG_FRAME_POOL, _CNG_POOL_IDX
+    if _CNG_FRAME_POOL is None:
+        _CNG_FRAME_POOL = _generate_cng_frame_pool()
+        logging.info(f"[CNG] Generated {len(_CNG_FRAME_POOL)} smooth comfort noise frames")
+    
+    # Round-robin through pool — ensures temporal continuity between frames
+    frame = _CNG_FRAME_POOL[_CNG_POOL_IDX % len(_CNG_FRAME_POOL)]
+    _CNG_POOL_IDX += 1
+    return frame
+
+
+# =============================================================================
+# [PRE-CALL HARDENING] TRUE SILENCE FRAME — Zero-energy µ-law silence
+# =============================================================================
+# CNG (comfort noise) uses IIR-filtered random noise at amplitude 6. Even at
+# sub-perceptual levels, this accumulates into audible static/hiss over 800ms+
+# windows — the root cause of the "static at ~11 seconds" artifact.
+#
+# True silence uses µ-law 0xFF (the value encoding zero amplitude in G.711).
+# This produces ZERO energy — no hiss, no static, no artifacts.
+# Used for:
+#   1. Gap filler between turns (replaces CNG gap filler)
+#   2. Inter-sentence silence (replaces CNG comfort frames)
+# CNG is retained ONLY for frame padding at speech boundaries where the
+# tail fade function needs smooth blending with near-zero energy.
+# =============================================================================
+_TRUE_SILENCE_FRAME = None
+
+def generate_true_silence_frame():
+    """Generate a 160-byte frame of true µ-law silence (zero energy).
+    
+    µ-law 0xFF = linear PCM 0 (zero amplitude). This is the quietest
+    possible value in the G.711 µ-law encoding space — pure digital silence
+    with zero spectral energy. No hiss, no static, no artifacts.
+    
+    [2026-03-09 PRE-CALL HARDENING] Replaces CNG for gap filling and
+    inter-sentence silence. Humans expect SILENCE between utterances,
+    not filtered noise. Real phone conversations have true silence gaps.
+    """
+    global _TRUE_SILENCE_FRAME
+    if _TRUE_SILENCE_FRAME is None:
+        _TRUE_SILENCE_FRAME = b'\xff' * FRAME_SIZE
+        logging.info(f"[SILENCE] Generated true silence frame ({FRAME_SIZE} bytes, µ-law 0xFF)")
+    return _TRUE_SILENCE_FRAME
 
 def split_into_sentences(text):
     """Split text into natural sentences for per-sentence TTS.
@@ -2169,6 +2543,7 @@ class AQIConversationRelayServer:
         self.active_conversations = {}
         self._conversations_lock = asyncio.Lock()
         self.greeting_cache = {} # [FIX] Initialize Audio Cache
+        self.sprint_tts_cache = {}  # [2026-03-05 LATENCY FIX] Pre-cached sprint opener audio
         self.ring_tone_audio = generate_ring_tone()  # Pre-generate ring tone
         logger.info(f"[RING TONE] Generated {len(self.ring_tone_audio)} bytes of ring tone audio")
 
@@ -2258,13 +2633,13 @@ class AQIConversationRelayServer:
         if openai_key:
             # CRITICAL: Explicit base_url to bypass OPENAI_BASE_URL env var
             # (that env var may be stale — always use explicit base_url for TTS)
-            self.tts_client = OpenAIClient(api_key=openai_key, base_url="https://api.openai.com/v1", timeout=15.0)  # [TIMING AUDIT] 15s TTS timeout (allows cold-start greeting synthesis)
+            self.tts_client = OpenAIClient(api_key=openai_key, base_url="https://api.openai.com/v1", timeout=8.0)  # [SPEED FIX 2026-03-04] 8s timeout (was 15s — cold-start never needs >5s, streaming TTS needs tighter failure detection)
             logger.info(f"[TTS] OpenAI TTS configured (voice={self._tts_voice}, model={self._tts_model})")
         else:
             self.tts_client = None
             logger.warning("[TTS] No OPENAI_API_KEY found. Mouth is shut.")
 
-        self.executor = ThreadPoolExecutor(max_workers=6)  # [NEG-PROOF] 6 workers: LLM+TTS+prefetch per call × 2 concurrent calls
+        self.executor = ThreadPoolExecutor(max_workers=8)  # [SPEED FIX 2026-03-04] 8 workers (was 6): streaming TTS + LLM + prefetch + sprint per call × 2 concurrent
         
         # [AQI 0.1mm CHIP] Initialize Runtime Guard — constitutional conformance engine
         # Validates governance order, FSM legality, health constraints, and supervision
@@ -2321,6 +2696,23 @@ class AQIConversationRelayServer:
         # The greeting_cache dict maps greeting text → mulaw bytes.
         self._precache_greetings()
         
+        # =================================================================
+        # [2026-03-09 PRE-CALL HARDENING] Pre-warm external API connections
+        # =================================================================
+        # Before any call dials, force TCP+TLS handshakes and model warm-ups
+        # for LLM, STT, and TTS providers. This eliminates 350-600ms of
+        # first-call variance (cold TCP/TLS + model load + tokenizer init).
+        # =================================================================
+        self._preflight_warm_connections()
+        
+        # [2026-03-09 PRE-CALL HARDENING] Pre-generate true silence frame
+        # Force frame generation at boot so first use is instant (no lazy init)
+        generate_true_silence_frame()
+        
+        # [2026-03-09 PRE-CALL HARDENING] Pre-generate CNG pool at boot
+        # Force pool creation so first CNG use (frame padding) is instant
+        generate_comfort_noise_frame()
+        
         logger.info("AQI Conversation Relay Server initialized")
 
     def subsystem_status(self):
@@ -2335,6 +2727,113 @@ class AQIConversationRelayServer:
             "coupled": both_online,
             "status": "READY" if both_online else "DEGRADED",
         }
+
+    def _preflight_warm_connections(self):
+        """[2026-03-09 PRE-CALL HARDENING] Pre-warm all external API connections.
+        
+        Forces TCP+TLS handshakes and model/tokenizer warm-ups BEFORE any call
+        dials. This eliminates 350-600ms of first-call cold-start variance:
+        
+        1. LLM (OpenAI gpt-4o-mini): 1-token dummy prompt forces connection pool
+           warm-up + tokenizer load + model activation. Saves ~200-400ms TTFT
+           on first call's sprint + full LLM.
+        
+        2. STT (Groq Whisper): 200ms silent WAV forces Groq's LPU kernel warm-up
+           + FFT pipeline init + whisper-large-v3-turbo model load. Saves ~200-300ms
+           on first STT transcription.
+        
+        3. HTTP session (requests.Session): The TCP connection pool (4 connections,
+           8 max) gets its first TLS handshake, so all subsequent requests reuse
+           the established connection. Saves ~100-200ms per request.
+        
+        All warm-up calls are fire-and-forget with generous timeouts and full
+        error isolation — a failed warm-up never prevents server startup.
+        """
+        import struct as _struct_warm
+        
+        # ---- 1. PRE-WARM LLM (Sprint + Full Model) ----
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            try:
+                with open("agent_alan_config.json", "r") as _f:
+                    api_key = json.load(_f).get("openai_api_key")
+            except Exception:
+                pass
+        
+        if api_key and self._llm_session:
+            try:
+                _warm_start = time.time()
+                _warm_payload = {
+                    "model": "gpt-4o-mini",
+                    "messages": [{"role": "user", "content": "hi"}],
+                    "max_tokens": 1,
+                    "temperature": 0.0,
+                    "stream": False
+                }
+                _warm_headers = {"Authorization": f"Bearer {api_key}"}
+                _resp = self._llm_session.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    json=_warm_payload,
+                    headers=_warm_headers,
+                    timeout=(3, 5)
+                )
+                _warm_ms = 1000 * (time.time() - _warm_start)
+                if _resp.status_code == 200:
+                    logger.info(f"[PRE-FLIGHT] LLM warm-up complete in {_warm_ms:.0f}ms "
+                               f"(TCP+TLS+tokenizer+model primed)")
+                else:
+                    logger.warning(f"[PRE-FLIGHT] LLM warm-up returned {_resp.status_code} in {_warm_ms:.0f}ms "
+                                  f"(connection still primed)")
+            except Exception as _llm_warm_err:
+                logger.warning(f"[PRE-FLIGHT] LLM warm-up failed (non-fatal): {_llm_warm_err}")
+        
+        # ---- 2. PRE-WARM STT (Groq Whisper) ----
+        try:
+            groq_client = aqi_stt_engine._get_groq_client()
+            if groq_client:
+                _stt_start = time.time()
+                # Generate 200ms of silence as WAV for warm-up
+                _silence_samples = 1600  # 200ms at 8kHz
+                _silence_pcm = b'\x00\x00' * _silence_samples  # 16-bit zero samples
+                _wav_warm = io.BytesIO()
+                _data_size = len(_silence_pcm)
+                _wav_warm.write(b'RIFF')
+                _wav_warm.write(_struct_warm.pack('<I', 36 + _data_size))
+                _wav_warm.write(b'WAVE')
+                _wav_warm.write(b'fmt ')
+                _wav_warm.write(_struct_warm.pack('<I', 16))
+                _wav_warm.write(_struct_warm.pack('<H', 1))     # PCM
+                _wav_warm.write(_struct_warm.pack('<H', 1))     # mono
+                _wav_warm.write(_struct_warm.pack('<I', 8000))  # sample rate
+                _wav_warm.write(_struct_warm.pack('<I', 16000)) # byte rate
+                _wav_warm.write(_struct_warm.pack('<H', 2))     # block align
+                _wav_warm.write(_struct_warm.pack('<H', 16))    # bits per sample
+                _wav_warm.write(b'data')
+                _wav_warm.write(_struct_warm.pack('<I', _data_size))
+                _wav_warm.write(_silence_pcm)
+                _wav_warm.seek(0)
+                _wav_warm.name = "warmup.wav"
+                
+                _result = groq_client.audio.transcriptions.create(
+                    model="whisper-large-v3-turbo",
+                    file=_wav_warm,
+                    language="en",
+                    response_format="text"
+                )
+                _stt_ms = 1000 * (time.time() - _stt_start)
+                logger.info(f"[PRE-FLIGHT] STT (Groq Whisper) warm-up complete in {_stt_ms:.0f}ms "
+                           f"(LPU kernel+FFT+model primed)")
+            else:
+                logger.info("[PRE-FLIGHT] STT warm-up skipped (no Groq client)")
+        except Exception as _stt_warm_err:
+            logger.warning(f"[PRE-FLIGHT] STT warm-up failed (non-fatal): {_stt_warm_err}")
+        
+        # ---- 3. PRE-WARM TTS (OpenAI gpt-4o-mini-tts) ----
+        # Already warmed by greeting pre-cache (first TTS call primes connection).
+        # No additional warm-up needed — greeting cache guarantees TTS is hot.
+        logger.info("[PRE-FLIGHT] TTS already warmed via greeting pre-cache")
+        
+        logger.info("[PRE-FLIGHT] All external API connections pre-warmed")
 
     def _precache_greetings(self):
         """[ZERO-LATENCY] Pre-synthesize all greeting variants at startup.
@@ -2381,6 +2880,16 @@ class AQIConversationRelayServer:
             "Hey, this is Alan calling. Is the owner in?",
             "Hi, this is Alan from Signature Card. Is the owner available?",
         ]
+        # [2026-03-09 PRE-CALL HARDENING] TIME-OF-DAY greetings — cached for zero variance
+        TIME_OF_DAY = [
+            "Good morning, this is Alan. Is the owner around?",
+            "Good afternoon, this is Alan. Is the owner available?",
+        ]
+        # [2026-03-09 PRE-CALL HARDENING] SHORT greetings — minimal opener
+        SHORT = [
+            "Hey, is the owner in?",
+            "Hey, is the owner or manager available?",
+        ]
         # [TWO-STAGE] Named greeting PREFIXES — cached so named greetings start instantly
         NAMED_PREFIXES = [
             # SOFT PREFIXES (no company name)
@@ -2390,7 +2899,14 @@ class AQIConversationRelayServer:
             # STANDARD PREFIX (with company name — shortened)
             "Hi, this is Alan from Signature Card.",
         ]
-        all_greetings = INBOUND + COLD + NAMED_PREFIXES
+        # [2026-03-04] INSTRUCTOR MODE greetings — pre-cache with "boss" placeholder
+        # since that's the fallback when caller name isn't known.
+        INSTRUCTOR = [
+            "Hey boss, it's Alan. Ready for some coaching whenever you are.",
+            "Hey boss, Alan here. What are we working on today?",
+            "Hey boss, it's Alan. Let's get to work.",
+        ]
+        all_greetings = INBOUND + COLD + TIME_OF_DAY + SHORT + NAMED_PREFIXES + INSTRUCTOR
         
         cached = 0
         for greeting in all_greetings:
@@ -2422,6 +2938,43 @@ class AQIConversationRelayServer:
         logger.info(f"[BRIDGE CACHE] Pre-cached {bridge_cached}/{len(all_bridges)} bridge utterances")
 
         # =====================================================================
+        # [SPRINT OPENER CACHE] Pre-synthesize common sprint opening phrases
+        # =====================================================================
+        # [2026-03-05 LATENCY FIX] The sprint LLM generates short opening clauses
+        # like "Absolutely,", "That's a great question.", "I hear you." — the same
+        # ~15 phrases recur across 80%+ of calls. Each one needs ~400-500ms TTS
+        # synthesis. By pre-caching their audio at boot, sprint first-audio drops
+        # from 1400ms to ~900ms (sprint TTFT only, no TTS wait).
+        SPRINT_OPENER_PHRASES = [
+            "Absolutely,",
+            "That's a great question.",
+            "I hear you.",
+            "Good question.",
+            "Here's the thing —",
+            "Let me be straight with you —",
+            "To be direct with you —",
+            "That actually comes up a lot.",
+            "Great question.",
+            "I'm listening.",
+            "Totally fair.",
+            "Here's what I'd say —",
+            "That's actually really common.",
+            "For sure.",
+            "That makes sense.",
+        ]
+        sprint_cached = 0
+        for phrase in SPRINT_OPENER_PHRASES:
+            if _try_cache(phrase, "SPRINT"):
+                sprint_cached += 1
+        
+        if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+            logger.warning(f"[SPRINT CACHE] CIRCUIT BREAKER: cached {sprint_cached}/{len(SPRINT_OPENER_PHRASES)} before failure.")
+        else:
+            logger.info(f"[SPRINT CACHE] Pre-cached {sprint_cached}/{len(SPRINT_OPENER_PHRASES)} sprint opener phrases")
+        # Store reference for fast lookup during calls
+        self.sprint_tts_cache = {k: v for k, v in self.greeting_cache.items() if k in SPRINT_OPENER_PHRASES}
+
+        # =====================================================================
         # [TURN-01 FAST RESPONSE CACHE] Pre-synthesize instant Turn-01 replies
         # =====================================================================
         # Problem: After Alan's greeting, the merchant responds ("Speaking", "Who
@@ -2443,7 +2996,7 @@ class AQIConversationRelayServer:
         # 4 of 6 categories. The repeated phrase was reinforcing a loop where the LLM
         # mirrored it. Each response now uses distinct, natural phrasing.
         TURN01_RESPONSES = {
-            'ack_owner': "So I do free rate reviews for business owners — are you guys accepting cards there?",
+            'ack_owner': "I do free rate reviews for business owners — are you guys accepting cards there?",
             'ack_transfer': "Sure, take your time.",
             'identity': "It's Alan from Signature Card Services — I do free rate reviews for business owners.",
             'purpose': "I help business owners cut their card processing costs — takes about 30 seconds.",
@@ -3145,18 +3698,14 @@ class AQIConversationRelayServer:
                             )
                         return
 
-# [POST-GREETING FILTER] After the greeting plays, the first STT often picks
-        # up noise, echo, or a bare acknowledgment like "Okay" / "Hi". These are NOT
-        # real requests — the greeting already asked "how may I help you?" Dropping them
-        # prevents Alan from saying "Got it, what can I help you with?" immediately.
-        POST_GREETING_ACKS = {"okay", "ok", "hi", "hello", "hey", "yeah", "yep",
-                              "yes", "uh-huh", "mm-hmm", "sure", "alright",
-                              "got it", "right", "good", "go ahead", "hmm",
-                              "all right", "oh", "ah", "hm", "huh"}
+# [POST-GREETING FILTER] — REMOVED 2026-03-04
+        # Previously dropped bare acknowledgments ("Hey", "Yeah", "Hi") after the
+        # greeting. This caused RECURRING DEAD CALLS: Tim says "Hey" → gets dropped
+        # → Alan goes silent → no re-prompt → call dies. The TURN-01 fast response
+        # system already handles these naturally ("Hey" → quick follow-up). The LLM
+        # handles anything that falls through. The echo filter (line ~2766) catches
+        # actual echo. This filter was REDUNDANT and HARMFUL.
         text_check = text.lower().strip().rstrip('.!?,')  
-        if not context.get('first_turn_complete') and text_check in POST_GREETING_ACKS:
-            logger.info(f"[POST-GREETING] Dropped bare acknowledgment '{text}' — waiting for real request")
-            return
 
         # [BACK-CHANNEL FILTER] Short acknowledgments ("Okay", "Yeah", "Mm-hmm") 
         # during an active response are NOT interrupts — they're signals the listener
@@ -3167,8 +3716,16 @@ class AQIConversationRelayServer:
                          "oh", "ah", "hm", "hmm", "huh", "thank you", "thanks"}
         existing_task = context.get('response_task')
         if text_check in BACK_CHANNELS and existing_task and not existing_task.done():
-            logger.info(f"[BACK-CHANNEL] Ignored acknowledgment '{text}' during active response (gen {context.get('response_generation')})")
-            return
+            # [2026-03-06 FIX] Interruption support: only suppress back-channels BEFORE
+            # first audio plays. Once Alan is speaking, "Yeah." is a BARGE-IN — the user
+            # is interrupting and Alan should stop and respond. The original intent was
+            # to prevent LLM pipeline restarts from idle acks while Alan is thinking.
+            # That still applies: pre-audio yes. Post-audio (playing) → treat as interrupt.
+            if not context.get('first_audio_produced', False):
+                logger.info(f"[BACK-CHANNEL] Ignored acknowledgment '{text}' (pre-audio, gen {context.get('response_generation')})")
+                return
+            # Audio IS playing → fall through as barge-in
+            logger.info(f"[BARGE-IN] '{text}' during active audio — interrupting Alan (gen {context.get('response_generation')})")
         
         # ================================================================
         # [VAD GUARD] Don't fire pipeline while user is still speaking
@@ -3323,6 +3880,11 @@ class AQIConversationRelayServer:
             pcm_data = response.content
             mulaw_data = self._pcm24k_to_mulaw8k(pcm_data)
             
+            # [CLICK FIX] Onset fade — smooth CNG→speech transition at audio start
+            # Applied before breath injection so the fade sits at the CNG→speech
+            # boundary within the breath+CNG+audio sequence.
+            mulaw_data = apply_onset_fade(mulaw_data)
+            
             # [ORGAN 10] Breath injection — splice in breath sample before audio
             # This happens BEFORE tempo compression so the breath timing is natural
             mulaw_data = inject_breath_before_audio(mulaw_data, prosody_intent, sentence_idx,
@@ -3336,12 +3898,184 @@ class AQIConversationRelayServer:
             # [TEMPO AMPLIFIER] Compress audio for faster playback
             mulaw_data = tempo_compress_audio(mulaw_data)
             
+            # [2026-03-04] SENTENCE BOUNDARY SMOOTHING — tail fade
+            # Apply micro-fade to the last 5ms of audio so the transition
+            # from speech → inter-sentence CNG comfort noise is smooth,
+            # not a hard chop. Mimics natural human vocal offset.
+            mulaw_data = apply_tail_fade(mulaw_data)
+            
             tts_ms = 1000 * (time.time() - tts_start)
             logger.info(f"[TTS-OPENAI] Synthesized in {tts_ms:.0f}ms (intent={prosody_intent}, speed={tts_speed}): '{text[:40]}...' ({len(mulaw_data)} bytes)")
             return mulaw_data
         except Exception as e:
             logger.error(f"[TTS-OPENAI] Error: {e}")
             return b""
+
+    def _openai_tts_streaming_sync(self, text: str, prosody_intent: str = "neutral",
+                                    sentence_idx: int = 0, speed_bias: float = 1.0,
+                                    breath_prob_bias: float = 0.0,
+                                    frame_queue: thread_queue.Queue = None) -> float:
+        """Streaming TTS for latency-critical first sentence.
+
+        Instead of waiting ~1,673ms for full TTS download, streams PCM chunks
+        from OpenAI via with_streaming_response as they're generated. First
+        mulaw chunk arrives at the queue in ~200-400ms, eliminating ~1,200ms
+        of dead air on the most critical moment of the call.
+
+        Pushes mulaw 8kHz chunks (~800 bytes each, ~100ms of audio) to
+        frame_queue. Sentinel None signals completion.
+
+        Per-chunk processing (preserves audio quality):
+        - Downsample 24kHz → 8kHz (audioop.ratecv with state continuity)
+        - Mulaw encoding (audioop.lin2ulaw)
+        - Tempo compression (matches TEMPO_MULTIPLIER)
+
+        Skipped in streaming mode (applied on prefetched subsequent sentences):
+        - Breath injection (speed > breath on first sentence)
+        - Alan signature micro-pauses (needs full audio length)
+
+        [CLICK FIX 2026-03-04] Onset fade + tail fade now applied:
+        - Onset fade on first chunk (smooth CNG→speech transition)
+        - Tail fade on last chunk via deferred pattern (smooth speech→CNG transition)
+
+        Falls back to blocking _openai_tts_sync() on any error.
+
+        Args:
+            text: Text to synthesize.
+            prosody_intent: Controls voice instructions and speed.
+            sentence_idx: 0-based index (for logging).
+            speed_bias: Organ 11 speed bias (1.0 = neutral).
+            breath_prob_bias: Organ 11 breath bias (unused in streaming mode).
+            frame_queue: Thread-safe queue to push mulaw chunks into.
+
+        Returns:
+            TTS synthesis time in milliseconds.
+        """
+        if not self.tts_client or frame_queue is None:
+            if frame_queue is not None:
+                frame_queue.put(None)
+            return 0.0
+
+        try:
+            # Build instructions — same logic as _openai_tts_sync
+            clauses = segment_into_clauses(text, prosody_intent)
+            if len(clauses) > 1:
+                tts_instructions = build_clause_arc_instructions(clauses, prosody_intent)
+            else:
+                tts_instructions = PROSODY_INSTRUCTIONS.get(prosody_intent, PROSODY_INSTRUCTIONS["neutral"])
+
+            tts_speed = PROSODY_SPEED.get(prosody_intent, TIMING.tts_default_speed)
+            if speed_bias != 1.0:
+                tts_speed = round(tts_speed * speed_bias, 2)
+
+            tts_start = time.time()
+            ratecv_state = None
+            pcm_buffer = b""
+            PCM_CHUNK_SIZE = 4800  # 100ms of 24kHz 16-bit mono PCM (2400 samples × 2 bytes)
+            chunks_sent = 0
+            _deferred_chunk = None  # [CLICK FIX] Buffer last chunk for tail fade application
+
+            with self.tts_client.audio.speech.with_streaming_response.create(
+                model=self._tts_model,
+                voice=self._tts_voice,
+                input=text,
+                instructions=tts_instructions,
+                response_format="pcm",
+                speed=tts_speed
+            ) as response:
+                for raw_chunk in response.iter_bytes(chunk_size=PCM_CHUNK_SIZE):
+                    pcm_buffer += raw_chunk
+
+                    # Process complete 100ms blocks
+                    while len(pcm_buffer) >= PCM_CHUNK_SIZE:
+                        block = pcm_buffer[:PCM_CHUNK_SIZE]
+                        pcm_buffer = pcm_buffer[PCM_CHUNK_SIZE:]
+
+                        # Downsample 24kHz → 8kHz with filter state continuity
+                        converted, ratecv_state = audioop.ratecv(
+                            block, 2, 1, 24000, 8000, ratecv_state
+                        )
+                        mulaw_chunk = audioop.lin2ulaw(converted, 2)
+
+                        # Per-chunk tempo compression (matches global TEMPO_MULTIPLIER)
+                        if TEMPO_MULTIPLIER > 1.0:
+                            _src_rate = int(8000 * TEMPO_MULTIPLIER)
+                            _tc_pcm = audioop.ulaw2lin(mulaw_chunk, 2)
+                            _compressed, _ = audioop.ratecv(
+                                _tc_pcm, 2, 1, _src_rate, 8000, None
+                            )
+                            mulaw_chunk = audioop.lin2ulaw(_compressed, 2)
+
+                        # [CLICK FIX] Onset fade on first chunk, deferred-last for tail fade
+                        if chunks_sent == 0:
+                            mulaw_chunk = apply_onset_fade(mulaw_chunk)
+                            frame_queue.put(mulaw_chunk)  # First chunk: IMMEDIATE (preserves low latency)
+                        else:
+                            # Deferred pattern: send PREVIOUS chunk, hold current
+                            # so we can apply tail_fade to the actual last chunk
+                            if _deferred_chunk is not None:
+                                frame_queue.put(_deferred_chunk)
+                            _deferred_chunk = mulaw_chunk
+                        chunks_sent += 1
+
+                        if chunks_sent == 1:
+                            _first_ms = 1000 * (time.time() - tts_start)
+                            logger.info(
+                                f"[TTS-STREAM] ★ First chunk in {_first_ms:.0f}ms "
+                                f"(~{_first_ms - 1673:.0f}ms saved): '{text[:40]}'"
+                            )
+
+            # Process remaining PCM buffer (final partial block)
+            if pcm_buffer and len(pcm_buffer) >= 4:
+                try:
+                    converted, ratecv_state = audioop.ratecv(
+                        pcm_buffer, 2, 1, 24000, 8000, ratecv_state
+                    )
+                    mulaw_chunk = audioop.lin2ulaw(converted, 2)
+                    if TEMPO_MULTIPLIER > 1.0:
+                        _src_rate = int(8000 * TEMPO_MULTIPLIER)
+                        _tc_pcm = audioop.ulaw2lin(mulaw_chunk, 2)
+                        _compressed, _ = audioop.ratecv(
+                            _tc_pcm, 2, 1, _src_rate, 8000, None
+                        )
+                        mulaw_chunk = audioop.lin2ulaw(_compressed, 2)
+                    # [CLICK FIX] Deferred pattern for remaining buffer too
+                    if _deferred_chunk is not None:
+                        frame_queue.put(_deferred_chunk)
+                    _deferred_chunk = mulaw_chunk
+                    chunks_sent += 1
+                except Exception:
+                    pass  # Tiny remainder — safe to discard
+
+            # [CLICK FIX] Apply tail fade to the deferred final chunk
+            # This is the LAST audio before CNG resumes — fading it from
+            # 100% → 8% over 5ms eliminates the speech→CNG click.
+            if _deferred_chunk is not None:
+                _deferred_chunk = apply_tail_fade(_deferred_chunk)
+                frame_queue.put(_deferred_chunk)
+            frame_queue.put(None)  # Sentinel: TTS complete
+
+            tts_ms = 1000 * (time.time() - tts_start)
+            logger.info(
+                f"[TTS-STREAM] Complete in {tts_ms:.0f}ms ({chunks_sent} chunks, "
+                f"intent={prosody_intent}, speed={tts_speed}): '{text[:40]}'"
+            )
+            return tts_ms
+
+        except Exception as e:
+            logger.error(f"[TTS-STREAM] Streaming failed: {e}. Falling back to blocking TTS.")
+            try:
+                full_audio = self._openai_tts_sync(
+                    text, prosody_intent, sentence_idx, speed_bias, breath_prob_bias
+                )
+                if full_audio:
+                    frame_queue.put(full_audio)
+                frame_queue.put(None)
+                return 1000 * (time.time() - time.time()) if False else 0.0
+            except Exception as e2:
+                logger.error(f"[TTS-STREAM] Fallback also failed: {e2}")
+                frame_queue.put(None)
+                return 0.0
 
     async def synthesize_greeting_to_mulaw_bytes(self, text: str) -> bytes:
         """
@@ -3552,6 +4286,12 @@ class AQIConversationRelayServer:
 
         try:
             # Initialize conversation context
+            # [2026-03-09 PRE-CALL HARDENING] Pre-allocate ALL state fields used by
+            # the pipeline (VAD, echo, timing, generation counters, events, flags).
+            # Previously these were lazily created via dict.get() defaults, which
+            # caused first-run branch penalties and allocation jitter on Turn 1.
+            # Pre-allocating everything as a flat dict eliminates ~5-15ms per turn
+            # of Python object allocation + hash table growth overhead.
             conversation_context = {
                 'client_id': client_id,
                 'start_time': datetime.now(),
@@ -3560,7 +4300,44 @@ class AQIConversationRelayServer:
                 'conversation_state': 'greeting',
                 'agent_instance': alan_ai, # Store agent in context
                 'last_speech_time': 0, # For Dynamic Breath (VAD)
-                'greeting_sent': False
+                'greeting_sent': False,
+                # [PRE-ALLOC] VAD state — prevents first-frame dict growth
+                'vad_state': 'silence',
+                'vad_last_speech': 0,
+                'vad_speech_frames': 0,
+                # [PRE-ALLOC] Echo/playback state — prevents first-turn allocation  
+                'audio_playing': False,
+                'twilio_playback_done': True,
+                'responding_ended_at': 0,
+                'first_audio_produced': False,
+                # [PRE-ALLOC] Pipeline generation counter — prevents .get() default overhead
+                'response_generation': 0,
+                'response_task': None,
+                'accumulated_stt_text': '',
+                'pending_stt_text': '',
+                '_pipeline_start': 0,
+                # [PRE-ALLOC] Stream state
+                'stream_started': False,
+                'stream_ended': False,
+                'streamSid': None,
+                # [PRE-ALLOC] Bridge/sprint tracking
+                '_bridge_sent': False,
+                '_deferred_text': None,
+                # [PRE-ALLOC] Early sprint (braided pipeline) state
+                '_early_stt_fired': False,
+                '_early_stt_text': None,
+                '_early_stt_ready': False,
+                '_early_sprint_fired': False,
+                '_early_sprint_text': None,
+                '_early_sprint_audio': None,
+                '_early_sprint_done': False,
+                '_early_sprint_mono': None,
+                # [PRE-ALLOC] Telemetry timestamps
+                '_vad_end_mono': None,
+                '_stt_done_mono': None,
+                '_env_done_mono': None,
+                '_turn_telemetry': None,
+                'alan_turn_count': 0,
             }
 
             # [PHASE 2] Initialize deterministic call lifecycle FSM
@@ -3945,7 +4722,49 @@ class AQIConversationRelayServer:
                             self.stream_sid_to_client_id[stream_sid] = client_id
                             
                             logger.info(f"[TWILIO] Stream Started: {stream_sid} | Call: {call_sid}")
-                            
+
+                            # [AIRFRAME] Initialize conversation governor for this call
+                            if _GOVERNANCE_WIRED:
+                                try:
+                                    _gov = _GovManager.get_instance().get_governor(call_sid)
+                                    conversation_context['_conversation_governor'] = _gov
+                                    logger.info(f"[GOVERNANCE] Governor activated for call {call_sid}")
+                                except Exception as _gov_err:
+                                    logger.debug(f"[GOVERNANCE] Init failed (non-fatal): {_gov_err}")
+
+                            # [AIRFRAME] Initialize adaptive layer for this call
+                            if _ADAPTIVE_WIRED:
+                                try:
+                                    _adapt = _AdaptiveManager.get_instance().get_state(call_sid)
+                                    conversation_context['_adaptive_state'] = _adapt
+                                    logger.info(f"[ADAPTIVE] Adaptive state activated for call {call_sid}")
+                                except Exception as _adapt_err:
+                                    logger.debug(f"[ADAPTIVE] Init failed (non-fatal): {_adapt_err}")
+
+                            # [FSM BRIDGE] WebSocket connected = call answered.
+                            # The governor FSM (CallLifecycleFSM) in control_api_fixed
+                            # only receives Twilio status callbacks, but Twilio may not
+                            # send 'answered' when AMD is disabled (instructor/demo mode).
+                            # Sending 'answered' here ensures the FSM transitions to
+                            # CONNECTED_HUMAN so the ringing-timeout watchdog won't
+                            # kill an active conversation.
+                            try:
+                                import control_api_fixed as _capi
+                                if getattr(_capi, 'CALL_FSM_AVAILABLE', False) and getattr(_capi, 'call_fsm', None):
+                                    _gov_fsm = _capi.call_fsm
+                                    _gov_state = _gov_fsm.state.name if hasattr(_gov_fsm, 'state') else 'unknown'
+                                    if _gov_state in ('DIALING', 'RINGING'):
+                                        _gov_fsm.on_twilio_event(
+                                            call_status='answered',
+                                            answered_by='human',
+                                            call_sid=call_sid,
+                                        )
+                                        logger.info(f"[FSM BRIDGE] Governor FSM notified: answered (was {_gov_state})")
+                                    else:
+                                        logger.debug(f"[FSM BRIDGE] Governor FSM already in {_gov_state} -- skip")
+                            except Exception as _fsm_bridge_err:
+                                logger.debug(f"[FSM BRIDGE] Could not notify governor FSM: {_fsm_bridge_err}")
+
                             # [LIVE MONITOR] Register call for real-time tracking
                             if LIVE_MONITOR_WIRED and _live_monitor:
                                 _live_monitor.register_call(call_sid, datetime.now())
@@ -4018,7 +4837,8 @@ class AQIConversationRelayServer:
                                     if ctx.get('stream_ended'):
                                         return  # Call already ended
                                     msgs = ctx.get('messages', [])
-                                    if len(msgs) == 0:
+                                    _user_turns = sum(1 for m in msgs if m.get('user', '').strip())
+                                    if _user_turns == 0:
                                         elapsed = (datetime.now() - ctx['start_time']).total_seconds()
                                         logger.warning(
                                             f"[WATCHDOG] 0 turns after {elapsed:.0f}s on call {ctx.get('call_sid', cid)} — "
@@ -4034,6 +4854,25 @@ class AQIConversationRelayServer:
                                                 logger.info(f"[WATCHDOG] Forced STT finalize for {_ws_sid}")
                                             except Exception as _stt_err:
                                                 logger.debug(f"[WATCHDOG] STT finalize failed: {_stt_err}")
+                                        
+                                        # [2026-03-04 RE-PROMPT SAFETY NET] If after forced finalize
+                                        # there's STILL 0 user turns after 2s grace, Alan re-prompts
+                                        # to keep the conversation alive. This prevents dead silence.
+                                        await asyncio.sleep(2.0)
+                                        if ctx.get('stream_ended'):
+                                            return
+                                        _user_turns_after = sum(1 for m in ctx.get('messages', []) if m.get('user', '').strip())
+                                        if _user_turns_after == 0:
+                                            _ws = ctx.get('websocket')
+                                            _ss = ctx.get('streamSid')
+                                            if _ws and _ss:
+                                                _reprompt = "I'm right here — what's on your mind?"
+                                                logger.warning(f"[WATCHDOG] Re-prompting: '{_reprompt}'")
+                                                try:
+                                                    await self.synthesize_and_stream_greeting(_ws, _reprompt, _ss)
+                                                    ctx['responding_ended_at'] = time.time()
+                                                except Exception as _rp_err:
+                                                    logger.error(f"[WATCHDOG] Re-prompt TTS failed: {_rp_err}")
                                 except asyncio.CancelledError:
                                     logger.info("[WATCHDOG] Task cancelled (call ended)")
                                 except Exception as _wd_err:
@@ -4640,10 +5479,21 @@ class AQIConversationRelayServer:
                                     (not conversation_context.get('twilio_playback_done', True))  # If False, Twilio still playing
                                 )
                                 
-                                # During echo cooldown: skip everything (brief 300ms window)
+                                # During echo cooldown: STILL FEED STT (ears on) but suppress VAD.
+                                # [2026-03-04 FIX] Previously did `continue` which skipped STT feeding
+                                # entirely. This meant 0.8s+ of Tim's speech was LOST — the STT buffer
+                                # never accumulated enough audio for transcription, causing Alan to go
+                                # deaf after the greeting. Now we feed STT during cooldown so the buffer
+                                # fills up, but suppress VAD to prevent echo-triggered speech detection.
                                 if _in_cooldown and not _is_alan_talking:
+                                    # Feed STT so buffer accumulates (ears stay on)
+                                    await aqi_stt_engine.process_audio_chunk(
+                                        conversation_context['streamSid'],
+                                        payload,
+                                        'audio/ulaw'
+                                    )
                                     conversation_context['vad_speech_frames'] = 0
-                                    continue
+                                    continue  # Skip VAD processing only
                                 
                                 # 1. Feed the STT Buffer — EARS ALWAYS ON
                                 # During Alan's speech, audio contains echo + possible real speech.
@@ -4710,13 +5560,21 @@ class AQIConversationRelayServer:
                                     
                                     # VAD Constants — Tuned for Telephony Narrowband (300-3400 Hz)
                                     SPEECH_THRESHOLD = 400      # Normal mode: detect user speech
-                                    ECHO_SPEECH_THRESHOLD = 1500  # Speaking mode: only detect REAL interrupts (echo is ~400-600 RMS)
+                                    ECHO_SPEECH_THRESHOLD = 3200  # [2026-03-10 CALL-9] Speaking mode: raised 2500→3200.
+                                                                    # Echo ~400-600 RMS, backchannels ~800-1500 RMS,
+                                                                    # casual speech ~1500-2500 RMS.
+                                                                    # 3200 = only loud, deliberate talk-over triggers barge-in.
+                                                                    # Tim: "interruptions were a killer" on calls 7+8.
                                     SILENCE_THRESHOLD = 250     # Silence floor
-                                    SILENCE_DURATION = 0.55     # Turn commit delay — 550ms. Was 420ms which cut mid-sentence pauses.
-                                                                # Human inter-word pauses can be 500-700ms (Stivers et al. 2009).
-                                                                # 550ms < 700ms trouble threshold. VAD guard still catches edge cases.
+                                    SILENCE_DURATION = 0.50     # [2026-03-10 CALL-9] Restored 0.45→0.50s.
+                                                                # 0.45s caused premature turn-commit on natural pauses
+                                                                # (300-450ms range) — Alan jumped in mid-thought.
+                                                                # 0.50s (500ms) is the safe boundary. Early sprint
+                                                                # at 150ms masks perceived latency.
                                     BARGE_IN_CONSECUTIVE_FRAMES = 3   # Normal mode: 60ms sustained
-                                    ECHO_BARGE_IN_FRAMES = 5          # Speaking mode: 100ms sustained (more conservative)
+                                    ECHO_BARGE_IN_FRAMES = 15         # [2026-03-10 CALL-9] Raised 12→15 (300ms sustained).
+                                                                      # 240ms still caught backchannels. 300ms = only
+                                                                      # deliberate, sustained interruption triggers barge-in.
                                     
                                     # Select threshold based on whether Alan is talking
                                     active_threshold = ECHO_SPEECH_THRESHOLD if _is_alan_talking else SPEECH_THRESHOLD
@@ -4732,45 +5590,81 @@ class AQIConversationRelayServer:
                                         
                                         if vad_state == 'silence' and conversation_context['vad_speech_frames'] >= active_frames_needed:
                                              if _is_alan_talking:
-                                                 # BARGE-IN DURING ALAN'S SPEECH — User is genuinely interrupting
-                                                 # Like a human: stop talking, listen to what they're saying
-                                                 logger.info(f"[VAD] BARGE-IN INTERRUPT detected during TTS (RMS: {rms}, sustained {conversation_context['vad_speech_frames']} frames)")
+                                                 # [2026-03-05 FIX] MANDATORY GREETING SHIELD
+                                                 # During FIRST_GREETING_PENDING, NEVER barge-in.
+                                                 # When someone answers an outbound call, they say "Hello?"
+                                                 # immediately (RMS 5000-11000). That's not an interruption —
+                                                 # it's expected answering behavior. The greeting is only 1-2s
+                                                 # and MUST play to completion. Without this shield, the "Hello?"
+                                                 # triggers CLEAR → greeting cuts off → STT clears → Groq
+                                                 # hallucinates from noise → wrong response → cascade failure.
+                                                 # Evidence: Call CAcb946285b7 — RMS 8083 barged greeting,
+                                                 # ghost STT "Call me, please.", two OpenAI timeouts, dead air.
+                                                 if _current_state == 'FIRST_GREETING_PENDING':
+                                                     # Greeting shield: suppress, reset counter, skip action
+                                                     conversation_context['vad_speech_frames'] = 0
+                                                     logger.debug(f"[VAD] Greeting shield: suppressed barge-in (RMS: {rms}) during mandatory greeting")
+                                                 else:
+                                                     # BARGE-IN DURING ALAN'S SPEECH — User is genuinely interrupting
+                                                     # Like a human: stop talking, listen to what they're saying
+                                                     logger.info(f"[VAD] BARGE-IN INTERRUPT detected during TTS (RMS: {rms}, sustained {conversation_context['vad_speech_frames']} frames)")
                                                  
-                                                 # [PHASE 3B] Record talk-over for telephony health
-                                                 _tel_mon = conversation_context.get('_telephony_monitor')
-                                                 if _tel_mon:
-                                                     _tel_mon.record_talkover()
+                                                     # [PHASE 3B] Record talk-over for telephony health
+                                                     _tel_mon = conversation_context.get('_telephony_monitor')
+                                                     if _tel_mon:
+                                                         _tel_mon.record_talkover()
 
-                                                 # 1. Tell Twilio to stop playing Alan's audio
-                                                 barge_in_payload = {
-                                                     "event": "clear",
-                                                     "streamSid": conversation_context['streamSid']
-                                                 }
-                                                 asyncio.create_task(self._safe_send(websocket, barge_in_payload))
-                                                 logger.info(f"[BARGE-IN] Sent CLEAR command to Twilio (interrupt)")
-                                                 
-                                                 # 2. Increment generation — running pipeline sees mismatch and stops
-                                                 conversation_context['response_generation'] = conversation_context.get('response_generation', 0) + 1
-                                                 conversation_context['audio_playing'] = False
-                                                 conversation_context['twilio_playback_done'] = True  # Barge-in clears Twilio buffer
-                                                 
-                                                 # 4. Clear STT buffer (drop echo residue) and start fresh
-                                                 aqi_stt_engine.clear_buffer(conversation_context['streamSid'])
-                                                 
-                                                 # 5. NOW start feeding STT with the interrupt speech
-                                                 await aqi_stt_engine.process_audio_chunk(
-                                                     conversation_context['streamSid'],
-                                                     payload,
-                                                     'audio/ulaw'
-                                                 )
+                                                     # 1. Tell Twilio to stop playing Alan's audio
+                                                     barge_in_payload = {
+                                                         "event": "clear",
+                                                         "streamSid": conversation_context['streamSid']
+                                                     }
+                                                     asyncio.create_task(self._safe_send(websocket, barge_in_payload))
+                                                     logger.info(f"[BARGE-IN] Sent CLEAR command to Twilio (interrupt)")
+                                                     
+                                                     # 2. Increment generation — running pipeline sees mismatch and stops
+                                                     conversation_context['response_generation'] = conversation_context.get('response_generation', 0) + 1
+                                                     conversation_context['audio_playing'] = False
+                                                     conversation_context['twilio_playback_done'] = True  # Barge-in clears Twilio buffer
+                                                     
+                                                     # 4. Clear STT buffer (drop echo residue) and start fresh
+                                                     aqi_stt_engine.clear_buffer(conversation_context['streamSid'])
+                                                     
+                                                     # 5. NOW start feeding STT with the interrupt speech
+                                                     await aqi_stt_engine.process_audio_chunk(
+                                                         conversation_context['streamSid'],
+                                                         payload,
+                                                         'audio/ulaw'
+                                                     )
+                                                     conversation_context['vad_state'] = 'speaking'
+                                                     # [EARLY-SPRINT] Reset flags — barge-in starts fresh turn
+                                                     conversation_context['_early_stt_fired'] = False
+                                                     conversation_context['_early_stt_text'] = None
+                                                     conversation_context['_early_stt_ready'] = False
+                                                     conversation_context['_early_sprint_fired'] = False
+                                                     conversation_context['_early_sprint_text'] = None
+                                                     conversation_context['_early_sprint_audio'] = None
+                                                     conversation_context['_early_sprint_done'] = False
+                                                     conversation_context['_early_sprint_mono'] = None
                                              else:
                                                  # Normal speech start — user speaking after Alan finished
                                                  # Do NOT send CLEAR here — there's no audio to clear.
                                                  # Sending CLEAR on every speech start can cause Twilio
                                                  # buffer hiccups and audio artifacts.
                                                  logger.info(f"[VAD] User Started Speaking (RMS: {rms}, sustained {conversation_context['vad_speech_frames']} frames)")
+                                                 conversation_context['vad_state'] = 'speaking'
+                                                 # [EARLY-SPRINT] Reset flags for new turn
+                                                 conversation_context['_early_stt_fired'] = False
+                                                 conversation_context['_early_stt_text'] = None
+                                                 conversation_context['_early_stt_ready'] = False
+                                                 conversation_context['_early_sprint_fired'] = False
+                                                 conversation_context['_early_sprint_text'] = None
+                                                 conversation_context['_early_sprint_audio'] = None
+                                                 conversation_context['_early_sprint_done'] = False
+                                                 conversation_context['_early_sprint_mono'] = None
                                              
-                                             conversation_context['vad_state'] = 'speaking'
+                                             # Note: vad_state = 'speaking' set inside each branch above
+                                             # EXCEPT the greeting shield, which must not transition state.
                                         elif vad_state == 'silence':
                                             # Building speech confidence — not yet enough frames
                                             pass
@@ -4784,6 +5678,38 @@ class AQIConversationRelayServer:
                                         # Reset speech frame counter when silence detected
                                         conversation_context['vad_speech_frames'] = 0
                                         silence_elapsed = now - last_speech_time
+                                        
+                                        # ─── EARLY SPRINT: Fire speculative STT at first silence edge ───
+                                        # [2026-03-09] Braided pipeline: don't wait for 450ms commit.
+                                        # At the FIRST frame where silence is detected after speech,
+                                        # snapshot the STT buffer and fire early STT → early sprint.
+                                        # Normal path (silence commit → finalize → full LLM) is unchanged.
+                                        _early_sprint_ok = (
+                                            EARLY_SPRINT_ENABLED
+                                            and not conversation_context.get('_early_stt_fired')
+                                            and _current_state != 'FIRST_GREETING_PENDING'
+                                            and not _is_alan_talking
+                                            and silence_elapsed >= 0.15  # [2026-03-10 CALL-8] Was 0.20→0.15s.
+                                                                         # 150ms confirmed silence before early sprint.
+                                                                         # 50ms faster speculative start. Still safe —
+                                                                         # micro-pauses are <100ms, this clears them.
+                                        )
+                                        # EAB guard: skip if environment classified as non-human
+                                        if _early_sprint_ok:
+                                            _eab_act = conversation_context.get('_eab_action')
+                                            if _eab_act is not None:
+                                                # EnvironmentAction enum — only allow human-route actions
+                                                _eab_act_name = getattr(_eab_act, 'name', str(_eab_act))
+                                                if _eab_act_name not in ('CONTINUE_MISSION', 'FALLBACK'):
+                                                    _early_sprint_ok = False
+                                        if _early_sprint_ok:
+                                            conversation_context['_early_stt_fired'] = True
+                                            conversation_context['_early_sprint_mono'] = time.monotonic()
+                                            logger.info("[EARLY-SPRINT] VAD silence edge — firing speculative early STT")
+                                            asyncio.create_task(
+                                                self._fire_early_sprint_pipeline(conversation_context)
+                                            )
+                                        
                                         if silence_elapsed > SILENCE_DURATION:
                                             logger.info(f"[VAD] Silence Detected ({silence_elapsed:.2f}s). Committing Turn.")
                                             conversation_context['vad_state'] = 'silence'
@@ -4820,6 +5746,38 @@ class AQIConversationRelayServer:
                         elif event == 'stop':
                             logger.info(f"[TWILIO] Stream Stopped")
                             _call_sid = conversation_context.get('call_sid', '')
+                            
+                            # [AIRFRAME] End governance for this call + log stats
+                            if _GOVERNANCE_WIRED and _call_sid:
+                                try:
+                                    _gov_stats = _GovManager.get_instance().end_call(_call_sid)
+                                    if _gov_stats:
+                                        logger.info(f"[GOVERNANCE] Call stats: allowed={_gov_stats.get('allowed',0)} rephrased={_gov_stats.get('rephrased',0)} blocked={_gov_stats.get('blocked',0)} fillers={_gov_stats.get('total_fillers_cleaned',0)}")
+                                except Exception as _gov_end_err:
+                                    logger.debug(f"[GOVERNANCE] End-call cleanup error: {_gov_end_err}")
+                            
+                            # [AIRFRAME] End adaptive layer + emit fingerprint + persist
+                            if _ADAPTIVE_WIRED and _call_sid:
+                                try:
+                                    _adapt_summary = _AdaptiveManager.get_instance().end_call(_call_sid)
+                                    if _adapt_summary:
+                                        logger.info(f"[ADAPTIVE] Fingerprint: role={_adapt_summary.get('merchant_role','?')} "
+                                                     f"friction_risk={_adapt_summary.get('friction',{}).get('dropout_risk_score',0):.1%} "
+                                                     f"energy={_adapt_summary.get('energy',{}).get('alan_energy_profile','?')} "
+                                                     f"vocab={_adapt_summary.get('vocabulary',{}).get('formality_level','?')}")
+                                        # Persist fingerprint to disk for queryable analysis
+                                        try:
+                                            import json as _fp_json
+                                            _fp_dir = os.path.join(os.path.dirname(__file__), 'fingerprints')
+                                            os.makedirs(_fp_dir, exist_ok=True)
+                                            _fp_path = os.path.join(_fp_dir, f"{_call_sid}.json")
+                                            with open(_fp_path, 'w') as _fp_f:
+                                                _fp_json.dump(_adapt_summary, _fp_f, indent=2, default=str)
+                                            logger.info(f"[ADAPTIVE] Fingerprint persisted: {_fp_path}")
+                                        except Exception as _fp_err:
+                                            logger.debug(f"[ADAPTIVE] Fingerprint persist failed (non-fatal): {_fp_err}")
+                                except Exception as _adapt_end_err:
+                                    logger.debug(f"[ADAPTIVE] End-call cleanup error: {_adapt_end_err}")
                             
                             # [INBOUND SENSITIZER] Unregister call
                             if INBOUND_SENSITIZER_WIRED and _inbound_sensitizer and _call_sid:
@@ -4888,7 +5846,10 @@ class AQIConversationRelayServer:
                                             try:
                                                 _p5_profile = _phase5_analyzer.on_call_complete(_p4_trace)
                                                 if _p5_profile and not _p5_profile.get('error'):
-                                                    _end_payload['phase5_profile'] = _p5_profile
+                                                    # [2026-03-16 FIX] Store on context — _end_payload
+                                                    # is created later in the CAPTURE section.
+                                                    # Previously caused UnboundLocalError.
+                                                    conversation_context['_phase5_profile'] = _p5_profile
                                                     logger.info(f"[PHASE 5] Behavioral profile generated: "
                                                                 f"calls_analyzed={_phase5_analyzer.calls_analyzed}")
                                                 elif _p5_profile and _p5_profile.get('error'):
@@ -5080,7 +6041,17 @@ class AQIConversationRelayServer:
                             mark_name = data.get('mark', {}).get('name', '')
                             if mark_name in ('turn_complete', 'greeting_complete'):
                                 conversation_context['twilio_playback_done'] = True
-                                conversation_context['responding_ended_at'] = time.time()
+                                # [2026-03-04 FIX] Only reset echo cooldown if NOT in greeting phase.
+                                # After greeting, the echo cooldown was already set at line ~6863.
+                                # Resetting it here upon mark receipt caused a SECOND 0.8s blackout
+                                # window, doubling the time Alan was deaf to Tim's speech.
+                                # For normal responses (dialogue), the mark IS the right moment
+                                # to start the echo cooldown.
+                                _mark_state = conversation_context.get('conversation_state')
+                                if _mark_state != 'LISTENING_FOR_CALLER':
+                                    conversation_context['responding_ended_at'] = time.time()
+                                else:
+                                    logger.info(f"[TWILIO] Greeting mark received — skipping echo cooldown reset (already listening)")
                                 # [2026-03-03] Resume telephony health monitoring now that
                                 # Alan's response has finished playing — real silence from
                                 # here means actual line problems, not LLM processing gaps.
@@ -5463,6 +6434,11 @@ class AQIConversationRelayServer:
                     _end_payload['ccnm_ignore'] = conversation_context.get('_ccnm_ignore', False)
                     # [CW23] Unfit context for training set
                     _end_payload['unfit_context'] = conversation_context.get('_unfit_context')
+                    # [2026-03-16 FIX] Pick up Phase 5 profile stored on context
+                    # (stored earlier in Phase 4 exporter, before _end_payload existed)
+                    _p5_stored = conversation_context.get('_phase5_profile')
+                    if _p5_stored:
+                        _end_payload['phase5_profile'] = _p5_stored
                     # [PHASE 1] Tag sentinel-killed and system-abort calls
                     _killed_by = conversation_context.get('_killed_by')
                     if _killed_by:
@@ -6269,12 +7245,18 @@ class AQIConversationRelayServer:
             REQUIRED_GREETING = random.choice(ITALIAN_GREETINGS)
             logger.info(f"[DEMO MODE] Using Italian AQI greeting")
         elif _is_instructor:
+            # [2026-03-04 FIX] Greetings address the CALLER as the instructor,
+            # not as a third-party trainee. Tim, the founder, calls Alan directly
+            # to coach and train him. The old greetings said "Tim said you'd be
+            # a great person to train with" — nonsensical when Tim IS the caller.
+            _inst_name = prospect_name if has_name else 'boss'
             INSTRUCTOR_GREETINGS = [
-                "Hey, this is Alan. Tim set us up for some role-play practice. Appreciate you taking the time.",
-                "Hey, it's Alan. Tim said you'd be a great person to train with. Thanks for doing this.",
+                f"Hey {_inst_name}, it's Alan. Ready for some coaching whenever you are.",
+                f"Hey {_inst_name}, Alan here. What are we working on today?",
+                f"Hey {_inst_name}, it's Alan. Let's get to work.",
             ]
             REQUIRED_GREETING = random.choice(INSTRUCTOR_GREETINGS)
-            logger.info(f"[INSTRUCTOR MODE] Using training greeting")
+            logger.info(f"[INSTRUCTOR MODE] Using training greeting for instructor: {_inst_name}")
         elif call_direction == 'inbound':
             # [ORGAN 29] Warm greeting for returning callers
             _ic_state = context.get('_inbound_context_state', 'cold')
@@ -6376,11 +7358,28 @@ class AQIConversationRelayServer:
             logger.info("[FIRST TURN] Greeting already sent. Skipping.")
             return
 
-        # 2.5 STREAM RING TONE — OUTBOUND ONLY: skip entirely
-        # On outbound calls, merchant already heard ringing on their end.
-        # Adding fake ring tone wastes 0.5-2s where they're waiting for someone to speak.
-        # Only play on inbound calls where caller expects a pickup sound.
+        # 2.5 PRE-GREETING SILENCE + RING TONE
+        # On outbound calls: inject 600ms of silence before greeting.
+        # When the callee picks up and says "Hello?", Alan was jumping in
+        # immediately over their greeting. 600ms gives them room to finish
+        # their pickup phrase before Alan starts talking.
+        # On inbound calls: play ring tone for pickup feel.
         stream_sid = context.get('streamSid')
+        if stream_sid and call_direction == 'outbound':
+            _pre_greet_frames = 90  # 90 frames × 20ms = 1800ms of silence
+            logger.info(f"[PRE-GREETING] Outbound: sending {_pre_greet_frames} silence frames (1800ms) before greeting")
+            for _ in range(_pre_greet_frames):
+                _silence_frame = generate_true_silence_frame()
+                _b64 = base64.b64encode(_silence_frame).decode('utf-8')
+                _payload = {"event": "media", "streamSid": stream_sid, "media": {"payload": _b64}}
+                try:
+                    if hasattr(websocket, 'send_text'):
+                        await websocket.send_text(json.dumps(_payload))
+                    else:
+                        await websocket.send(json.dumps(_payload))
+                except Exception:
+                    break
+                await asyncio.sleep(0.018)
         if self.ring_tone_audio and stream_sid and call_direction == 'inbound':
             logger.info(f"[RING TONE] Streaming {len(self.ring_tone_audio)} bytes before greeting...")
             chunk_size = 160  # 20ms frames
@@ -6468,15 +7467,6 @@ class AQIConversationRelayServer:
              if agent and hasattr(agent, 'conversation_history'):
                  agent.conversation_history.add_message('Alan', REQUIRED_GREETING)
              
-             # [LAG FIX] Pre-warm LLM connection while greeting audio plays
-             # The greeting takes ~3-4 seconds to play. During that window,
-             # fire a cheap API call to warm the TCP connection + OpenAI prompt cache.
-             # This makes the FIRST real LLM call much faster (3000ms → 500ms TTFT).
-             if agent:
-                 loop = asyncio.get_running_loop()
-                 await loop.run_in_executor(self.executor, self._prewarm_llm_connection, agent)
-             logger.info(f"[FIRST TURN] Greeting seeded + LLM connection pre-warmed")
-             
              # [ORGAN] Hook 2 — Greeting Sent
              if CALL_MONITOR_WIRED:
                  monitor_greeting_sent(context.get('call_sid', ''), REQUIRED_GREETING)
@@ -6485,7 +7475,13 @@ class AQIConversationRelayServer:
              if CALL_CAPTURE_WIRED:
                  _cdc_greeting(context.get('call_sid', ''), REQUIRED_GREETING)
              
-             # 6. ENTER LISTENING STATE
+             # 6. ENTER LISTENING STATE — IMMEDIATELY after greeting frames sent.
+             # [2026-03-05 FIX] Moved BEFORE LLM pre-warm. Previously, the pre-warm
+             # blocked this coroutine for 19+ seconds, keeping state as
+             # FIRST_GREETING_PENDING. During that time _is_alan_talking=True,
+             # STT was not fed, and Tim's speech was lost. Now we transition to
+             # LISTENING_FOR_CALLER first so the media handler starts feeding STT
+             # within the next frame (~20ms), then pre-warm runs concurrently.
              # [PHASE 2] FSM: GREETING_PENDING → GREETING_PLAYED
              _fsm = context.get('_call_fsm')
              if _fsm:
@@ -6495,11 +7491,35 @@ class AQIConversationRelayServer:
              context['responding_ended_at'] = time.time()  # Echo cooldown reference
              context['vad_speech_frames'] = 0  # Reset speech detection
              
+             # [2026-03-04 FIX] Explicitly set audio flags to guarantee _is_alan_talking=False.
+             # Without this, _is_alan_talking could remain True if audio_playing or
+             # twilio_playback_done were set by a racing code path, causing all of
+             # Tim's speech to be treated as barge-in (buffer cleared every frame).
+             context['audio_playing'] = False
+             context['twilio_playback_done'] = True
+             
              # Clear STT buffer of any echo collected during greeting
              if stream_sid:
                  aqi_stt_engine.clear_buffer(stream_sid)
              
-             logger.info("[FIRST TURN] Transitioned to LISTENING_FOR_CALLER")
+             logger.info(f"[FIRST TURN] Transitioned to LISTENING_FOR_CALLER | "
+                         f"audio_playing={context.get('audio_playing')}, "
+                         f"twilio_playback_done={context.get('twilio_playback_done')}, "
+                         f"conversation_state={context.get('conversation_state')}")
+             
+             # [LAG FIX] Pre-warm LLM connection AFTER state transition.
+             # Fire as background task so it doesn't block the listening state.
+             # The greeting takes ~3-4 seconds to play on Twilio's end. During
+             # that window we warm the TCP connection + OpenAI prompt cache.
+             # This makes the FIRST real LLM call much faster (3000ms → 500ms TTFT).
+             # [2026-03-05 FIX] Changed from blocking `await` to background task.
+             # The pre-warm result isn't used — it just warms the connection pool.
+             if agent:
+                 loop = asyncio.get_running_loop()
+                 # [2026-03-05 FIX] run_in_executor returns a Future directly — no wrap needed.
+                 # The previous asyncio.wrap_future() was causing "Critical Failure" log spam.
+                 asyncio.ensure_future(loop.run_in_executor(self.executor, self._prewarm_llm_connection, agent))
+             logger.info(f"[FIRST TURN] Greeting seeded + LLM pre-warm launched (non-blocking)")
              
         except Exception as e:
              logger.error(f"[FIRST TURN] Critical Failure in Greeting Synthesis: {e}")
@@ -6579,6 +7599,149 @@ class AQIConversationRelayServer:
     # =============================================================================
 
     # =============================================================================
+    # [2026-03-09] EARLY SPRINT PIPELINE — Braided Speculative Execution
+    # =============================================================================
+    # Fires at VAD silence edge (before 450ms commit). Runs as fire-and-forget
+    # asyncio task. If successful, stores sprint text + audio in context for
+    # generate_response to use instead of firing a new sprint.
+    #
+    # Pipeline: early STT → sprint prompt → sprint LLM → TTS → store audio
+    # If ANY step fails, silently falls back — normal path is completely unaffected.
+    # =============================================================================
+    async def _fire_early_sprint_pipeline(self, context):
+        """Speculative early STT → sprint LLM → TTS. Stores result in context."""
+        try:
+            stream_sid = context.get('streamSid')
+            if not stream_sid:
+                return
+
+            # 1. Early STT — snapshot buffer, transcribe without consuming
+            _es_t0 = time.monotonic()
+            partial_text = await aqi_stt_engine.transcribe_early(stream_sid)
+            if not partial_text:
+                logger.info("[EARLY-SPRINT] Early STT returned nothing — no action")
+                return
+
+            _es_stt_ms = round(1000 * (time.monotonic() - _es_t0), 1)
+            context['_early_stt_text'] = partial_text
+            context['_early_stt_ready'] = True
+            logger.info(f"[EARLY-SPRINT] Early STT done in {_es_stt_ms:.0f}ms: '{partial_text[:60]}'")
+
+            # 2. Check if turn was superseded (user resumed speaking)
+            if context.get('vad_state') == 'speaking':
+                logger.info("[EARLY-SPRINT] User resumed speaking — aborting early sprint")
+                return
+
+            # 3. Build sprint prompt from partial text
+            sprint_msgs = self._build_sprint_prompt(partial_text, context)
+            if not sprint_msgs:
+                logger.info("[EARLY-SPRINT] Sprint prompt build failed — aborting")
+                return
+
+            context['_early_sprint_fired'] = True
+
+            # 4. Fire sprint LLM (synchronous in thread — same pattern as normal sprint)
+            loop = asyncio.get_running_loop()
+
+            def _early_sprint_llm():
+                """Run sprint LLM and return first sentence."""
+                try:
+                    url = "https://api.openai.com/v1/chat/completions"
+                    body = {
+                        "model": "gpt-4o-mini",
+                        "messages": sprint_msgs,
+                        "max_tokens": SPRINT_MAX_TOKENS,
+                        "temperature": 0.5,
+                        "stream": True,
+                    }
+                    headers = {
+                        "Authorization": f"Bearer {os.environ.get('OPENAI_API_KEY', '')}",
+                        "Content-Type": "application/json",
+                    }
+                    session = self._llm_session
+                    resp = session.post(url, json=body, headers=headers, stream=True, timeout=3.0)
+                    resp.raise_for_status()
+
+                    tokens = []
+                    for line in resp.iter_lines():
+                        if not line:
+                            continue
+                        decoded = line.decode('utf-8', errors='replace')
+                        if not decoded.startswith('data: '):
+                            continue
+                        payload = decoded[6:]
+                        if payload.strip() == '[DONE]':
+                            break
+                        try:
+                            chunk = json.loads(payload)
+                            delta = chunk.get('choices', [{}])[0].get('delta', {})
+                            token = delta.get('content', '')
+                            if token:
+                                tokens.append(token)
+                        except Exception:
+                            continue
+
+                    text = ''.join(tokens).strip()
+                    # Run through chatbot cleaner
+                    if text:
+                        text = _chatbot_clean_sentence(text, context, logger, is_sprint=True)
+                    return text if text and len(text) > 3 else None
+                except Exception as e:
+                    logger.debug(f"[EARLY-SPRINT] LLM error: {e}")
+                    return None
+
+            _es_llm_t0 = time.monotonic()
+            sprint_text = await asyncio.wait_for(
+                loop.run_in_executor(self.executor, _early_sprint_llm),
+                timeout=3.0
+            )
+            if not sprint_text:
+                logger.info("[EARLY-SPRINT] Sprint LLM returned nothing — aborting")
+                return
+
+            _es_llm_ms = round(1000 * (time.monotonic() - _es_llm_t0), 1)
+            logger.info(f"[EARLY-SPRINT] Sprint LLM done in {_es_llm_ms:.0f}ms: '{sprint_text[:60]}'")
+
+            # 5. Check again if turn was superseded
+            if context.get('vad_state') == 'speaking':
+                logger.info("[EARLY-SPRINT] User resumed speaking after LLM — discarding")
+                return
+
+            # 6. TTS synthesis — check sprint cache first, then synthesize
+            _cached = self.sprint_tts_cache.get(sprint_text) or self.greeting_cache.get(sprint_text)
+            if _cached:
+                sprint_audio = _cached
+                logger.info(f"[EARLY-SPRINT] TTS cache hit: '{sprint_text[:40]}' ({len(sprint_audio)} bytes)")
+            else:
+                _es_tts_t0 = time.monotonic()
+                sprint_audio = await loop.run_in_executor(
+                    self.executor,
+                    self._tts_sentence_sync,
+                    sprint_text, None, None, 'neutral', 0, 1.0, 0.0
+                )
+                _es_tts_ms = round(1000 * (time.monotonic() - _es_tts_t0), 1)
+                logger.info(f"[EARLY-SPRINT] TTS done in {_es_tts_ms:.0f}ms ({len(sprint_audio) if sprint_audio else 0} bytes)")
+
+            if not sprint_audio:
+                logger.info("[EARLY-SPRINT] TTS returned nothing — aborting")
+                return
+
+            # 7. Store results for generate_response to consume
+            context['_early_sprint_text'] = sprint_text
+            context['_early_sprint_audio'] = sprint_audio
+            context['_early_sprint_done'] = True
+
+            _es_total_ms = round(1000 * (time.monotonic() - _es_t0), 1)
+            logger.info(f"[EARLY-SPRINT] ★ Pipeline complete in {_es_total_ms:.0f}ms "
+                        f"(STT={_es_stt_ms:.0f} LLM={_es_llm_ms:.0f} TTS={_es_tts_ms if '_es_tts_ms' in dir() else 'cached'}ms) "
+                        f"text='{sprint_text[:50]}'")
+
+        except asyncio.TimeoutError:
+            logger.info("[EARLY-SPRINT] Pipeline timed out — normal path will handle")
+        except Exception as e:
+            logger.debug(f"[EARLY-SPRINT] Pipeline error (non-fatal): {e}")
+
+    # =============================================================================
     # [SPECULATIVE DECODING] Sprint Prompt Builder
     # =============================================================================
     def _build_sprint_prompt(self, user_text, context):
@@ -6618,7 +7781,13 @@ class AQIConversationRelayServer:
                 "If they're role-playing a merchant → stay in character and respond naturally. "
                 "If they asked you a question → answer it directly. "
                 "If they said something casual → match their energy. Be a real person. "
-                "A brief natural acknowledgment is fine: 'Right', 'Yeah', 'Got it'. "
+                "SPEECH STYLE — SOUND HUMAN: Talk like a real guy on the phone — fluid, natural, unscripted. "
+                "Use contractions always: 'I'm', 'we're', 'that's', 'wouldn't', 'gonna', 'kinda'. "
+                "Vary your sentence length — mix short punchy lines with longer flowing ones. "
+                "Start sentences different ways — don't always use subject-verb-object. Sometimes start mid-thought: 'Thing is...' or 'Way I see it...' "
+                "NEVER sound like you're reading. Sound like you're THINKING and TALKING at the same time. "
+                "Do NOT start with acknowledgment filler like 'Got it', 'I understand', 'Yeah', 'Right', 'Fair enough', 'I appreciate that'. Dive straight into substance. "
+                "WAIT for them to FINISH their thought before you respond. Don't jump in mid-sentence. "
                 "NEVER say goodbye or end the call. "
                 "NEVER pitch payment processing unless you're in an active role-play. "
                 "NO lists, NO markdown. Just natural phone speech."
@@ -6648,24 +7817,24 @@ class AQIConversationRelayServer:
                 "NO lists, NO markdown, NO formal language. Just natural phone speech."
             )
         else:
+            # [2026-03-05 LATENCY FIX] System prompt is now STATIC — no f-strings,
+            # no dynamic mode/business injection. This enables OpenAI prompt caching
+            # which cuts Sprint TTFT by ~50% (cached prompts process in ~100ms vs ~500ms).
+            # Dynamic context (mode, business, opener tracking) moved to user message.
             system = (
                 "You are Alan, a sharp payment processing consultant on a live phone call. "
-                "Sound like a real person — direct, natural. "
-                f"Current conversation mode: {mode}. "
-            )
-            if business_name:
-                system += f"You're speaking with someone at {business_name}. "
-            system += (
+                "Sound like a real guy talking — fluid, natural, unscripted. Use contractions: 'I'm', 'we're', 'that's', 'gonna', 'kinda'. "
                 "LISTEN to what they just said. Respond to THEIR words, not your script. "
-                "Keep your response to 1-2 complete sentences that make sense on their own. "
-                "A brief natural acknowledgment is OK before your point: 'Right', 'Yeah', 'Look'. "
-                "NEVER repeat what you already said. Check the conversation history. "
+                "1 sentence. MAX 2 if they asked a real question. This is a PHONE CALL — brevity wins. "
+                "Vary how you start sentences — don't always use the same structure. Sometimes start mid-thought: 'Thing is...' or 'Way I see it...' Mix short and long. Sound like you're thinking out loud, not reading. "
+                "PROFESSIONAL SPEECH: Skip the opener. Dive straight into substance — that's what a veteran does. Do NOT start with 'Got it', 'Right', 'Yeah', 'Fair enough', 'I understand', 'I appreciate that' — those are filler. A 15-year pro just says the next thing that matters. "
+                "NEVER repeat what you already said. NEVER say 'let me repeat that.' Check the conversation history. "
                 "If they gave information → use it to ask a sharper follow-up. "
-                "If they asked a question → answer it directly. "
+                "If they asked a question → answer it directly in one sentence. "
                 "If they showed interest → deepen with a specific benefit or question. "
                 "If they objected → counter with a specific benefit. "
                 "If they asked 'how can I help you' or 'what do you need' → get specific: "
-                "'Are you guys processing cards right now?' or 'So who handles the merchant services over there?' "
+                "'Are you guys processing cards right now?' or 'Who handles the merchant services over there?' "
                 "End with a period or question mark — your response should be COMPLETE. "
                 "NEVER say 'I appreciate you letting me know', 'Thanks for that', 'Thanks for sharing'. "
                 "NEVER say 'Sounds like you're in a good mood' or any comment about their mood/tone. "
@@ -6673,12 +7842,39 @@ class AQIConversationRelayServer:
                 "NO lists, NO markdown, NO formal language. Just natural phone speech."
             )
         
-        messages = [{"role": "system", "content": system}]
+            # [OPENER TRACKING] Build dynamic context as a separate user-role message
+            # so the system prompt stays static and OpenAI prompt cache can hit.
+            _dynamic_parts = []
+            if mode != 'rapport':
+                _dynamic_parts.append(f"Current conversation mode: {mode}.")
+            if business_name:
+                _dynamic_parts.append(f"Speaking with someone at {business_name}.")
+            _last_alan = None
+            for _msg in reversed(conv_messages):
+                _a = _msg.get('alan', '')
+                if _a:
+                    _last_alan = _a.strip()
+                    break
+            if _last_alan:
+                _first_word = _last_alan.split()[0].rstrip('.,!—-') if _last_alan.split() else ''
+                if _first_word.lower() in ('so', 'right', 'look', 'yeah', 'well', 'okay', 'honestly', 'hey', 'alright', 'got'):
+                    _dynamic_parts.append(f"Your last response started with '{_first_word}' — do NOT start with that word again.")
+            _sprint_dynamic_ctx = ' '.join(_dynamic_parts) if _dynamic_parts else None
         
-        # [LONG CONV] Adaptive history window — early turns need speed (4 messages),
-        # deep turns (8+) need full context to avoid repetition (10 messages).
-        # GPT-4o-mini has 128K context — 10 messages is ~2K tokens, negligible.
-        _history_window = 10 if len(conv_messages) >= 8 else 4
+        messages = [{"role": "system", "content": system}]
+
+        # [2026-03-05 LATENCY FIX] Inject dynamic context (mode, business, opener
+        # tracking) as a user message so system prompt stays cache-friendly.
+        # Only applies to the default path (non-instructor, non-first-response).
+        _sprint_dynamic_ctx_local = locals().get('_sprint_dynamic_ctx')
+        if _sprint_dynamic_ctx_local:
+            messages.append({"role": "user", "content": f"[Context: {_sprint_dynamic_ctx_local}]"})
+            messages.append({"role": "assistant", "content": "Got it."})
+        
+        # [2026-03-05 LATENCY FIX] Sprint history window cut to 2 messages.
+        # Was 4-10 messages. Sprint only needs the LAST exchange to avoid repetition.
+        # Fewer input tokens = faster TTFT. The full LLM has full history anyway.
+        _history_window = 2
         for msg in conv_messages[-_history_window:]:
             _u = msg.get('user', '')
             _a = msg.get('alan', '')
@@ -6713,6 +7909,29 @@ class AQIConversationRelayServer:
             logger.error("[ORCHESTRATED] No stream_sid or websocket. Cannot proceed.")
             return None
 
+        # [ADAPTIVE LAYER] Compute register directive for LLM prompt injection
+        # before build_llm_prompt so it can shape WHAT Alan says (formality/technicality)
+        _adapt_ctx = context.get('_adaptive_state')
+        if _adapt_ctx and _ADAPTIVE_WIRED:
+            try:
+                _mod = _adapt_ctx.get_modulation_params()
+                _vocab_style = _mod.get('vocab_style', 'neutral')
+                _tech_level = getattr(_adapt_ctx, 'technicality_level', 'medium')
+                # Only inject non-default values — defaults waste tokens
+                if _vocab_style != 'neutral' or _tech_level != 'medium':
+                    _reg_parts = []
+                    if _vocab_style == 'formal':
+                        _reg_parts.append("This merchant speaks formally — match their register. Be professional and precise.")
+                    elif _vocab_style == 'casual':
+                        _reg_parts.append("This merchant is casual — be relaxed and conversational. Don't be stiff.")
+                    if _tech_level == 'high':
+                        _reg_parts.append("They use technical language — you can use industry terms freely.")
+                    elif _tech_level == 'low':
+                        _reg_parts.append("They use simple language — keep it plain, no jargon.")
+                    context['_adaptive_register'] = ' '.join(_reg_parts)
+            except Exception:
+                pass
+
         # 1. BUILD LLM PROMPT (all injections: preferences, call memory, behavior, etc.)
         messages, prompt_user_text = agent.build_llm_prompt(analysis, context)
         api_key = agent.get_api_key()
@@ -6731,8 +7950,14 @@ class AQIConversationRelayServer:
             _alan_last = ""
             _conv_msgs = context.get('messages', [])
             for _m in reversed(_conv_msgs):
-                if _m.get('role') == 'assistant':
-                    _alan_last = _m.get('content', _m.get('text', ''))
+                # [2026-03-16 FIX] context messages use {'alan': '...'} format,
+                # not {'role': 'assistant', 'content': '...'}. The old lookup
+                # always returned empty string, breaking correction detection.
+                _alan_text = _m.get('alan', '')
+                if not _alan_text and _m.get('role') == 'assistant':
+                    _alan_text = _m.get('content', _m.get('text', ''))
+                if _alan_text:
+                    _alan_last = _alan_text
                     break
             _inst_guidance = on_instructor_turn(
                 session=_inst_session,
@@ -6750,22 +7975,47 @@ class AQIConversationRelayServer:
         # retrieval cortex, competitive intel, objection learning, summarization,
         # CRM, IQ budget, or inbound context. These add thousands of tokens
         # that slow TTFT from ~800ms to 5+ seconds, causing dead air.
+        #
+        # [2026-03-04 SPEED FIX] Also skip ALL organ injections on turns 0-2.
+        # The FAST_PATH prompt is designed to be ~620 tokens for speed. Organ
+        # injections (CRM fields, IQ budget, retrieval, etc.) add 300-2000+
+        # tokens that bloat the prompt and slow TTFT by ~200-500ms. At turns
+        # 0-4, none of these organs have actionable data:
+        #   - No retrieval context gathered yet (Organ 24)
+        #   - No competitor detected yet (Organ 34)
+        #   - No objection events yet (Organ 31)
+        #   - No summary collecting yet (Organ 32)
+        #   - CRM fields missing is obvious (Organ 33)
+        #   - IQ budget is always 'normal' (Organ 35)
+        #   - Calendar/language/handoff all inactive (Organs 25-29)
+        # Exception: Organ 29 (inbound context) IS injected on early turns
+        # for warm/hot callback callers — they need immediate context.
+        _early_turn_count = len(context.get('messages', []))
+        _skip_organ_injections = (_early_turn_count <= 4 and not _is_instructor_call)
+        if _skip_organ_injections:
+            logger.info(f"[SPEED] Skipping organ injections on turn {_early_turn_count} (FAST_PATH ~620 tokens)")
+
         _retrieval_ctx = context.get('_retrieval_context')
-        if _retrieval_ctx and RETRIEVAL_CORTEX_WIRED and not _is_instructor_call:
+        if _retrieval_ctx and RETRIEVAL_CORTEX_WIRED and not _is_instructor_call and not _skip_organ_injections:
             if messages and messages[0].get('role') == 'system':
-                messages[0]['content'] += f"\n\n[RETRIEVAL CORTEX — RELEVANT KNOWLEDGE]\n{_retrieval_ctx}"
+                _confidential_notice = (
+                    "⚠️ CONFIDENTIALITY: The knowledge below includes proprietary North/PaymentsHub business intelligence. "
+                    "Use it to inform your conversation naturally but NEVER quote internal pricing, wholesale costs, "
+                    "residual structures, or competitive analysis verbatim. If asked for documentation, offer to have Tim send it."
+                )
+                messages[0]['content'] += f"\n\n[RETRIEVAL CORTEX — RELEVANT KNOWLEDGE]\n{_confidential_notice}\n{_retrieval_ctx}"
             logger.info(f"[ORGAN 24] Knowledge injected into LLM context ({len(_retrieval_ctx)} chars)")
         
         # [ORGAN 34] Inject Competitive Intel context into LLM system message
         _competitor_ctx = context.get('_competitor_context')
-        if _competitor_ctx and COMPETITIVE_INTEL_WIRED and not _is_instructor_call:
+        if _competitor_ctx and COMPETITIVE_INTEL_WIRED and not _is_instructor_call and not _skip_organ_injections:
             if messages and messages[0].get('role') == 'system':
                 messages[0]['content'] += f"\n\n[COMPETITIVE INTEL — §4.9 POSITIONING]\n{_competitor_ctx}"
             logger.info(f"[ORGAN 34] Competitor context injected into LLM ({context.get('_detected_competitor')})")
         
         # [ORGAN 31] Inject objection learning context into LLM system message
         _obj_events = context.get('_objection_events', [])
-        if _obj_events and OBJECTION_LEARNING_WIRED and not _is_instructor_call:
+        if _obj_events and OBJECTION_LEARNING_WIRED and not _is_instructor_call and not _skip_organ_injections:
             _recent_objs = _obj_events[-3:]  # last 1-3 objections this call
             _obj_ctx_parts = []
             for _oe in _recent_objs:
@@ -6791,7 +8041,7 @@ class AQIConversationRelayServer:
             logger.info(f"[ORGAN 31] Objection context injected into LLM ({len(_recent_objs)} events)")
 
         # [ORGAN 32] Inject call summary / deal readiness context into LLM system message
-        if SUMMARIZATION_WIRED and context.get('_summarization_organ') and context.get('_summary_state') == 'collecting' and not _is_instructor_call:
+        if SUMMARIZATION_WIRED and context.get('_summarization_organ') and context.get('_summary_state') == 'collecting' and not _is_instructor_call and not _skip_organ_injections:
             try:
                 _sum_organ_llm = context['_summarization_organ']
                 _sum_ctx_parts = []
@@ -6825,7 +8075,7 @@ class AQIConversationRelayServer:
                 logger.debug(f"[ORGAN 32] LLM injection failed (non-fatal): {_sum_llm_err}")
 
         # [ORGAN 33] Inject CRM pipeline context into LLM system message
-        if CRM_INTEGRATION_WIRED and context.get('_crm_organ') and not _is_instructor_call:
+        if CRM_INTEGRATION_WIRED and context.get('_crm_organ') and not _is_instructor_call and not _skip_organ_injections:
             try:
                 _crm_ctx_parts = []
                 _crm_push_st = context.get('_crm_push_state', 'idle')
@@ -6855,7 +8105,7 @@ class AQIConversationRelayServer:
                 logger.debug(f"[ORGAN 33] LLM injection failed (non-fatal): {_crm_llm_err}")
 
         # [ORGAN 35] Inject IQ Budget cognitive state into LLM system message
-        if IQ_BUDGET_WIRED and context.get('_iq_budget_organ') and not _is_instructor_call:
+        if IQ_BUDGET_WIRED and context.get('_iq_budget_organ') and not _is_instructor_call and not _skip_organ_injections:
             try:
                 _iq_ctx_parts = []
                 _iq_organ_llm = context['_iq_budget_organ']
@@ -6942,7 +8192,7 @@ class AQIConversationRelayServer:
 
         # [ORGAN 28] Inject calendar scheduling context into LLM system message
         _cal_state = context.get('_calendar_state', 'inactive')
-        if _cal_state != 'inactive' and CALENDAR_ENGINE_WIRED:
+        if _cal_state != 'inactive' and CALENDAR_ENGINE_WIRED and not _skip_organ_injections:
             _cal_ctx_parts = []
 
             if _cal_state == 'proposed':
@@ -6980,7 +8230,7 @@ class AQIConversationRelayServer:
 
         # [ORGAN 27] Inject language switch context into LLM system message
         _ls_switch_state = context.get('_language_switch_state', 'inactive')
-        if _ls_switch_state != 'inactive' and LANGUAGE_SWITCH_WIRED:
+        if _ls_switch_state != 'inactive' and LANGUAGE_SWITCH_WIRED and not _skip_organ_injections:
             _ls_ctx_parts = []
             _ls_lang = context.get('_language_state', 'en')
             _ls_detected = context.get('_language_detected')
@@ -7014,7 +8264,7 @@ class AQIConversationRelayServer:
         # [ORGAN 26] Inject outbound comms context into LLM system message
         _oc_sends = context.get('_outbound_sends', [])
         _oc_pending = context.get('_outbound_pending')
-        if OUTBOUND_COMMS_WIRED and (_oc_sends or _oc_pending):
+        if OUTBOUND_COMMS_WIRED and (_oc_sends or _oc_pending) and not _skip_organ_injections:
             _oc_ctx_parts = []
             if _oc_sends:
                 _last_send = _oc_sends[-1]
@@ -7038,7 +8288,7 @@ class AQIConversationRelayServer:
 
         # [ORGAN 25] Inject warm handoff escalation context into LLM system message
         _handoff_state = context.get('_handoff_state', 'inactive')
-        if _handoff_state != 'inactive' and WARM_HANDOFF_WIRED:
+        if _handoff_state != 'inactive' and WARM_HANDOFF_WIRED and not _skip_organ_injections:
             _ho_ctx_parts = []
             _ho_reason = context.get('_handoff_reason', 'unknown')
             if _handoff_state == 'pending_consent':
@@ -7076,7 +8326,7 @@ class AQIConversationRelayServer:
         _pa_emotion = context.get('_prosody_emotion', 'neutral')
         _pa_confidence = context.get('_prosody_confidence', 0.0)
         _pa_strategy = context.get('_prosody_strategy')
-        if _pa_emotion != 'neutral' and _pa_confidence >= 0.5 and PROSODY_ANALYSIS_WIRED:
+        if _pa_emotion != 'neutral' and _pa_confidence >= 0.5 and PROSODY_ANALYSIS_WIRED and not _skip_organ_injections:
             _pa_ctx_parts = [
                 f"MERCHANT EMOTIONAL STATE: {_pa_emotion.upper()} (confidence: {_pa_confidence:.2f})",
             ]
@@ -7098,8 +8348,32 @@ class AQIConversationRelayServer:
             _original_intent = prosody_intent
             prosody_intent = _prosody_override
             logger.info(f"[ORGAN 30×ORGAN 7] Prosody intent: {_original_intent} → {prosody_intent} (§2.19 override)")
+        
+        # [PERSONALITY ENGINE × ORGAN 7] Apply PE prosody bias
+        # The Personality Engine's quantum state suggests a preferred intent +
+        # speed/silence modifiers. The PE bias only upgrades a 'neutral' intent
+        # — it never overrides a stronger signal (Organ 30, objection, stressed).
+        # Speed and silence mods always apply as additive refinements.
+        _pe_prosody = context.get('_personality_prosody_bias', {})
+        _pe_speed_mod = 0.0
+        _pe_silence_mod = 0
+        if _pe_prosody and PERSONALITY_ENGINE_ENABLED:
+            _pe_preferred = _pe_prosody.get('preferred_intent')
+            if _pe_preferred and prosody_intent == 'neutral':
+                _original_pe = prosody_intent
+                prosody_intent = _pe_preferred
+                logger.info(f"[PE×ORGAN 7] Prosody intent: {_original_pe} → {prosody_intent} (personality bias)")
+            _pe_speed_mod = _pe_prosody.get('speed_mod', 0.0)
+            _pe_silence_mod = _pe_prosody.get('silence_mod', 0)
+        
         prosody_silence = PROSODY_SILENCE_FRAMES.get(prosody_intent, SENTENCE_SILENCE_FRAMES)
+        # Apply PE silence modifier (additive, clamped to safe range)
+        if _pe_silence_mod != 0:
+            prosody_silence = max(1, prosody_silence + _pe_silence_mod)
         prosody_speed = PROSODY_SPEED.get(prosody_intent, TIMING.tts_default_speed)  # [TIMING CONFIG]
+        # Apply PE speed modifier (additive, clamped to safe range)
+        if _pe_speed_mod != 0.0:
+            prosody_speed = round(max(0.85, min(1.15, prosody_speed + _pe_speed_mod)), 3)
         
         # [ORGAN 11] Apply signature bias — learned from human interaction patterns
         eff_sig = context.get('_effective_signature')
@@ -7116,6 +8390,67 @@ class AQIConversationRelayServer:
             sig_speed_bias = 1.0
             sig_breath_bias = 0.0
             logger.info(f"[PROSODY] Base intent: {prosody_intent} | Silence: {prosody_silence} frames (~{prosody_silence * 20}ms) | Speed: {prosody_speed}")
+        
+        # [ADAPTIVE LAYER] Close the loop — modulate TTS pace and prosody energy
+        # from real-time merchant behavioral observation.
+        # pace_shift_pct → multiplicative speed bias (clamped -8% to +12%)
+        # energy_level → prosody intent shift (only when base intent is "neutral")
+        _adapt_for_tts = context.get('_adaptive_state')
+        if _adapt_for_tts and _ADAPTIVE_WIRED:
+            try:
+                _mod_params = _adapt_for_tts.get_modulation_params()
+                _a_pace = _mod_params.get('pace_shift_pct', 0.0)
+                _a_energy = _mod_params.get('energy_level', 'medium')
+                
+                # Pace → TTS speed bias (multiplicative combination with Organ 11)
+                if _a_pace != 0.0:
+                    sig_speed_bias = round(sig_speed_bias * (1.0 + _a_pace), 3)
+                
+                # Energy → prosody intent (only when neutral — never override
+                # a prosody intent already detected from emotional context)
+                if prosody_intent == 'neutral':
+                    if _a_energy == 'low':
+                        prosody_intent = 'reassure_stability'
+                        prosody_silence = PROSODY_SILENCE_FRAMES.get(prosody_intent, SENTENCE_SILENCE_FRAMES)
+                    elif _a_energy == 'high':
+                        prosody_intent = 'casual_rapport'
+                        prosody_silence = PROSODY_SILENCE_FRAMES.get(prosody_intent, SENTENCE_SILENCE_FRAMES)
+                
+                logger.info(f"[ADAPTIVE×PROSODY] pace={_a_pace:+.3f} → bias={sig_speed_bias:.3f}, "
+                           f"energy={_a_energy}, intent={prosody_intent}")
+            except Exception as _adpt_err:
+                logger.debug(f"[ADAPTIVE×PROSODY] Modulation read failed: {_adpt_err}")
+        
+        # [PERSONALITY ENGINE] Apply quantum personality prosody bias
+        # The PE provides preferred_intent (when neutral), speed_mod, and silence_mod.
+        # This completes the PE → Voice Pipeline wire: personality shapes HOW Alan sounds.
+        # Priority: lowest — never overrides Organ 30, Organ 11, or adaptive layer decisions.
+        if PERSONALITY_ENGINE_ENABLED:
+            _pe_prosody = context.get('_personality_prosody_bias', {})
+            if _pe_prosody:
+                try:
+                    # Intent bias: only when no other system has claimed the intent
+                    _pe_preferred = _pe_prosody.get('preferred_intent')
+                    if _pe_preferred and prosody_intent == 'neutral':
+                        prosody_intent = _pe_preferred
+                        prosody_silence = PROSODY_SILENCE_FRAMES.get(prosody_intent, SENTENCE_SILENCE_FRAMES)
+                        prosody_speed = PROSODY_SPEED.get(prosody_intent, TIMING.tts_default_speed)
+                    
+                    # Speed modulation: additive on top of existing bias chain
+                    _pe_speed_mod = _pe_prosody.get('speed_mod', 0.0)
+                    if _pe_speed_mod != 0.0:
+                        prosody_speed = round(prosody_speed + _pe_speed_mod, 3)
+                        prosody_speed = max(0.85, min(1.15, prosody_speed))  # safety clamp
+                    
+                    # Silence modulation: additive frames on inter-sentence gap
+                    _pe_silence_mod = _pe_prosody.get('silence_mod', 0)
+                    if _pe_silence_mod != 0:
+                        prosody_silence = max(1, prosody_silence + _pe_silence_mod)
+                    
+                    logger.info(f"[PE×PROSODY] intent={prosody_intent}, speed_mod={_pe_speed_mod:+.3f}, "
+                               f"silence_mod={_pe_silence_mod:+d} → speed={prosody_speed}, silence={prosody_silence}")
+                except Exception as _pe_err:
+                    logger.debug(f"[PE×PROSODY] Bias application failed (non-fatal): {_pe_err}")
         
         # Persist user message
         if prompt_user_text:
@@ -7155,15 +8490,20 @@ class AQIConversationRelayServer:
             # "I get that, " — merchant heard weird audio, telephony health killed the call.
             # Fix: First 2 turns use 60 tokens (enough for 1-2 sentences) for speed.
             _conv_turn_count = len(context.get('messages', []))
+            # [2026-03-05] LATENCY FIX: ALL turns capped at 2 sentences max.
+            # Measured: 3 sentences = 3000ms+ TTS, 2 sentences = 1500ms TTS.
+            # Every extra sentence adds ~1s of lag the merchant hears.
+            # Token caps also tightened: 80→60 for turns 5-7, 120→80 for turns 8+.
+            # Gong.io: 77% more speaker switches = shorter turns = success.
             if _conv_turn_count >= 8:
-                _adaptive_max_tokens = 150
-                _adaptive_max_sentences = 5
+                _adaptive_max_tokens = 80
+                _adaptive_max_sentences = 2
             elif _conv_turn_count >= 5:
-                _adaptive_max_tokens = 120
-                _adaptive_max_sentences = 4
+                _adaptive_max_tokens = 80
+                _adaptive_max_sentences = 2
             elif _conv_turn_count >= 2:
-                _adaptive_max_tokens = TIMING.relay_max_tokens  # 100 from timing_config.json
-                _adaptive_max_sentences = TIMING.max_sentences
+                _adaptive_max_tokens = TIMING.relay_max_tokens  # 80 from timing_config.json
+                _adaptive_max_sentences = 2
             else:
                 _adaptive_max_tokens = 60  # Ultra-fast first impression
                 _adaptive_max_sentences = 2
@@ -7189,17 +8529,29 @@ class AQIConversationRelayServer:
             # token within TTFT_DEADLINE_S, abort the stream and push a fallback sentence.
             # This prevents 5-9+ second dead air that causes instant hangups.
             # The fallback is a natural sales opener that keeps the call alive.
-            TTFT_DEADLINE_S = 2.0  # Max seconds to wait for first token (was 2.5 — pre-warm ensures <800ms TTFT)
-            TOTAL_LLM_DEADLINE_S = 3.5  # Max total LLM time (was 4.5 — 60 tokens early/100 mid never needs >3.5s)
-            # [2026-03-03] Lowered from 4.5→3.5: With 60-token early turns, 3.5s is generous.
+            # [2026-03-16 FIX] Instructor mode gets relaxed deadlines — training
+            # calls have a willing participant, not a cold prospect about to hang up.
+            _is_instructor_llm = context.get('prospect_info', {}).get('instructor_mode', False)
+            if _is_instructor_llm:
+                TTFT_DEADLINE_S = 4.0   # Training calls — participant is patient
+                TOTAL_LLM_DEADLINE_S = 6.0
+            else:
+                TTFT_DEADLINE_S = 1.8  # [2026-03-05] Was 2.0→1.8. Sprint covers opening audio; full LLM TTFT tighter
+                TOTAL_LLM_DEADLINE_S = 3.0  # [2026-03-05] Was 3.5→3.0. With 60-80 token caps, 3.0s is generous
+            # [2026-03-03] Lowered from 4.5->3.5: With 60-token early turns, 3.5s is generous.
             # When deadline hits, we truncate gracefully + add bridge sentence.
             
             try:
-                # [TIMING FIX] Read timeout tightened from 8s→3s to enforce TTFT deadline.
+                # [TIMING FIX] Read timeout tightened from 8s->3s to enforce TTFT deadline.
                 # iter_lines() blocks until a line arrives, so the TTFT check inside the loop
                 # never fires if OpenAI is slow to send the first line. A 3s read timeout
                 # forces a ReadTimeout exception which triggers the fallback path below.
-                with llm_session.post(url, json=payload, headers=headers, stream=True, timeout=(2, 3)) as response:
+                # [2026-03-05 FIX] Bumped normal read from 3→5s. Under memory pressure
+                # (96% RAM used), the HTTP client starves on reads causing false timeouts.
+                # The TTFT_DEADLINE_S (2.0s) still catches slow first tokens inside the loop.
+                # [2026-03-16 FIX] Instructor mode: relaxed to (3, 8) — no cold prospect pressure.
+                _http_timeout = (3, 8) if _is_instructor_llm else (2, 5)
+                with llm_session.post(url, json=payload, headers=headers, stream=True, timeout=_http_timeout) as response:
                     response.raise_for_status()
                     for line in response.iter_lines(decode_unicode=True):
                         if not line or not line.startswith('data: '):
@@ -7208,10 +8560,15 @@ class AQIConversationRelayServer:
                                 logger.error(f"[LLM] TTFT DEADLINE EXCEEDED ({TTFT_DEADLINE_S}s) — aborting stream, pushing fallback")
                                 _telemetry['ttft_ms'] = 1000 * TTFT_DEADLINE_S
                                 _telemetry['ttft_deadline_hit'] = True
-                                # [2026-03-03 FIX] Bridge-aware TTFT fallback.
-                                # If a bridge phrase already played ("Good question..."),
-                                # the fallback must continue naturally from it.
-                                if context.get('_bridge_sent'):
+                                # [2026-03-16 FIX] Mode-aware TTFT fallback.
+                                if _is_instructor_llm:
+                                    _ttft_fallbacks = [
+                                        "Sorry, I missed that. What were you saying?",
+                                        "Go ahead, I'm listening.",
+                                        "I'm here. What would you like to work on?",
+                                    ]
+                                    sentence_q.put(random.choice(_ttft_fallbacks))
+                                elif context.get('_bridge_sent'):
                                     _ttft_bridge = [
                                         "who handles the card processing for you guys right now?",
                                         "what system are you using for payments currently?",
@@ -7310,13 +8667,19 @@ class AQIConversationRelayServer:
                         if not _ends_clean and _telemetry.get('ttft_deadline_hit') or \
                            (not _ends_clean and (time.time() - stream_start) >= TOTAL_LLM_DEADLINE_S * 0.9):
                             # Deadline-truncated fragment — add bridge
-                            _bridge_phrases = [
-                                "but hey, who handles the card processing for you guys?",
-                                "anyway, do you guys take card payments there?",
-                                "but real quick, are you set up to take cards?",
-                            ]
-                            final = final.rstrip().rstrip(',;—–-') + " — " + random.choice(_bridge_phrases)
-                            logger.info(f"[LLM] Deadline bridge applied: '{final[:60]}'")
+                            # [2026-03-16 FIX] Skip sales bridge for instructor mode
+                            if not _is_instructor_llm:
+                                _bridge_phrases = [
+                                    "but hey, who handles the card processing for you guys?",
+                                    "anyway, do you guys take card payments there?",
+                                    "but real quick, are you set up to take cards?",
+                                ]
+                                final = final.rstrip().rstrip(',;--') + " -- " + random.choice(_bridge_phrases)
+                                logger.info(f"[LLM] Deadline bridge applied: '{final[:60]}'")
+                            else:
+                                # Instructor mode: just clean up the truncated fragment
+                                final = final.rstrip().rstrip(',;--') + "."
+                                logger.info(f"[LLM] Instructor mode: truncated fragment cleaned: '{final[:60]}'")
                         sentence_q.put(final)
                         sentence_count += 1
                 
@@ -7338,8 +8701,15 @@ class AQIConversationRelayServer:
                     else:
                         logger.warning(f"[LLM] [TIMING GUARD] LLM error before first sentence — pushing fallback: {type(e).__name__}")
                     _telemetry['ttft_deadline_hit'] = True
-                    # [2026-03-03 FIX] Bridge-aware SSE error fallback.
-                    if context.get('_bridge_sent'):
+                    # [2026-03-16 FIX] Mode-aware SSE error fallback
+                    if _is_instructor_llm:
+                        _sse_fallbacks = [
+                            "Sorry, I missed that. What were you saying?",
+                            "Go ahead, I'm listening.",
+                            "I'm here. What would you like to work on?",
+                        ]
+                        sentence_q.put(random.choice(_sse_fallbacks))
+                    elif context.get('_bridge_sent'):
                         _sse_bridge = [
                             "who handles the card processing for you guys right now?",
                             "do you mind if I ask what you're paying on your processing?",
@@ -7347,7 +8717,7 @@ class AQIConversationRelayServer:
                         ]
                         sentence_q.put(random.choice(_sse_bridge))
                     else:
-                        sentence_q.put("Hey, I'm still with you \u2014 are you guys set up to take cards there?")
+                        sentence_q.put("Hey, I'm still with you -- are you guys set up to take cards there?")
                     sentence_count = 1
             
             sentence_q.put(None)  # Sentinel: stream complete
@@ -7473,15 +8843,193 @@ class AQIConversationRelayServer:
         prefetch_future = None
         prefetch_sentence_text = None
         
+        # ================================================================
+        # [2026-03-16] PROCESSING GAP CNG FILLER — Eliminate Dead Air
+        # ================================================================
+        # Problem: Between user speech ending and Alan's first audio frame,
+        # there's 1.5-5s of ABSOLUTE SILENCE (digital zero). This "dead air"
+        # feels unnatural — real phone calls always have ambient line noise.
+        # The bridge phrase covers ~500ms, but the remaining gap is silent.
+        #
+        # Fix: Launch a background task that sends CNG comfort noise frames
+        # at 20ms intervals until the first audio frame is produced. This
+        # fills the processing gap with natural phone line noise, making
+        # the transition from user speech → Alan's response feel continuous
+        # rather than having a jarring silence gap.
+        #
+        # [2026-03-16 v2] ATOMIC HANDOVER via asyncio.Event
+        # The filler uses an asyncio.Event as a synchronized kill switch.
+        # When the first real audio frame is ready, the Event is set,
+        # causing the filler to exit its loop atomically — no flag polling
+        # delay, no double-frame overlap, no dropped-frame gap.
+        #
+        # DRIFT-CORRECTED TIMING: Instead of flat asyncio.sleep(0.020),
+        # we measure actual frame dispatch time and subtract it from the
+        # 20ms window. This prevents "creeping latency" when CPU spikes
+        # during LLM processing cause sleep to overshoot.
+        # ================================================================
+        _cng_filler_task = None
+        _cng_stop_event = asyncio.Event()  # Atomic kill switch for CNG→audio handover
+        if stream_sid and websocket:
+            async def _cng_gap_filler(_ctx, _ws, _sid, _gen, _stop_event):
+                """Send CNG frames during LLM processing gap to prevent dead air.
+                
+                Uses drift-corrected 20ms pacing and asyncio.Event for
+                zero-latency handover to real audio.
+                """
+                try:
+                    # Wait for bridge phrase to finish (if sent) before starting CNG
+                    # [2026-03-06 FIX] Bridge takes ~800-1000ms to play — 0.6s caused
+                    # CNG to overlap bridge audio producing static-on-top-of-voice.
+                    # [2026-03-09 FIX] Reduced from 1.2s to 0.3s — CNG now sends TRUE
+                    # SILENCE (µ-law 0xFF) which has zero energy. Overlapping silence
+                    # with bridge audio produces only bridge audio, no static. The 1.2s
+                    # delay was leaving a 700ms gap between bridge end and CNG start.
+                    if _ctx.get('_bridge_sent'):
+                        await asyncio.sleep(0.3)
+                    else:
+                        await asyncio.sleep(0.1)  # Brief settling time after user speech
+                    
+                    _cng_frames_sent = 0
+                    _max_drift_ms = 0.0  # Track worst-case timing drift
+                    while not _stop_event.is_set() and not _ctx.get('stream_ended'):
+                        if _ctx.get('response_generation') != _gen:
+                            break  # New speech interrupted — stop filling
+                        
+                        _loop_start = time.monotonic()
+                        
+                        # [2026-03-09 PRE-CALL HARDENING] True silence instead of CNG.
+                        # CNG's IIR-filtered noise at amplitude 6 accumulated into
+                        # audible static over 800ms windows — the "11-second static"
+                        # artifact. True silence (µ-law 0xFF) has zero energy.
+                        frame = generate_true_silence_frame()
+                        b64_data = base64.b64encode(frame).decode("utf-8")
+                        payload = {"event": "media", "streamSid": _sid, "media": {"payload": b64_data}}
+                        try:
+                            if hasattr(_ws, 'send_text'):
+                                await _ws.send_text(json.dumps(payload))
+                            else:
+                                await _ws.send(json.dumps(payload))
+                        except Exception:
+                            break
+                        _cng_frames_sent += 1
+                        
+                        # DRIFT-CORRECTED PACING — compensate for dispatch time
+                        # If send_frame took 3ms, sleep only 17ms to maintain 20ms cadence.
+                        # Prevents "creeping latency" during CPU-heavy LLM processing.
+                        _elapsed = time.monotonic() - _loop_start
+                        _drift_ms = _elapsed * 1000
+                        if _drift_ms > _max_drift_ms:
+                            _max_drift_ms = _drift_ms
+                        _sleep_time = 0.020 - _elapsed
+                        if _sleep_time > 0.001:  # Floor at 1ms to avoid busy-spin
+                            await asyncio.sleep(_sleep_time)
+                        else:
+                            await asyncio.sleep(0.001)
+                        
+                        # Safety cap: max 200 frames (4000ms) of gap fill
+                        # [2026-03-06 FIX] Was 250 (5s) — far too long. Tim reported static.
+                        # [2026-03-09 FIX] Was 40 (800ms) — too short. TTFA is 2.4-3.5s,
+                        # so CNG stopped at 800ms leaving 1.6-2.7s of DEAD SILENCE
+                        # before first audio. The abrupt silence→voice transition is
+                        # what Tim heard as "static interruptions". Now 200 frames
+                        # (4s) — _cng_stop_event.set() handles normal termination
+                        # when first audio arrives. This cap is belt-and-suspenders.
+                        if _cng_frames_sent >= 200:
+                            break
+                    if _cng_frames_sent > 0:
+                        logger.info(f"[CNG FILLER] Sent {_cng_frames_sent} gap-fill frames "
+                                    f"({_cng_frames_sent * 20}ms, max_drift={_max_drift_ms:.1f}ms)")
+                except asyncio.CancelledError:
+                    pass
+                except Exception as _cng_err:
+                    logger.debug(f"[CNG FILLER] Error: {_cng_err}")
+            
+            _cng_filler_task = asyncio.create_task(
+                _cng_gap_filler(context, websocket, stream_sid, generation, _cng_stop_event)
+            )
+        
         # === [SPECULATIVE DECODING] Sprint Consumption Phase ===
         # Drain sprint queue first — get the opening clause to TTS immediately.
         # This produces audio ~500-800ms faster than waiting for the full response.
         _sprint_text = ""
         _spec_skip_first_full = False
         
-        if sprint_future is not None:
+        # === [EARLY SPRINT] Check if braided pipeline already produced audio ===
+        # If _fire_early_sprint_pipeline() completed during VAD silence window,
+        # use its pre-computed sprint audio instead of firing a new sprint.
+        # This saves ~350ms because STT+LLM+TTS already ran speculatively.
+        _early_sprint_used = False
+        if EARLY_SPRINT_ENABLED and context.get('_early_sprint_done') and context.get('_early_sprint_audio'):
+            _es_audio = context['_early_sprint_audio']
+            _es_text = context.get('_early_sprint_text', '')
+            logger.info(f"[EARLY-SPRINT] ★ Using pre-computed sprint: '{_es_text[:60]}' ({len(_es_audio)} bytes)")
+
+            # Update sprint tracking state — same as normal sprint cache hit path
+            _sprint_text = _es_text
+            full_response_text = _es_text + " "
+            sentence_idx = 1
+            _spec_skip_first_full = True
+            prev_sentence_text = _es_text
+
+            if _telemetry.get('tts_start_ms') is None:
+                _telemetry['tts_start_ms'] = round(1000 * (time.monotonic() - _mono_base), 1)
+            if _telemetry.get('tts_first_audio_ms') is None:
+                _telemetry['tts_first_audio_ms'] = round(1000 * (time.monotonic() - _mono_base), 1)
+            if not first_audio_logged:
+                ttfa = 1000 * (time.time() - pipeline_start)
+                logger.info(f"[EARLY-SPRINT] ★ FIRST AUDIO in {ttfa:.0f}ms (early sprint)")
+                first_audio_logged = True
+                _telemetry['ttfa_ms'] = ttfa
+                _telemetry['play_start_ms'] = round(1000 * (time.monotonic() - _mono_base), 1)
+                context['audio_playing'] = True
+                context['twilio_playback_done'] = False
+                context['first_audio_produced'] = True
+                _cng_stop_event.set()
+
+            # Stream pre-computed frames to Twilio — same as sprint cache hit path
+            _es_offset = 0
+            _es_frame = 0
+            while _es_offset < len(_es_audio):
+                if context.get('response_generation') != generation:
+                    break
+                _es_end = min(_es_offset + FRAME_SIZE, len(_es_audio))
+                frame = _es_audio[_es_offset:_es_end]
+                _es_offset = _es_end
+                if len(frame) < FRAME_SIZE:
+                    # [2026-03-09] True silence padding — CNG noise pads caused audible static bursts
+                    cng_pad = generate_true_silence_frame()[:FRAME_SIZE - len(frame)]
+                    frame = frame + cng_pad
+                b64_data = base64.b64encode(frame).decode("utf-8")
+                payload = {"event": "media", "streamSid": stream_sid, "media": {"payload": b64_data}}
+                try:
+                    if hasattr(websocket, 'send_text'):
+                        await websocket.send_text(json.dumps(payload))
+                    else:
+                        await websocket.send(json.dumps(payload))
+                except Exception as _ws_err:
+                    logger.debug(f"[EARLY-SPRINT] Frame send error: {_ws_err}")
+                    break
+                if _es_frame < 3:
+                    await asyncio.sleep(0.001)
+                else:
+                    await asyncio.sleep(0.012)
+                total_frames += 1
+                _es_frame += 1
+
+            # Cache for future reuse
+            if _es_text and _es_audio and _es_text not in self.sprint_tts_cache:
+                self.sprint_tts_cache[_es_text] = _es_audio
+                logger.info(f"[EARLY-SPRINT] Cached sprint audio for '{_es_text[:40]}'")
+
+            _early_sprint_used = True
+            logger.info(f"[EARLY-SPRINT] ★ Early sprint consumed — {_es_frame} frames, {total_frames * 20}ms audio")
+
+        if not _early_sprint_used and sprint_future is not None:
             _sprint_t0 = time.time()
-            _sprint_deadline = _sprint_t0 + 3.0  # Max 3s wait for sprint
+            _sprint_deadline = _sprint_t0 + 2.0  # [2026-03-09] Was 1.5s→2.0s. LLM first token is consistently 1.5-1.9s;
+                                                   # at 1.5s sprint timed out 80%+ of turns ("Sprint phase empty").
+                                                   # 2.0s gives sprint a chance to return the opening clause.
             
             while time.time() < _sprint_deadline:
                 if context.get('response_generation') != generation:
@@ -7515,47 +9063,45 @@ class AQIConversationRelayServer:
                 # [INSTRUMENT] Stamp TTS start for sprint path
                 if _telemetry.get('tts_start_ms') is None:
                     _telemetry['tts_start_ms'] = round(1000 * (time.monotonic() - _mono_base), 1)
-                sprint_audio = await loop.run_in_executor(
-                    self.executor,
-                    self._tts_sentence_sync,
-                    sprint_sentence, None, None, prosody_intent, 0,
-                    sig_speed_bias, sig_breath_bias
-                )
-                _telemetry['tts_total_ms'] += 1000 * (time.time() - _tts_t0)
-                
-                if sprint_audio:
+
+                # [2026-03-05 LATENCY FIX] Check sprint TTS cache first — skip synthesis
+                # entirely for common opening phrases (saves 400-500ms per turn).
+                _cached_sprint_audio = self.sprint_tts_cache.get(sprint_sentence) or self.greeting_cache.get(sprint_sentence)
+                if _cached_sprint_audio:
+                    logger.info(f"[SPRINT CACHE HIT] '{sprint_sentence}' — skipping TTS ({len(_cached_sprint_audio)} bytes)")
+                    sprint_audio = _cached_sprint_audio
                     _sprint_text = sprint_sentence
                     full_response_text = sprint_sentence + " "
                     sentence_idx = 1
-                    
-                    # [INSTRUMENT] TTS produced audio
+                    _spec_skip_first_full = True
+                    prev_sentence_text = sprint_sentence
+
                     if _telemetry.get('tts_first_audio_ms') is None:
                         _telemetry['tts_first_audio_ms'] = round(1000 * (time.monotonic() - _mono_base), 1)
-                    
-                    # First audio tracking
                     if not first_audio_logged:
                         ttfa = 1000 * (time.time() - pipeline_start)
-                        logger.info(f"[SPECULATIVE] ★ FIRST AUDIO in {ttfa:.0f}ms (sprint)")
+                        logger.info(f"[SPECULATIVE] ★ FIRST AUDIO in {ttfa:.0f}ms (sprint+CACHE)")
                         first_audio_logged = True
                         _telemetry['ttfa_ms'] = ttfa
-                        # [INSTRUMENT] First frame to Twilio
                         _telemetry['play_start_ms'] = round(1000 * (time.monotonic() - _mono_base), 1)
                         context['audio_playing'] = True
                         context['twilio_playback_done'] = False
                         context['first_audio_produced'] = True
-                    
-                    # Stream audio frames to Twilio (fast pacing — sprint is short)
-                    offset = 0
-                    sprint_frame = 0
-                    while offset < len(sprint_audio):
+                        _cng_stop_event.set()
+
+                    # Stream cached frames to Twilio
+                    _c_offset = 0
+                    _c_frame = 0
+                    while _c_offset < len(sprint_audio):
                         if context.get('response_generation') != generation:
-                            logger.info("[SPECULATIVE] Mid-frame interrupt during sprint.")
                             break
-                        end = min(offset + FRAME_SIZE, len(sprint_audio))
-                        frame = sprint_audio[offset:end]
-                        offset = end
+                        _c_end = min(_c_offset + FRAME_SIZE, len(sprint_audio))
+                        frame = sprint_audio[_c_offset:_c_end]
+                        _c_offset = _c_end
                         if len(frame) < FRAME_SIZE:
-                            frame = frame + ULAW_SILENCE_BYTE * (FRAME_SIZE - len(frame))
+                            # [2026-03-09] True silence padding — CNG noise pads caused audible static bursts
+                            cng_pad = generate_true_silence_frame()[:FRAME_SIZE - len(frame)]
+                            frame = frame + cng_pad
                         b64_data = base64.b64encode(frame).decode("utf-8")
                         payload = {"event": "media", "streamSid": stream_sid, "media": {"payload": b64_data}}
                         try:
@@ -7564,18 +9110,166 @@ class AQIConversationRelayServer:
                             else:
                                 await websocket.send(json.dumps(payload))
                         except Exception as _ws_err:
-                            logger.debug(f"[SPECULATIVE] Frame send error: {_ws_err}")
+                            logger.debug(f"[SPRINT CACHE] Frame send error: {_ws_err}")
                             break
-                        # Fast pacing for sprint — minimal ramp then cruise
-                        if sprint_frame < 3:
+                        if _c_frame < 3:
                             await asyncio.sleep(0.001)
                         else:
                             await asyncio.sleep(0.012)
                         total_frames += 1
-                        sprint_frame += 1
-                    
-                    _spec_skip_first_full = True
-                    prev_sentence_text = sprint_sentence
+                        _c_frame += 1
+
+                    _telemetry['tts_total_ms'] += 1000 * (time.time() - _tts_t0)
+                    _sprint_elapsed = 1000 * (time.time() - _sprint_t0)
+                    logger.info(f"[SPECULATIVE] Sprint phase complete: '{sprint_sentence}' ({_sprint_elapsed:.0f}ms, CACHED)")
+                    break  # Sprint done — move to full LLM sentences
+
+                # [2026-03-04] STREAMING TTS — first audio chunk arrives in ~200-400ms
+                # instead of waiting ~1,673ms for the full blocking download.
+                if TTS_STREAMING_ENABLED:
+                    _sprint_tts_q = thread_queue.Queue()
+                    _sprint_tts_future = loop.run_in_executor(
+                        self.executor,
+                        self._openai_tts_streaming_sync,
+                        sprint_sentence, prosody_intent, 0,
+                        sig_speed_bias, sig_breath_bias, _sprint_tts_q
+                    )
+
+                    # Consume mulaw chunks as they arrive → stream frames to Twilio
+                    sprint_audio = b""
+                    sprint_frame = 0
+                    _sprint_streaming_done = False
+                    while not _sprint_streaming_done:
+                        if context.get('response_generation') != generation:
+                            logger.info("[SPECULATIVE] Mid-stream interrupt during sprint TTS.")
+                            break
+                        try:
+                            _tts_chunk = _sprint_tts_q.get_nowait()
+                        except thread_queue.Empty:
+                            await asyncio.sleep(0.003)
+                            continue
+                        if _tts_chunk is None:
+                            _sprint_streaming_done = True
+                            break
+                        sprint_audio += _tts_chunk
+
+                        # Signal first audio on FIRST chunk (not after full TTS)
+                        if not first_audio_logged and sprint_frame == 0:
+                            _sprint_text = sprint_sentence
+                            full_response_text = sprint_sentence + " "
+                            sentence_idx = 1
+                            if _telemetry.get('tts_first_audio_ms') is None:
+                                _telemetry['tts_first_audio_ms'] = round(1000 * (time.monotonic() - _mono_base), 1)
+                            ttfa = 1000 * (time.time() - pipeline_start)
+                            logger.info(f"[SPECULATIVE] ★ FIRST AUDIO in {ttfa:.0f}ms (sprint+streaming)")
+                            first_audio_logged = True
+                            _telemetry['ttfa_ms'] = ttfa
+                            _telemetry['play_start_ms'] = round(1000 * (time.monotonic() - _mono_base), 1)
+                            context['audio_playing'] = True
+                            context['twilio_playback_done'] = False
+                            context['first_audio_produced'] = True
+                            _cng_stop_event.set()
+
+                        # Send 160-byte frames from this chunk
+                        _chunk_offset = 0
+                        while _chunk_offset < len(_tts_chunk):
+                            if context.get('response_generation') != generation:
+                                break
+                            _end = min(_chunk_offset + FRAME_SIZE, len(_tts_chunk))
+                            frame = _tts_chunk[_chunk_offset:_end]
+                            _chunk_offset = _end
+                            if len(frame) < FRAME_SIZE:
+                                # [2026-03-09] True silence padding — CNG noise pads caused audible static bursts
+                                cng_pad = generate_true_silence_frame()[:FRAME_SIZE - len(frame)]
+                                frame = frame + cng_pad
+                            b64_data = base64.b64encode(frame).decode("utf-8")
+                            payload = {"event": "media", "streamSid": stream_sid, "media": {"payload": b64_data}}
+                            try:
+                                if hasattr(websocket, 'send_text'):
+                                    await websocket.send_text(json.dumps(payload))
+                                else:
+                                    await websocket.send(json.dumps(payload))
+                            except Exception as _ws_err:
+                                logger.debug(f"[SPECULATIVE] Frame send error: {_ws_err}")
+                                _sprint_streaming_done = True
+                                break
+                            if sprint_frame < 3:
+                                await asyncio.sleep(0.001)
+                            else:
+                                await asyncio.sleep(0.012)
+                            total_frames += 1
+                            sprint_frame += 1
+
+                    _telemetry['tts_total_ms'] += 1000 * (time.time() - _tts_t0)
+                    if sprint_audio:
+                        if not _sprint_text:
+                            _sprint_text = sprint_sentence
+                            full_response_text = sprint_sentence + " "
+                            sentence_idx = 1
+                        _spec_skip_first_full = True
+                        prev_sentence_text = sprint_sentence
+
+                else:
+                    # LEGACY BLOCKING PATH — fallback when streaming is disabled
+                    sprint_audio = await loop.run_in_executor(
+                        self.executor,
+                        self._tts_sentence_sync,
+                        sprint_sentence, None, None, prosody_intent, 0,
+                        sig_speed_bias, sig_breath_bias
+                    )
+                    _telemetry['tts_total_ms'] += 1000 * (time.time() - _tts_t0)
+                
+                    if sprint_audio:
+                        _sprint_text = sprint_sentence
+                        full_response_text = sprint_sentence + " "
+                        sentence_idx = 1
+
+                        if _telemetry.get('tts_first_audio_ms') is None:
+                            _telemetry['tts_first_audio_ms'] = round(1000 * (time.monotonic() - _mono_base), 1)
+
+                        if not first_audio_logged:
+                            ttfa = 1000 * (time.time() - pipeline_start)
+                            logger.info(f"[SPECULATIVE] ★ FIRST AUDIO in {ttfa:.0f}ms (sprint)")
+                            first_audio_logged = True
+                            _telemetry['ttfa_ms'] = ttfa
+                            _telemetry['play_start_ms'] = round(1000 * (time.monotonic() - _mono_base), 1)
+                            context['audio_playing'] = True
+                            context['twilio_playback_done'] = False
+                            context['first_audio_produced'] = True
+                            _cng_stop_event.set()
+
+                        offset = 0
+                        sprint_frame = 0
+                        while offset < len(sprint_audio):
+                            if context.get('response_generation') != generation:
+                                logger.info("[SPECULATIVE] Mid-frame interrupt during sprint.")
+                                break
+                            end = min(offset + FRAME_SIZE, len(sprint_audio))
+                            frame = sprint_audio[offset:end]
+                            offset = end
+                            if len(frame) < FRAME_SIZE:
+                                # [2026-03-09] True silence padding — CNG noise pads caused audible static bursts
+                                cng_pad = generate_true_silence_frame()[:FRAME_SIZE - len(frame)]
+                                frame = frame + cng_pad
+                            b64_data = base64.b64encode(frame).decode("utf-8")
+                            payload = {"event": "media", "streamSid": stream_sid, "media": {"payload": b64_data}}
+                            try:
+                                if hasattr(websocket, 'send_text'):
+                                    await websocket.send_text(json.dumps(payload))
+                                else:
+                                    await websocket.send(json.dumps(payload))
+                            except Exception as _ws_err:
+                                logger.debug(f"[SPECULATIVE] Frame send error: {_ws_err}")
+                                break
+                            if sprint_frame < 3:
+                                await asyncio.sleep(0.001)
+                            else:
+                                await asyncio.sleep(0.012)
+                            total_frames += 1
+                            sprint_frame += 1
+
+                        _spec_skip_first_full = True
+                        prev_sentence_text = sprint_sentence
                 
                 break  # Sprint: only first clause
             
@@ -7639,6 +9333,19 @@ class AQIConversationRelayServer:
                 except Exception as _val_err:
                     logger.debug(f"[COMPLIANCE] Supervisor validation failed: {_val_err}")
             
+            # [AIRFRAME] Conversation Governance — per-sentence monorepo enforcement
+            _gov_inst = context.get('_conversation_governor')
+            if _gov_inst:
+                try:
+                    sentence, _gov_meta = _gov_inst.filter_sentence(sentence, context)
+                    if _gov_meta.get('action') == 'drop':
+                        logger.info(f"[GOVERNANCE] Dropped sentence: {_gov_meta.get('reason', 'unknown')}")
+                        prev_sentence_text = sentence
+                        sentence_idx += 1
+                        continue
+                except Exception as _gov_err:
+                    logger.debug(f"[GOVERNANCE] Filter error (non-fatal): {_gov_err}")
+            
             # [QUESTION CAP] One question per turn — drop extras
             # Prevents "Do you have a website? And how are you handling payments?"
             # and "Does that make sense? Any questions on that?" patterns.
@@ -7658,6 +9365,7 @@ class AQIConversationRelayServer:
             full_response_text += sentence
             
             # TTS — check if we have a prefetched result
+            _main_streaming_sent = False  # [2026-03-04] Flag: True if streaming TTS already sent frames
             if prefetch_future is not None:
                 _tts_t0 = time.time()
                 raw_audio = await prefetch_future
@@ -7670,18 +9378,111 @@ class AQIConversationRelayServer:
                 sentence_prosody = refine_prosody_per_sentence(sentence, prosody_intent, is_last_sentence=is_last)
                 if sentence_prosody != prosody_intent:
                     logger.info(f"[PROSODY REFINE] {prosody_intent} → {sentence_prosody} for: '{sentence[:50]}'")
-                # First sentence — synthesize now (with refined prosody)
+                
                 _tts_t0 = time.time()
                 # [INSTRUMENT] Stamp TTS start for main path
                 if _telemetry.get('tts_start_ms') is None:
                     _telemetry['tts_start_ms'] = round(1000 * (time.monotonic() - _mono_base), 1)
-                raw_audio = await loop.run_in_executor(
-                    self.executor,
-                    self._tts_sentence_sync,
-                    sentence, prev_sentence_text, None, sentence_prosody, sentence_idx,
-                    sig_speed_bias, sig_breath_bias
-                )
-                _telemetry['tts_total_ms'] += 1000 * (time.time() - _tts_t0)
+
+                # [2026-03-04] STREAMING TTS for ALL sentences — not just first audio.
+                # Streams PCM chunks from OpenAI and sends frames to Twilio as they
+                # arrive, cutting ~1,200-3,000ms from every sentence's latency.
+                # Previously gated on `not first_audio_logged` which meant only the
+                # FIRST sentence streamed; after sprint set the flag, all remaining
+                # sentences fell to the 2-4 second blocking TTS path.
+                if TTS_STREAMING_ENABLED:
+                    _main_tts_q = thread_queue.Queue()
+                    _main_tts_future = loop.run_in_executor(
+                        self.executor,
+                        self._openai_tts_streaming_sync,
+                        sentence, sentence_prosody, sentence_idx,
+                        sig_speed_bias, sig_breath_bias, _main_tts_q
+                    )
+                    
+                    raw_audio = b""
+                    _main_frame = 0
+                    _main_streaming_done = False
+                    while not _main_streaming_done:
+                        if context.get('response_generation') != generation:
+                            logger.info(f"[ORCHESTRATED] Mid-stream interrupt during streaming TTS.")
+                            break
+                        try:
+                            _tts_chunk = _main_tts_q.get_nowait()
+                        except thread_queue.Empty:
+                            await asyncio.sleep(0.003)
+                            continue
+                        if _tts_chunk is None:
+                            _main_streaming_done = True
+                            break
+                        raw_audio += _tts_chunk
+
+                        # Signal first audio on FIRST chunk
+                        if not first_audio_logged and _main_frame == 0:
+                            if _telemetry.get('tts_first_audio_ms') is None:
+                                _telemetry['tts_first_audio_ms'] = round(1000 * (time.monotonic() - _mono_base), 1)
+                            ttfa = 1000 * (time.time() - pipeline_start)
+                            logger.info(f"[ORCHESTRATED] ★ FIRST AUDIO in {ttfa:.0f}ms (streaming)")
+                            first_audio_logged = True
+                            _telemetry['ttfa_ms'] = ttfa
+                            _telemetry['play_start_ms'] = round(1000 * (time.monotonic() - _mono_base), 1)
+                            context['audio_playing'] = True
+                            context['twilio_playback_done'] = False
+                            context['first_audio_produced'] = True
+                            _cng_stop_event.set()
+
+                        # Send 160-byte frames from this chunk
+                        _chunk_offset = 0
+                        while _chunk_offset < len(_tts_chunk):
+                            if context.get('response_generation') != generation:
+                                break
+                            _end = min(_chunk_offset + FRAME_SIZE, len(_tts_chunk))
+                            frame = _tts_chunk[_chunk_offset:_end]
+                            _chunk_offset = _end
+                            if len(frame) < FRAME_SIZE:
+                                # [2026-03-09] True silence padding — CNG noise pads caused audible static bursts
+                                cng_pad = generate_true_silence_frame()[:FRAME_SIZE - len(frame)]
+                                frame = frame + cng_pad
+                            b64_data = base64.b64encode(frame).decode("utf-8")
+                            payload = {"event": "media", "streamSid": stream_sid, "media": {"payload": b64_data}}
+                            try:
+                                if hasattr(websocket, 'send_text'):
+                                    await websocket.send_text(json.dumps(payload))
+                                else:
+                                    await websocket.send(json.dumps(payload))
+                            except Exception as _ws_err:
+                                logger.debug(f"[ORCHESTRATED] Streaming frame send error: {_ws_err}")
+                                _main_streaming_done = True
+                                break
+                            # [2026-03-04] Adaptive pacing: cold for first-ever audio, warm for subsequent
+                            if not first_audio_logged:
+                                # Cold jitter buffer: gentle ramp
+                                if _main_frame < 5:
+                                    await asyncio.sleep(0.003)
+                                elif _main_frame < 15:
+                                    await asyncio.sleep(0.001)
+                                else:
+                                    await asyncio.sleep(0.012)
+                            else:
+                                # Warm buffer: near-instant then cruise
+                                if _main_frame < 3:
+                                    await asyncio.sleep(0.001)
+                                else:
+                                    await asyncio.sleep(0.012)
+                            total_frames += 1
+                            _main_frame += 1
+
+                    _telemetry['tts_total_ms'] += 1000 * (time.time() - _tts_t0)
+                    _main_streaming_sent = True  # Skip downstream frame loop
+
+                else:
+                    # LEGACY BLOCKING PATH — fallback when streaming is disabled
+                    raw_audio = await loop.run_in_executor(
+                        self.executor,
+                        self._tts_sentence_sync,
+                        sentence, prev_sentence_text, None, sentence_prosody, sentence_idx,
+                        sig_speed_bias, sig_breath_bias
+                    )
+                    _telemetry['tts_total_ms'] += 1000 * (time.time() - _tts_t0)
             
             if not raw_audio:
                 logger.warning(f"[ORCHESTRATED] No audio for sentence {sentence_idx+1}. Skipping.")
@@ -7707,6 +9508,8 @@ class AQIConversationRelayServer:
                 # Any new STT text from this point is a REAL interrupt, not a
                 # continuation of the caller's thought.
                 context['first_audio_produced'] = True
+                # [ATOMIC HANDOVER] Signal CNG filler to stop immediately
+                _cng_stop_event.set()
             
             # PREFETCH next sentence TTS while we stream current audio
             # If the next sentence is already in the queue, start synthesizing it now.
@@ -7754,9 +9557,17 @@ class AQIConversationRelayServer:
             
             # [ORGAN 7] INTER-SENTENCE SILENCE — adaptive to prosody intent
             # Empathetic turns breathe longer (~240ms). Closing turns keep momentum (~100ms).
+            # [2026-03-09 PRE-CALL HARDENING] True silence instead of CNG between sentences.
+            # CNG created audible hiss during inter-sentence gaps. True silence is what
+            # humans produce between sentences — zero energy, zero artifacts.
+            # [2026-03-10 HUMANIZATION] Added ±40% random jitter to silence frames.
+            # Metronomic timing (identical gaps every time) is a major AI tell.
+            # Real humans have hugely variable inter-phrase pauses — sometimes 80ms,
+            # sometimes 400ms. The jitter makes the rhythm feel lived-in, not produced.
             if sentence_idx > 0 and stream_sid:
-                for _ in range(prosody_silence):
-                    comfort_frame = generate_comfort_noise_frame()
+                _jittered_silence = max(2, int(prosody_silence * random.uniform(0.6, 1.4)))
+                for _ in range(_jittered_silence):
+                    comfort_frame = generate_true_silence_frame()
                     b64_silence = base64.b64encode(comfort_frame).decode("utf-8")
                     payload = {"event": "media", "streamSid": stream_sid, "media": {"payload": b64_silence}}
                     try:
@@ -7770,70 +9581,77 @@ class AQIConversationRelayServer:
                     total_frames += 1
             
             # STREAM AUDIO FRAMES TO TWILIO
-            # [VERSION R+ NEG-PROOF] ADAPTIVE FRAME PACING
-            # Like an orchestra warming up: first notes are careful, then the ensemble
-            # finds its tempo. As the conversation progresses, Twilio's jitter buffer
-            # stabilizes and we can pace tighter.
-            #
-            # Two dimensions:
-            #   1. Frame position within this audio (early = gentle, later = real-time)
-            #   2. Conversation maturity (first response = cold, later = warm)
-            #
-            # Pacing schedule per frame:
-            #   Cold start (sentence_idx == 0, first response):
-            #     frames 0-4:   0.003s  (minimal warm-up)
-            #     frames 5-15:  0.001s  (fast ramp)
-            #     frames 16+:   0.012s  (real-time cruise)
-            #   Warm (sentence_idx > 0 or messages > 2):
-            #     frames 0-3:   0.001s  (near-instant prime)
-            #     frames 4+:    0.012s  (real-time cruise)
-            #
-            conversation_age = len(context.get('messages', []))
-            is_cold_start = (sentence_idx == 0 and conversation_age < 2)
-            
-            offset = 0
-            sentence_frame = 0  # Frame counter within THIS sentence
-            while offset < len(raw_audio):
-                if context.get('response_generation') != generation:
-                    logger.info(f"[ORCHESTRATED] Mid-frame interrupt. Aborting.")
-                    break
+            # [2026-03-04] Skip if streaming TTS already sent frames inline
+            if _main_streaming_sent:
+                logger.info(f"[ORCHESTRATED] Frames already sent via streaming TTS ({total_frames} frames)")
+            else:
+                # [VERSION R+ NEG-PROOF] ADAPTIVE FRAME PACING
+                # Like an orchestra warming up: first notes are careful, then the ensemble
+                # finds its tempo. As the conversation progresses, Twilio's jitter buffer
+                # stabilizes and we can pace tighter.
+                #
+                # Two dimensions:
+                #   1. Frame position within this audio (early = gentle, later = real-time)
+                #   2. Conversation maturity (first response = cold, later = warm)
+                #
+                # Pacing schedule per frame:
+                #   Cold start (sentence_idx == 0, first response):
+                #     frames 0-4:   0.003s  (minimal warm-up)
+                #     frames 5-15:  0.001s  (fast ramp)
+                #     frames 16+:   0.012s  (real-time cruise)
+                #   Warm (sentence_idx > 0 or messages > 2):
+                #     frames 0-3:   0.001s  (near-instant prime)
+                #     frames 4+:    0.012s  (real-time cruise)
+                #
+                conversation_age = len(context.get('messages', []))
+                is_cold_start = (sentence_idx == 0 and conversation_age < 2)
                 
-                end = min(offset + FRAME_SIZE, len(raw_audio))
-                frame = raw_audio[offset:end]
-                offset = end
-                
-                if len(frame) < FRAME_SIZE:
-                    frame = frame + ULAW_SILENCE_BYTE * (FRAME_SIZE - len(frame))
-                
-                b64_data = base64.b64encode(frame).decode("utf-8")
-                payload = {"event": "media", "streamSid": stream_sid, "media": {"payload": b64_data}}
-                
-                try:
-                    if hasattr(websocket, 'send_text'):
-                        await websocket.send_text(json.dumps(payload))
+                offset = 0
+                sentence_frame = 0  # Frame counter within THIS sentence
+                while offset < len(raw_audio):
+                    if context.get('response_generation') != generation:
+                        logger.info(f"[ORCHESTRATED] Mid-frame interrupt. Aborting.")
+                        break
+                    
+                    end = min(offset + FRAME_SIZE, len(raw_audio))
+                    frame = raw_audio[offset:end]
+                    offset = end
+                    
+                    if len(frame) < FRAME_SIZE:
+                        # [2026-03-09] True silence padding — CNG noise pads caused audible static bursts
+                        # Digital silence (0xFF) is clean — no noise energy at sentence ends.
+                        cng_pad = generate_true_silence_frame()[:FRAME_SIZE - len(frame)]
+                        frame = frame + cng_pad
+                    
+                    b64_data = base64.b64encode(frame).decode("utf-8")
+                    payload = {"event": "media", "streamSid": stream_sid, "media": {"payload": b64_data}}
+                    
+                    try:
+                        if hasattr(websocket, 'send_text'):
+                            await websocket.send_text(json.dumps(payload))
+                        else:
+                            await websocket.send(json.dumps(payload))
+                    except Exception as e:
+                        logger.error(f"[ORCHESTRATED] Send Error: {e}")
+                    
+                    # ADAPTIVE PACING — the conductor's tempo
+                    if is_cold_start:
+                        # Cold jitter buffer: minimal ramp
+                        if sentence_frame < 5:
+                            await asyncio.sleep(0.003)
+                        elif sentence_frame < 15:
+                            await asyncio.sleep(0.001)
+                        else:
+                            await asyncio.sleep(0.012)
                     else:
-                        await websocket.send(json.dumps(payload))
-                except Exception as e:
-                    logger.error(f"[ORCHESTRATED] Send Error: {e}")
-                
-                # ADAPTIVE PACING — the conductor's tempo
-                if is_cold_start:
-                    # Cold jitter buffer: minimal ramp
-                    if sentence_frame < 5:
-                        await asyncio.sleep(0.003)
-                    elif sentence_frame < 15:
-                        await asyncio.sleep(0.001)
-                    else:
-                        await asyncio.sleep(0.012)
-                else:
-                    # Warm buffer: near-instant then cruise
-                    if sentence_frame < 3:
-                        await asyncio.sleep(0.001)
-                    else:
-                        await asyncio.sleep(0.012)
-                
-                total_frames += 1
-                sentence_frame += 1
+                        # Warm buffer: near-instant then cruise
+                        if sentence_frame < 3:
+                            await asyncio.sleep(0.001)
+                        else:
+                            await asyncio.sleep(0.012)
+                    
+                    total_frames += 1
+                    sentence_frame += 1
             
             prev_sentence_text = sentence
             sentence_idx += 1
@@ -7859,6 +9677,11 @@ class AQIConversationRelayServer:
             if sig_extractor:
                 sig_extractor.record_alan_finished_speaking()
         
+        # [2026-03-16] Stop CNG gap filler — Event + cancel for belt-and-suspenders
+        _cng_stop_event.set()  # Signal loop exit (may already be set)
+        if _cng_filler_task and not _cng_filler_task.done():
+            _cng_filler_task.cancel()
+        
         total_time = 1000 * (time.time() - pipeline_start)
         logger.info(f"[ORCHESTRATED] Complete. {total_frames} frames, {sentence_idx} sentences in {total_time:.0f}ms")
         
@@ -7877,6 +9700,21 @@ class AQIConversationRelayServer:
         if full_response_text:
             agent.conversation_history.add_message("Alan", full_response_text)
         
+        # [AIRFRAME] Record Alan utterance for adaptive layer
+        _adapt_state_alan = context.get('_adaptive_state')
+        if _adapt_state_alan and full_response_text:
+            try:
+                _alan_words = full_response_text.split()
+                _unique_ratio = len(set(w.lower() for w in _alan_words)) / max(len(_alan_words), 1)
+                _adapt_state_alan.record_alan_utterance(
+                    word_count=len(_alan_words),
+                    pause_ms=None,
+                    energy_profile=_adapt_state_alan.alan_energy_profile,
+                    vocab_diversity_score=_unique_ratio,
+                )
+            except Exception:
+                pass
+        
         # =====================================================================
         # [FIX R5b 2026-02-20] EMPTY RESPONSE FALLBACK — BEFORE CDC/downstream
         # If the entire orchestrated pipeline (LLM+Sprint) produced zero text,
@@ -7887,16 +9725,21 @@ class AQIConversationRelayServer:
         # =====================================================================
         if not full_response_text or not full_response_text.strip():
             import random as _fb_random
-            # [FIX CW-AUDIT 2025-06-24] Every fallback MUST advance the sales mission.
-            # "Yeah? Go ahead." violated Rule #8. Passive phrases cause NO_PITCH failures.
-            # All entries now either re-engage with pitch context or prompt the merchant
-            # to share information Alan can use as a bridge into the value prop.
-            # [2026-03-02 FIX] Removed "Quick question" from fallback pool — it was
-            # reinforcing the repetition loop. All fallbacks are now unique phrasings.
-            # [2026-03-03 FIX] Bridge-aware fallback — if a bridge phrase was sent
-            # this turn, the fallback CONTINUES from it naturally.
+            # [2026-03-16 FIX] Mode-aware fallback — instructor mode gets training-
+            # appropriate fallbacks instead of sales pitches. Sales fallbacks during
+            # a training call sound bizarre and break the session.
+            _is_instructor_fb = context.get('prospect_info', {}).get('instructor_mode', False)
             _bridge_was_sent = context.get('_bridge_sent', False)
-            if _bridge_was_sent:
+            if _is_instructor_fb:
+                _FALLBACK_POOL = [
+                    "Sorry, I missed that. What were you saying?",
+                    "Can you hear me alright?",
+                    "Go ahead, I'm listening.",
+                    "I'm here. What would you like to work on?",
+                    "Sorry about that. What did you want to focus on?",
+                    "I'm ready. What's next?",
+                ]
+            elif _bridge_was_sent:
                 _FALLBACK_POOL = [
                     "who handles the card processing for you guys right now?",
                     "what system are you using for payments currently?",
@@ -7906,10 +9749,10 @@ class AQIConversationRelayServer:
             else:
                 _FALLBACK_POOL = [
                     "So what's going on with your payment setup right now?",
-                    "The reason I'm reaching out is I help business owners cut their processing costs —",
-                    "I work with local businesses on their payment processing — who handles yours right now?",
+                    "The reason I'm reaching out is I help business owners cut their processing costs --",
+                    "I work with local businesses on their payment processing -- who handles yours right now?",
                     "Hey, are you guys set up to accept cards there?",
-                    "Sorry, I missed that — what were you saying?",
+                    "Sorry, I missed that -- what were you saying?",
                     "Can you hear me alright?",
                     "Hello?",
                 ]
@@ -8005,8 +9848,25 @@ class AQIConversationRelayServer:
         # [NEG PROOF] Only update on REAL speech (2+ words), not noise/music STT artifacts
         # Bug fix V2: 1-word garbage ("hmm", "ok", music transcripts) was resetting
         # silence timer, letting dead calls run 90-150s instead of dying at 40s
-        if len(user_text.split()) >= 2:
+        _merchant_words = user_text.split()
+        if len(_merchant_words) >= 2:
             context['last_speech_time'] = time.time()
+
+        # [AIRFRAME] Record merchant utterance for adaptive layer
+        _adapt_state = context.get('_adaptive_state')
+        if _adapt_state:
+            try:
+                _has_hesitation = any(w in user_text.lower() for w in ('uh', 'um', 'hmm', 'well...'))
+                _has_question = '?' in user_text
+                _adapt_state.record_merchant_utterance(
+                    word_count=len(_merchant_words),
+                    pause_ms=None,
+                    interrupted=False,
+                    hesitation=_has_hesitation,
+                    clarification_request=_has_question and len(_merchant_words) <= 5,
+                )
+            except Exception:
+                pass
 
         # During greeting, ignore input (greeting must complete first)
         current_state = context.get('conversation_state')
@@ -8032,6 +9892,14 @@ class AQIConversationRelayServer:
             if _guard:
                 _guard.bridge.mark_turn_start()  # Start latency clock
                 _ci_result = _guard.pre_check(user_text, context)
+                # [2026-03-06 FIX] Instructor mode: dead-end detection is disabled.
+                # Tim is training Alan — short terse responses ("Yeah.", "I said good.")
+                # are training signals, not a stalled sales conversation.
+                # Firing dead-end exit on instructor mode terminates valid training calls.
+                _is_instructor_call = context.get('prospect_info', {}).get('instructor_mode', False)
+                if _is_instructor_call and _ci_result and _ci_result.get('system') == 'dead_end':
+                    logger.info(f"[CONV INTEL] Instructor mode: dead-end suppressed for '{user_text[:40]}'")
+                    _ci_result = None
                 if _ci_result and _ci_result.get('abort'):
                     _ci_system = _ci_result.get('system', 'unknown')
                     _ci_outcome = _ci_result.get('outcome', _ci_system)
@@ -8142,14 +10010,17 @@ class AQIConversationRelayServer:
             # That dead air kills calls. Instead: pattern-match the merchant's
             # short response and serve a pre-cached TTS response in ~50ms.
             #
-            # Triggers on responses ≤12 words that match known patterns.
+            # Triggers on responses <=12 words that match known patterns.
             # Complex/long responses go to the full LLM pipeline.
+            # [2026-03-16 FIX] Skip T01 for instructor mode — canned sales
+            # responses are wrong for training calls. Let the LLM handle it.
             # =================================================================
+            _is_instructor_t01 = context.get('prospect_info', {}).get('instructor_mode', False)
             _t01_words = user_text.strip().split()
             _t01_text_lower = user_text.strip().lower().rstrip('?.!,')
             _t01_category = None
 
-            if len(_t01_words) <= 12 and hasattr(self, '_turn01_responses'):
+            if len(_t01_words) <= 12 and hasattr(self, '_turn01_responses') and not _is_instructor_t01:
                 # Pattern matching — most specific first
                 _ACK_TRANSFER_PATTERNS = [
                     'hold on', 'one moment', 'one second', 'hang on',
@@ -8398,11 +10269,16 @@ class AQIConversationRelayServer:
                 logger.warning(f"[ORGAN 31] Objection capture failed (non-fatal): {_obj31_err}")
 
         # [ORGAN 30] Prosody Analysis — detect merchant emotional state from text
+        # [2026-03-05 FIX] Organ 30 fires BEFORE analysis is computed (line ~9559).
+        # Previously referenced `analysis.get('sentiment')` which was always 'neutral'
+        # because `analysis` didn't exist yet. Now uses PREVIOUS turn's sentiment
+        # from context, which gives Organ 30 real emotional continuity.
         _pa = context.get('_prosody_analysis')
         if _pa:
             try:
                 _t_prosody = time.time()
-                _sentiment_for_pa = analysis.get('sentiment', 'neutral') if 'analysis' in dir() else 'neutral'
+                _prev_analysis = context.get('_last_analysis', {})
+                _sentiment_for_pa = _prev_analysis.get('sentiment', 'neutral') if _prev_analysis else 'neutral'
                 _pa_frame = _text_to_prosody_frame(user_text, sentiment=_sentiment_for_pa)
                 _pa_result = _pa.analyze_frame(_pa_frame)
                 _pa_emotion = _pa_result.get('emotion', 'neutral')
@@ -8957,8 +10833,9 @@ class AQIConversationRelayServer:
                 # Fallback: basic rapport handling if Agent X support not loaded
                 sentiment = analysis.get('sentiment', 'neutral')
                 resilience = self.rapport_layer.get('off_topic_resilience', {})
-                micro_acks = self.rapport_layer.get('micro_acknowledgments', {})
-                acks = micro_acks.get(sentiment, micro_acks.get('neutral', ["I hear you."]))
+                _active_listening = self.rapport_layer.get('active_listening', {})
+                micro_acks = _active_listening.get('micro_acknowledgments', ["That actually comes up a lot."])
+                acks = micro_acks if isinstance(micro_acks, list) else ["That actually comes up a lot."]
                 ack = random.choice(acks)
                 pivots = resilience.get('mission_pivots', ["Anyway, back to why I called."])
                 pivot = random.choice(pivots)
@@ -8967,7 +10844,7 @@ class AQIConversationRelayServer:
             if analysis.get('sentiment') == 'negative' and not analysis.get('is_off_topic'):
                 # [PERSONALITY FLARE] Handle difficult users with high-status professionalism
                 resilience = self.rapport_layer.get('off_topic_resilience', {})
-                prefices = resilience.get('professional_prefices', ["I understand your perspective. To be direct:"])
+                prefices = resilience.get('professional_prefices', ["Here's the thing —", "Let me be straight with you —", "To be direct with you —"])
                 rapport_prefix = random.choice(prefices) + " "
                 logger.info(f"[PERSONALITY FLARE] Negative sentiment detected. Applied professional prefix.")
 
@@ -9016,11 +10893,10 @@ class AQIConversationRelayServer:
                 context['_repetition_escalation'] = 'anchor'
                 analysis['_escalation_directive'] = (
                     "[ESCALATION] The merchant has asked this same question 3+ times. "
-                    "DO NOT repeat your previous answer. Instead: "
-                    "1) Acknowledge you may not have been clear enough: 'Sorry, let me be more clear.' "
-                    "2) Reframe with a concrete, specific example. "
-                    "3) Spell out the key detail (name, number, or fact) slowly and clearly. "
-                    "4) If about your identity/company: 'It's Signature Card Services — S-I-G-N-A-T-U-R-E. "
+                    "DO NOT repeat your previous answer. DO NOT say 'let me repeat that' or 'let me rephrase.' Instead: "
+                    "1) Use completely different words to explain the same thing. Try a concrete example or analogy. "
+                    "2) Spell out the key detail (name, number, or fact) slowly and clearly. "
+                    "3) If about your identity/company: 'It's Signature Card Services — S-I-G-N-A-T-U-R-E. "
                     "We help businesses like yours save on credit card processing fees.'"
                 )
                 logger.info(f"[REPETITION] Third-ask ANCHOR escalation triggered for: '{user_text[:50]}'")
@@ -9189,8 +11065,14 @@ class AQIConversationRelayServer:
             #   5. System instruction crafting for LLM persona shaping
             #   6. Prosody bias hints for Organ 7
             # Fail-open: if PersonalityEngine not loaded, falls back to no-op.
+            # Toggle: PERSONALITY_ENGINE_ENABLED (top of file)
             # =================================================================
-            try:
+            if not PERSONALITY_ENGINE_ENABLED:
+                context.pop('_personality_flare', None)
+                context.pop('_personality_state', None)
+                context.pop('_personality_prosody_bias', None)
+            else:
+              try:
                 _sentiment_raw = analysis.get('sentiment', 'neutral')
                 _user_text = user_text if isinstance(user_text, str) else ''
                 _pe_result = agent.process_personality_turn(_sentiment_raw, _user_text, analysis)
@@ -9210,7 +11092,7 @@ class AQIConversationRelayServer:
                     }
                     # Store prosody bias for Organ 7
                     context['_personality_prosody_bias'] = _pe_result.get('prosody_bias', {})
-            except Exception as _pm_e:
+              except Exception as _pm_e:
                 logger.debug(f"[PERSONALITY ENGINE] Processing failed (non-fatal): {_pm_e}")
 
             # =================================================================
@@ -9250,28 +11132,37 @@ class AQIConversationRelayServer:
             # =================================================================
             _turn_count = len(context.get('messages', []))
             _bridge_sent = False  # [2026-03-03] Track if bridge phrase was sent this turn
-            if CONV_INTEL_WIRED and not context.get('stream_ended') and _turn_count > 1:
+            # [2026-03-10 DISABLED] Bridge phrase causes stutter/doubled words.
+            # Bridge fires as async fire-and-forget (synthesize_and_stream_greeting),
+            # then sprint streams its opening clause to the SAME WebSocket.
+            # Both audio streams overlap → caller hears "Yeah, so... Thing is, I..."
+            # Sprint already provides fast-response with actual LLM content.
+            # Bridge is now redundant — sprint replaces it entirely.
+            _bridge_disabled = True  # Set False to re-enable bridge
+            if not _bridge_disabled and CONV_INTEL_WIRED and not context.get('stream_ended') and _turn_count > 1:
                 _guard = context.get('_conversation_guard')
                 if _guard:
                     _bridge_preprocess_ms = 1000 * (time.time() - pipeline_t0)
-                    # Determine context type for appropriate bridge
-                    _bridge_ctx = 'default'
-                    if analysis.get('sentiment') == 'negative' or analysis.get('objections'):
-                        _bridge_ctx = 'after_objection'
-                    elif '?' in user_text:
-                        _bridge_ctx = 'after_question'
-                    elif len(user_text.split()) > 15:
-                        _bridge_ctx = 'after_info'
-                    
-                    _bridge_text = _guard.bridge.get_bridge(_bridge_ctx)
-                    _bridge_sid = context.get('streamSid')
-                    if _bridge_text and _bridge_sid and websocket:
-                        logger.info(f"[LATENCY BRIDGE] Sending bridge: '{_bridge_text}' (preprocess={_bridge_preprocess_ms:.0f}ms)")
-                        asyncio.create_task(self.synthesize_and_stream_greeting(websocket, _bridge_text, _bridge_sid))
-                        _component_times['bridge_ms'] = 1000 * (time.time() - pipeline_t0) - _bridge_preprocess_ms
-                        _bridge_sent = True
-                        context['_bridge_sent'] = True      # LLM fallback path uses this
-                        context['_bridge_text'] = _bridge_text  # So fallback can continue naturally
+                    # [FIX] Check should_bridge() FIRST — respects threshold + per-call cap
+                    if _guard.bridge.should_bridge(_bridge_preprocess_ms):
+                        # Determine context type for appropriate bridge
+                        _bridge_ctx = 'default'
+                        if analysis.get('sentiment') == 'negative' or analysis.get('objections'):
+                            _bridge_ctx = 'after_objection'
+                        elif '?' in user_text:
+                            _bridge_ctx = 'after_question'
+                        elif len(user_text.split()) > 15:
+                            _bridge_ctx = 'after_info'
+                        
+                        _bridge_text = _guard.bridge.get_bridge(_bridge_ctx)
+                        _bridge_sid = context.get('streamSid')
+                        if _bridge_text and _bridge_sid and websocket:
+                            logger.info(f"[LATENCY BRIDGE] Sending bridge: '{_bridge_text}' (preprocess={_bridge_preprocess_ms:.0f}ms)")
+                            asyncio.create_task(self.synthesize_and_stream_greeting(websocket, _bridge_text, _bridge_sid))
+                            _component_times['bridge_ms'] = 1000 * (time.time() - pipeline_t0) - _bridge_preprocess_ms
+                            _bridge_sent = True
+                            context['_bridge_sent'] = True      # LLM fallback path uses this
+                            context['_bridge_text'] = _bridge_text  # So fallback can continue naturally
 
             # =================================================================
             # [VERSION R+] ORCHESTRATED PIPELINE — The Symphony
@@ -9284,12 +11175,24 @@ class AQIConversationRelayServer:
             # [2026-03-03 FIX] BRIDGE-AWARE TIMEOUT
             # When a bridge phrase was already sent ("Good question..."), the
             # merchant is actively waiting for the continuation. Dead air after
-            # a bridge is WORSE than dead air without one — it signals
+            # a bridge is WORSE than dead air without one -- it signals
             # "I started to answer but forgot what I was saying."
-            # Timeout reduced from 6.0s → 4.0s when bridge was sent.
+            # Timeout reduced from 6.0s -> 4.0s when bridge was sent.
+            # [2026-03-16 FIX] Instructor mode: relaxed to 10.0s -- training
+            # participant is patient, no cold prospect about to hang up.
             # =================================================================
             _t_orchestra = time.time()
-            _pipeline_timeout = 4.0 if _bridge_sent else 6.0
+            _is_instructor_pipe = context.get('prospect_info', {}).get('instructor_mode', False)
+            if _is_instructor_pipe:
+                _pipeline_timeout = 10.0
+            elif _bridge_sent:
+                # [2026-03-05] Was 7.0→5.5s. Bridge already filled dead air,
+                # but 7s was too generous — keeps the call alive waiting for LLM
+                # that may never arrive. 5.5s is enough for 80-token generation
+                # under normal memory conditions. Fallback fires if exceeded.
+                _pipeline_timeout = 5.5
+            else:
+                _pipeline_timeout = 5.0
             response_text = await asyncio.wait_for(
                 self._orchestrated_response(user_text, analysis, context, websocket, agent, generation=generation),
                 timeout=_pipeline_timeout
@@ -9441,17 +11344,27 @@ class AQIConversationRelayServer:
                     context.pop('_telephony_health_directive', None)
 
                 # One-shot repair phrase on first degradation
-                if _tel_mon.needs_repair and websocket:
+                # [2026-03-06 FIX] Suppress in instructor mode — the processing gaps that
+                # trigger dead-air detection are expected training delays, not real line problems.
+                # Injecting "Hey, the line might be rough" during a coaching session is disruptive.
+                _is_instructor_repair = context.get('prospect_info', {}).get('instructor_mode', False)
+                if _tel_mon.needs_repair and websocket and not _is_instructor_repair:
                     _repair = _tel_mon.get_repair_phrase()
                     _stream_sid = context.get('streamSid')
                     if _stream_sid:
                         logger.info(f"[TELEPHONY HEALTH] Sending repair phrase: '{_repair}'")
                         asyncio.create_task(self.synthesize_and_stream_greeting(websocket, _repair, _stream_sid))
                         _tel_mon.mark_repair_sent()
+                elif _tel_mon.needs_repair and _is_instructor_repair:
+                    _tel_mon.mark_repair_sent()  # Mark as handled so it doesn't keep accumulating
 
                 # Unusable → sovereign withdrawal
-                if _tel_mon.should_exit():
-                    logger.warning("[TELEPHONY HEALTH] UNUSABLE — triggering sovereign withdrawal")
+                # [INSTRUCTOR MODE] Training calls have slower LLM responses
+                # that create silence gaps. Never kill a training call for
+                # telephony health — the instructor is tolerant of pauses.
+                _is_instructor_tel = context.get('prospect_info', {}).get('instructor_mode', False)
+                if _tel_mon.should_exit() and not _is_instructor_tel:
+                    logger.warning("[TELEPHONY HEALTH] UNUSABLE -- triggering sovereign withdrawal")
                     _exit_phrase = _tel_mon.get_exit_phrase()
                     _stream_sid = context.get('streamSid')
                     if _stream_sid and websocket:
